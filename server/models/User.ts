@@ -1,0 +1,28 @@
+import { Entity, PrimaryGeneratedColumn, Column, BaseEntity } from 'typeorm';
+
+@Entity()
+export class User extends BaseEntity {
+  @PrimaryGeneratedColumn('uuid')
+  id!: string;  // Changed from number to string since we're using UUID
+
+  @Column('varchar', { nullable: false })
+  nom!: string;
+
+  @Column('varchar', { unique: true, nullable: false })
+  email!: string;
+
+  @Column('varchar', { nullable: true })
+  numero_telephone!: string;
+
+  @Column('varchar', { nullable: true })
+  pays!: string;
+
+  @Column('varchar', { nullable: true })
+  adresse!: string;
+
+  @Column('boolean', { default: false })
+  est_admin!: boolean;  
+
+  @Column('varchar', { nullable: false })
+  mot_de_passe!: string;
+}
