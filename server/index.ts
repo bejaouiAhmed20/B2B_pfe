@@ -2,7 +2,13 @@ import express from 'express';
 import { DataSource } from 'typeorm';
 import cors from 'cors';
 import userRoutes from './routes/UserRoutes/userRoutes';
+import flightRoutes from './routes/FlightRoutes/flightRoutes';
+import locationRoutes from './routes/LocationRoutes/locationRoutes';
+import airportRoutes from './routes/AirportRoutes/airportRoutes';
 import { User } from './models/User';
+import { Flight } from './models/Flight';
+import { Location } from './models/Location';
+import { Airport } from './models/Airport';
 
 const app = express();
 
@@ -12,6 +18,9 @@ app.use(express.json());
 
 // Routes
 app.use('/api/users', userRoutes);
+app.use('/api/flights', flightRoutes);
+app.use('/api/locations', locationRoutes);
+app.use('/api/airports', airportRoutes);
 
 // Database connection
 const AppDataSource = new DataSource({
@@ -21,7 +30,7 @@ const AppDataSource = new DataSource({
   username: "root",
   password: "",
   database: "b2b_db",
-  entities: [User],
+  entities: [User, Flight, Location, Airport],
   synchronize: true,
   logging: true
 });
