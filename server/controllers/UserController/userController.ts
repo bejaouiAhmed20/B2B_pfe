@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import { User } from '../../models/User';
+import { sendWelcomeEmail } from '../../config/emailConfig';
+import bcrypt from 'bcrypt';
 
 export const getUsers = async (req: Request, res: Response) => {
   try {
@@ -13,9 +15,26 @@ export const getUsers = async (req: Request, res: Response) => {
 
 export const addUser = async (req: Request, res: Response) => {
   try {
-    const user = User.create(req.body);
+    const { mot_de_passe, ...otherData } = req.body;
+    
+    // Hash the password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(mot_de_passe, saltRounds);
+    
+    // Create user with hashed password
+    const user = User.create({
+      ...otherData,
+      mot_de_passe: hashedPassword
+    });
+    
     await user.save();
-    res.status(201).json(user);
+    
+    // Send welcome email with original (unhashed) password
+    await sendWelcomeEmail(user.email, user.nom, mot_de_passe);
+    
+    // Remove password from response
+    const { mot_de_passe: _, ...userWithoutPassword } = user;
+    res.status(201).json(userWithoutPassword);
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "there is an issue" });

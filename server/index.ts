@@ -5,6 +5,7 @@ import userRoutes from './routes/UserRoutes/userRoutes';
 import flightRoutes from './routes/FlightRoutes/flightRoutes';
 import locationRoutes from './routes/LocationRoutes/locationRoutes';
 import airportRoutes from './routes/AirportRoutes/airportRoutes';
+import authRoutes from './routes/AuthRoutes/authRoutes';
 import { User } from './models/User';
 import { Flight } from './models/Flight';
 import { Location } from './models/Location';
@@ -21,6 +22,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/flights', flightRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/airports', airportRoutes);
+app.use('/api/auth', authRoutes);
 
 // Database connection
 const AppDataSource = new DataSource({

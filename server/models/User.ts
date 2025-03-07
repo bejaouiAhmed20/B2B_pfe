@@ -3,7 +3,7 @@ import { Entity, PrimaryGeneratedColumn, Column, BaseEntity } from 'typeorm';
 @Entity()
 export class User extends BaseEntity {
   @PrimaryGeneratedColumn('uuid')
-  id!: string;  // Changed from number to string since we're using UUID
+  id!: string;  
 
   @Column('varchar', { nullable: false })
   nom!: string;
