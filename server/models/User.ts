@@ -1,9 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, BaseEntity } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, BaseEntity, OneToMany } from 'typeorm';
+import { Reservation } from './Reservation'; 
 
 @Entity()
 export class User extends BaseEntity {
   @PrimaryGeneratedColumn('uuid')
-  id!: string;  // Changed from number to string since we're using UUID
+  id!: string;
 
   @Column('varchar', { nullable: false })
   nom!: string;
@@ -21,8 +22,12 @@ export class User extends BaseEntity {
   adresse!: string;
 
   @Column('boolean', { default: false })
-  est_admin!: boolean;  
+  est_admin!: boolean;
 
   @Column('varchar', { nullable: false })
   mot_de_passe!: string;
+
+  // Relation One-to-Many avec l'entité Reservation
+  @OneToMany(() => Reservation, (reservation) => reservation.user)
+  reservations!: Reservation[];
 }

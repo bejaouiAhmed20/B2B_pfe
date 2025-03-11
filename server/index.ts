@@ -5,10 +5,12 @@ import userRoutes from './routes/UserRoutes/userRoutes';
 import flightRoutes from './routes/FlightRoutes/flightRoutes';
 import locationRoutes from './routes/LocationRoutes/locationRoutes';
 import airportRoutes from './routes/AirportRoutes/airportRoutes';
+import reservationRoutes from './routes/ReservationRoutes/ReservationRoutes';
 import { User } from './models/User';
 import { Flight } from './models/Flight';
 import { Location } from './models/Location';
 import { Airport } from './models/Airport';
+import { Reservation } from './models/Reservation';
 
 const app = express();
 
@@ -21,6 +23,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/flights', flightRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/airports', airportRoutes);
+app.use('/api/reservations', reservationRoutes);
 
 // Database connection
 const AppDataSource = new DataSource({
@@ -30,7 +33,7 @@ const AppDataSource = new DataSource({
   username: "root",
   password: "",
   database: "b2b_db",
-  entities: [User, Flight, Location, Airport],
+  entities: [User, Flight, Location, Airport, Reservation],
   synchronize: true,
   logging: true
 });
