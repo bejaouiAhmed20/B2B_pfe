@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, BaseEntity } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, BaseEntity, OneToMany } from 'typeorm';
+import { Reservation } from './Reservation';
 
 @Entity()
 export class Flight extends BaseEntity {
@@ -28,4 +29,9 @@ export class Flight extends BaseEntity {
 
   @Column('varchar', { nullable: false })
   duree!: string;
+
+  @OneToMany(() => Reservation, (reservation) => reservation.flight)
+  reservations!: Reservation[];
 }
+
+

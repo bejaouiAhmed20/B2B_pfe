@@ -10,12 +10,15 @@ import airportRoutes from './routes/AirportRoutes/airportRoutes';
 import newsRoutes from './routes/NewsRoutes/newsRoutes';
 import authRoutes from './routes/AuthRoutes/authRoutes';
 import couponRoutes from './routes/CouponRoutes/couponRoutes';
+import reservationRoutes from './routes/ReservationRoutes/ReservationRoutes';
+
 import { User } from './models/User';
 import { Flight } from './models/Flight';
 import { Location } from './models/Location';
 import { Airport } from './models/Airport';
 import { News } from './models/News';
 import { Coupon } from './models/Coupon';
+import { Reservation } from './models/Reservation';
 
 const app = express();
 
@@ -34,6 +37,7 @@ app.use('/api/airports', airportRoutes);
 app.use('/api/news', newsRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/coupons', couponRoutes);
+app.use('/api/reservations', reservationRoutes);
 
 // Database connection
 const AppDataSource = new DataSource({
@@ -43,7 +47,7 @@ const AppDataSource = new DataSource({
   username: "root",
   password: "",
   database: "b2b_db2",
-  entities: [User, Flight, Location, Airport, News, Coupon],
+  entities: [User, Flight, Location, Airport, News, Coupon, Reservation], // Add Reservation here
   synchronize: true,
   logging: true,
   charset: "utf8mb4",

@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, BaseEntity } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, BaseEntity, OneToMany } from 'typeorm';
+import { Reservation } from './Reservation';
 
 @Entity()
 export class User extends BaseEntity {
@@ -25,4 +26,8 @@ export class User extends BaseEntity {
 
   @Column('varchar', { nullable: false })
   mot_de_passe!: string;
+
+  @OneToMany(() => Reservation, (reservation) => reservation.user)
+  reservations!: Reservation[];
+
 }
