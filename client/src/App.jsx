@@ -6,7 +6,9 @@ import Flights from './pages/Admin/Flights';
 import Locations from './pages/Admin/Locations';
 import Airports from './pages/Admin/Airports';
 import News from './pages/Admin/News';
+import AddNews from './pages/Admin/AddNews';
 import Coupons from './pages/Admin/Coupons';
+import AddCoupon from './pages/Admin/AddCoupon';
 import Popups from './pages/Admin/Popups';
 import Login from './pages/Auth/login';
 import AddClient from './pages/Admin/AddClient';
@@ -28,8 +30,10 @@ function App() {
           <Route path="locations/add" element={<AddLocation />} />
           <Route path="airports" element={<Airports />} />
           <Route path="airports/add" element={<AddAirport />} />
-          <Route path="news" element={<News />} />
+          <Route path="/admin/news" element={<News />} />
+          <Route path="/admin/news/add" element={<AddNews />} />
           <Route path="coupons" element={<Coupons />} />
+          <Route path="coupons/add" element={<AddCoupon />} />
           <Route path="popups" element={<Popups />} />
         </Route>
       </Routes>

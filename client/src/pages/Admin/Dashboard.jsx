@@ -9,8 +9,9 @@ import FlightIcon from '@mui/icons-material/Flight';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import AirportShuttleIcon from '@mui/icons-material/AirportShuttle';
 import NewReleasesIcon from '@mui/icons-material/NewReleases';
+// Add these imports to your existing imports
+import NewspaperIcon from '@mui/icons-material/Newspaper';
 import LocalOfferIcon from '@mui/icons-material/LocalOffer';
-import AnnouncementIcon from '@mui/icons-material/Announcement';
 
 const drawerWidth = 250;
 
@@ -22,7 +23,7 @@ const menuItems = [
   { text: 'Manage Airports', icon: <AirportShuttleIcon />, path: '/admin/airports' },
   { text: 'Manage News', icon: <NewReleasesIcon />, path: '/admin/news' },
   { text: 'Manage Coupon', icon: <LocalOfferIcon />, path: '/admin/coupons' },
-  { text: 'Manage Popups', icon: <AnnouncementIcon />, path: '/admin/popups' },
+  { text: 'Manage Popups', icon: <NewspaperIcon />, path: '/admin/popups' },
 ];
 
 const lightTheme = createTheme({
