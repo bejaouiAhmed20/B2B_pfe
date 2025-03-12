@@ -1,6 +1,24 @@
 import React, { useState } from 'react';
-import { Link, Outlet } from 'react-router-dom';
-import { AppBar, Toolbar, IconButton, Drawer, List, ListItem, ListItemIcon, ListItemText, CssBaseline, Typography, useMediaQuery, ThemeProvider, createTheme, Box } from '@mui/material';
+import { Link, Outlet, useNavigate } from 'react-router-dom';
+import { 
+  AppBar, 
+  Toolbar, 
+  IconButton, 
+  Drawer, 
+  List, 
+  ListItem, 
+  ListItemIcon, 
+  ListItemText, 
+  CssBaseline, 
+  Typography, 
+  useMediaQuery, 
+  ThemeProvider, 
+  createTheme, 
+  Box,
+  Button,
+  Divider,
+  Tooltip
+} from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import MenuIcon from '@mui/icons-material/Menu';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
@@ -9,9 +27,10 @@ import FlightIcon from '@mui/icons-material/Flight';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import AirportShuttleIcon from '@mui/icons-material/AirportShuttle';
 import NewReleasesIcon from '@mui/icons-material/NewReleases';
-// Add these imports to your existing imports
 import NewspaperIcon from '@mui/icons-material/Newspaper';
 import LocalOfferIcon from '@mui/icons-material/LocalOffer';
+import LogoutIcon from '@mui/icons-material/Logout';
+import axios from 'axios';
 
 const drawerWidth = 250;
 
@@ -48,6 +67,7 @@ export default function DashboardLayout() {
   const [open, setOpen] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
   const isMobile = useMediaQuery('(max-width: 600px)');
+  const navigate = useNavigate();
 
   const handleDrawerToggle = () => {
     setOpen(!open);
@@ -55,6 +75,26 @@ export default function DashboardLayout() {
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
+  };
+
+  const handleLogout = async () => {
+    try {
+      // Call the logout endpoint
+      await axios.post('http://localhost:5000/api/auth/logout');
+      
+      // Remove token from localStorage
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      
+      // Redirect to login page
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // Even if the server request fails, we still want to clear local storage and redirect
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      navigate('/login');
+    }
   };
 
   return (
@@ -66,17 +106,24 @@ export default function DashboardLayout() {
           sx={{
             zIndex: (theme) => theme.zIndex.drawer + 1,
             transition: 'width 0.3s ease-in-out',
-            // width: { sm: open ? `calc(100% - ${drawerWidth}px)` : '100%' },
           }}
         >
           <Toolbar>
-           
             <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
               Admin Dashboard
             </Typography>
-            <IconButton color="inherit" onClick={toggleDarkMode} aria-label="toggle dark mode">
+            <IconButton color="inherit" onClick={toggleDarkMode} aria-label="toggle dark mode" sx={{ mr: 2 }}>
               {darkMode ? '☀️' : '🌙'}
             </IconButton>
+            <Tooltip title="Logout">
+              <Button 
+                color="inherit" 
+                onClick={handleLogout} 
+                startIcon={<LogoutIcon />}
+              >
+                Logout
+              </Button>
+            </Tooltip>
           </Toolbar>
         </AppBar>
 
@@ -100,7 +147,7 @@ export default function DashboardLayout() {
           }}
         >
           <Toolbar />
-          <Box sx={{ overflow: 'hidden' }}> {/* Changed from 'auto' to 'hidden' */}
+          <Box sx={{ overflow: 'hidden' }}>
             <List>
               {menuItems.map((item) => (
                 <ListItem
@@ -131,6 +178,33 @@ export default function DashboardLayout() {
                   />
                 </ListItem>
               ))}
+              <Divider sx={{ my: 2 }} />
+              <ListItem
+                button
+                onClick={handleLogout}
+                sx={{
+                  px: 2,
+                  py: 1.5,
+                  borderRadius: '8px',
+                  mx: 1,
+                  my: 0.5,
+                  '&:hover': {
+                    backgroundColor: 'action.hover',
+                  },
+                  color: 'error.main'
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 0, mr: open ? 3 : 'auto', color: 'inherit' }}>
+                  <LogoutIcon />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Logout"
+                  sx={{
+                    opacity: open ? 1 : 0,
+                    transition: 'opacity 0.3s ease-in-out',
+                  }}
+                />
+              </ListItem>
             </List>
           </Box>
         </Drawer>

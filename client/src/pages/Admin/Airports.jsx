@@ -16,6 +16,7 @@ import {
   DialogContent,
   DialogActions,
   TextField,
+  MenuItem,
   Snackbar,
   Alert
 } from '@mui/material';
@@ -26,21 +27,23 @@ import axios from 'axios';
 const Airports = () => {
   const navigate = useNavigate();
   const [airports, setAirports] = useState([]);
+  const [locations, setLocations] = useState([]);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [editDialog, setEditDialog] = useState({ open: false, airport: null });
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [formData, setFormData] = useState({
     nom: '',
-    code_iata: '',
-    ville: '',
+    code: '',
     pays: '',
-    latitude: '',
-    longitude: ''
+    description: '',
+    est_actif: true,
+    location_id: ''
   });
 
   useEffect(() => {
     fetchAirports();
+    fetchLocations();
   }, []);
 
   const fetchAirports = async () => {
@@ -49,6 +52,15 @@ const Airports = () => {
       setAirports(response.data);
     } catch (error) {
       showSnackbar('Erreur lors du chargement des aéroports', 'error');
+    }
+  };
+
+  const fetchLocations = async () => {
+    try {
+      const response = await axios.get('http://localhost:5000/api/locations');
+      setLocations(response.data);
+    } catch (error) {
+      showSnackbar('Erreur lors du chargement des locations', 'error');
     }
   };
 
@@ -65,11 +77,11 @@ const Airports = () => {
     setEditDialog({ open: true, airport });
     setFormData({
       nom: airport.nom,
-      code_iata: airport.code_iata,
-      ville: airport.ville,
+      code: airport.code,
       pays: airport.pays,
-      latitude: airport.latitude,
-      longitude: airport.longitude
+      description: airport.description || '',
+      est_actif: airport.est_actif,
+      location_id: airport.location?.id || ''
     });
   };
 
@@ -77,11 +89,11 @@ const Airports = () => {
     setEditDialog({ open: false, airport: null });
     setFormData({
       nom: '',
-      code_iata: '',
-      ville: '',
+      code: '',
       pays: '',
-      latitude: '',
-      longitude: ''
+      description: '',
+      est_actif: true,
+      location_id: ''
     });
   };
 
@@ -140,11 +152,11 @@ const Airports = () => {
           <TableHead>
             <TableRow>
               <TableCell>Nom</TableCell>
-              <TableCell>Code IATA</TableCell>
-              <TableCell>Ville</TableCell>
+              <TableCell>Code</TableCell>
               <TableCell>Pays</TableCell>
-              <TableCell>Latitude</TableCell>
-              <TableCell>Longitude</TableCell>
+              <TableCell>Ville (Location)</TableCell>
+              <TableCell>Description</TableCell>
+              <TableCell>Statut</TableCell>
               <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
@@ -154,11 +166,11 @@ const Airports = () => {
               .map((airport) => (
                 <TableRow key={airport.id}>
                   <TableCell>{airport.nom}</TableCell>
-                  <TableCell>{airport.code_iata}</TableCell>
-                  <TableCell>{airport.ville}</TableCell>
+                  <TableCell>{airport.code}</TableCell>
                   <TableCell>{airport.pays}</TableCell>
-                  <TableCell>{airport.latitude}</TableCell>
-                  <TableCell>{airport.longitude}</TableCell>
+                  <TableCell>{airport.location ? `${airport.location.ville}, ${airport.location.pays}` : '-'}</TableCell>
+                  <TableCell>{airport.description || '-'}</TableCell>
+                  <TableCell>{airport.est_actif ? 'Actif' : 'Inactif'}</TableCell>
                   <TableCell>
                     <IconButton onClick={() => handleEditOpen(airport)} color="primary">
                       <EditIcon />
@@ -200,18 +212,9 @@ const Airports = () => {
               margin="dense"
             />
             <TextField
-              name="code_iata"
-              label="Code IATA"
-              value={formData.code_iata}
-              onChange={handleChange}
-              fullWidth
-              required
-              margin="dense"
-            />
-            <TextField
-              name="ville"
-              label="Ville"
-              value={formData.ville}
+              name="code"
+              label="Code"
+              value={formData.code}
               onChange={handleChange}
               fullWidth
               required
@@ -227,27 +230,43 @@ const Airports = () => {
               margin="dense"
             />
             <TextField
-              name="latitude"
-              label="Latitude"
-              type="number"
-              value={formData.latitude}
+              name="location_id"
+              label="Location"
+              select
+              value={formData.location_id}
               onChange={handleChange}
               fullWidth
               required
               margin="dense"
-              inputProps={{ step: "any" }}
+            >
+              {locations.map((location) => (
+                <MenuItem key={location.id} value={location.id}>
+                  {location.ville}, {location.pays}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              name="description"
+              label="Description"
+              value={formData.description}
+              onChange={handleChange}
+              fullWidth
+              multiline
+              rows={3}
+              margin="dense"
             />
             <TextField
-              name="longitude"
-              label="Longitude"
-              type="number"
-              value={formData.longitude}
+              name="est_actif"
+              label="Statut"
+              select
+              value={formData.est_actif}
               onChange={handleChange}
               fullWidth
-              required
               margin="dense"
-              inputProps={{ step: "any" }}
-            />
+            >
+              <MenuItem value={true}>Actif</MenuItem>
+              <MenuItem value={false}>Inactif</MenuItem>
+            </TextField>
           </DialogContent>
           <DialogActions>
             <Button onClick={handleEditClose}>Annuler</Button>

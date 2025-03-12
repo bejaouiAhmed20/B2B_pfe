@@ -43,3 +43,14 @@ export const login = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Erreur lors de la connexion" });
   }
 };
+
+export const logout = async (req: Request, res: Response) => {
+  try {
+    // Since we're using JWT, we don't need to do anything server-side
+    // The client will handle removing the token
+    res.status(200).json({ message: "Logged out successfully" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "There is an issue with logout" });
+  }
+};

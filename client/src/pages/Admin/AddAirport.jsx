@@ -1,26 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Typography,
   Paper,
   TextField,
   Button,
+  MenuItem,
   Snackbar,
-  Alert
+  Alert,
+  Grid
 } from '@mui/material';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
 const AddAirport = () => {
   const navigate = useNavigate();
+  const [locations, setLocations] = useState([]);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [formData, setFormData] = useState({
     nom: '',
-    code_iata: '',
-    ville: '',
+    code: '',
     pays: '',
-    latitude: '',
-    longitude: ''
+    description: '',
+    est_actif: true,
+    location_id: ''
   });
+
+  useEffect(() => {
+    fetchLocations();
+  }, []);
+
+  const fetchLocations = async () => {
+    try {
+      const response = await axios.get('http://localhost:5000/api/locations');
+      setLocations(response.data);
+    } catch (error) {
+      setSnackbar({ 
+        open: true, 
+        message: 'Erreur lors du chargement des locations', 
+        severity: 'error' 
+      });
+    }
+  };
 
   const handleChange = (e) => {
     setFormData({
@@ -51,64 +71,91 @@ const AddAirport = () => {
       </Typography>
       
       <form onSubmit={handleSubmit}>
-        <TextField
-          name="nom"
-          label="Nom de l'aéroport"
-          value={formData.nom}
-          onChange={handleChange}
-          fullWidth
-          required
-          margin="normal"
-        />
-        <TextField
-          name="code_iata"
-          label="Code IATA"
-          value={formData.code_iata}
-          onChange={handleChange}
-          fullWidth
-          required
-          margin="normal"
-        />
-        <TextField
-          name="ville"
-          label="Ville"
-          value={formData.ville}
-          onChange={handleChange}
-          fullWidth
-          required
-          margin="normal"
-        />
-        <TextField
-          name="pays"
-          label="Pays"
-          value={formData.pays}
-          onChange={handleChange}
-          fullWidth
-          required
-          margin="normal"
-        />
-        <TextField
-          name="latitude"
-          label="Latitude"
-          type="number"
-          value={formData.latitude}
-          onChange={handleChange}
-          fullWidth
-          required
-          margin="normal"
-          inputProps={{ step: "any" }}
-        />
-        <TextField
-          name="longitude"
-          label="Longitude"
-          type="number"
-          value={formData.longitude}
-          onChange={handleChange}
-          fullWidth
-          required
-          margin="normal"
-          inputProps={{ step: "any" }}
-        />
+        <Grid container spacing={2}>
+          <Grid item xs={12}>
+            <TextField
+              name="nom"
+              label="Nom de l'aéroport"
+              value={formData.nom}
+              onChange={handleChange}
+              fullWidth
+              required
+              margin="normal"
+            />
+          </Grid>
+          
+          <Grid item xs={12} md={6}>
+            <TextField
+              name="code"
+              label="Code"
+              value={formData.code}
+              onChange={handleChange}
+              fullWidth
+              required
+              margin="normal"
+            />
+          </Grid>
+          
+          <Grid item xs={12} md={6}>
+            <TextField
+              name="pays"
+              label="Pays"
+              value={formData.pays}
+              onChange={handleChange}
+              fullWidth
+              required
+              margin="normal"
+            />
+          </Grid>
+          
+          <Grid item xs={12}>
+            <TextField
+              name="location_id"
+              label="Location"
+              select
+              value={formData.location_id}
+              onChange={handleChange}
+              fullWidth
+              required
+              margin="normal"
+              helperText="Sélectionnez la ville associée à cet aéroport"
+            >
+              {locations.map((location) => (
+                <MenuItem key={location.id} value={location.id}>
+                  {location.ville}, {location.pays}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Grid>
+          
+          <Grid item xs={12}>
+            <TextField
+              name="description"
+              label="Description"
+              value={formData.description}
+              onChange={handleChange}
+              fullWidth
+              multiline
+              rows={3}
+              margin="normal"
+            />
+          </Grid>
+          
+          <Grid item xs={12}>
+            <TextField
+              name="est_actif"
+              label="Statut"
+              select
+              value={formData.est_actif}
+              onChange={handleChange}
+              fullWidth
+              margin="normal"
+            >
+              <MenuItem value={true}>Actif</MenuItem>
+              <MenuItem value={false}>Inactif</MenuItem>
+            </TextField>
+          </Grid>
+        </Grid>
         
         <div style={{ marginTop: 20, display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
           <Button onClick={() => navigate('/admin/airports')}>
