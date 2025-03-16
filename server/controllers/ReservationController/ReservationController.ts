@@ -115,7 +115,6 @@ export const updateReservation = async (req: Request, res: Response) => {
   }
 };
 
-// Supprimer une réservation
 export const deleteReservation = async (req: Request, res: Response) => {
   try {
     const reservation = await Reservation.findOneBy({ id: req.params.id });
@@ -131,3 +130,42 @@ export const deleteReservation = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Une erreur s'est produite" });
   }
 };
+
+export const getReservationsByFlightId = async (req: Request, res: Response) => {
+  try {
+    const flightId = req.params.flightId;
+    const reservations = await Reservation.find({
+      where: { flight: { id: flightId } },
+      relations: ['user', 'flight']
+    });
+    
+    if (reservations.length === 0) {
+      return res.status(404).json({ message: "No reservations found for this flight" });
+    }
+    
+    res.json(reservations);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "There is an issue retrieving reservations" });
+  }
+};
+
+export const getReservationsByUserId = async (req: Request, res: Response) => {
+  try {
+    const userId = req.params.userId;
+    const reservations = await Reservation.find({
+      where: { user: { id: userId } },
+      relations: ['user', 'flight']
+    });
+    
+    if (reservations.length === 0) {
+      return res.status(404).json({ message: "No reservations found for this user" });
+    }
+    
+    res.json(reservations);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "There is an issue retrieving reservations" });
+  }
+};
+

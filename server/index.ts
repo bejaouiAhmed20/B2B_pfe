@@ -46,7 +46,7 @@ const AppDataSource = new DataSource({
   port: 3306,
   username: "root",
   password: "",
-  database: "b2b_db2",
+  database: "b2b_db3",
   entities: [User, Flight, Location, Airport, News, Coupon, Reservation], // Add Reservation here
   synchronize: true,
   logging: true,

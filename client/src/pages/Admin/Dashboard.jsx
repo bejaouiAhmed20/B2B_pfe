@@ -43,8 +43,8 @@ const menuItems = [
   { text: 'Manage News', icon: <NewReleasesIcon />, path: '/admin/news' },
   { text: 'Manage Coupon', icon: <LocalOfferIcon />, path: '/admin/coupons' },
   { text: 'Manage Popups', icon: <NewspaperIcon />, path: '/admin/popups' },
+  { text: 'Manage Reservations', icon: <FlightIcon />, path: '/admin/reservations' }
 ];
-
 const lightTheme = createTheme({
   palette: {
     mode: 'light',

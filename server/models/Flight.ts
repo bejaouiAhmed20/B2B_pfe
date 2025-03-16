@@ -19,18 +19,16 @@ export class Flight extends BaseEntity {
   @Column('datetime', { nullable: false })
   date_retour!: Date;
 
-  // Remove these string columns as they'll be replaced by relations
-  // @Column('varchar', { nullable: false })
-  // ville_depart!: string;
-
-  // @Column('varchar', { nullable: false })
-  // ville_arrivee!: string;
+  
 
   @Column('varchar', { nullable: false })
   compagnie_aerienne!: string;
 
   @Column('varchar', { nullable: false })
   duree!: string;
+
+  @Column('int', { nullable: false, default: 100 })
+  places_disponibles!: number;
 
   // Add relations to Airport for departure and arrival
   @ManyToOne(() => Airport, { eager: true })
@@ -44,5 +42,4 @@ export class Flight extends BaseEntity {
   @OneToMany(() => Reservation, (reservation) => reservation.flight)
   reservations!: Reservation[];
 }
-
 
