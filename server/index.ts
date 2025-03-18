@@ -11,6 +11,10 @@ import newsRoutes from './routes/NewsRoutes/newsRoutes';
 import authRoutes from './routes/AuthRoutes/authRoutes';
 import couponRoutes from './routes/CouponRoutes/couponRoutes';
 import reservationRoutes from './routes/ReservationRoutes/ReservationRoutes';
+import compteRoutes from './routes/CompteRoutes/compteRoutes';
+import uploadRoutes from './routes/UploadRoutes/uploadRoutes';
+import requestSoldeRoutes from './routes/RequestSoldeRoutes/requestSoldeRoutes';
+
 
 import { User } from './models/User';
 import { Flight } from './models/Flight';
@@ -19,6 +23,8 @@ import { Airport } from './models/Airport';
 import { News } from './models/News';
 import { Coupon } from './models/Coupon';
 import { Reservation } from './models/Reservation';
+import { Compte } from './models/Compte';
+import { RequestSolde } from './models/RequestSolde';
 
 const app = express();
 
@@ -38,6 +44,25 @@ app.use('/api/news', newsRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/reservations', reservationRoutes);
+app.use('/api/comptes', compteRoutes);
+// Add this near your other route imports
+
+// Register routes
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/flights', flightRoutes);
+app.use('/api/locations', locationRoutes);
+app.use('/api/airports', airportRoutes);
+app.use('/api/news', newsRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/coupons', couponRoutes);
+app.use('/api/reservations', reservationRoutes);
+app.use('/api/comptes', compteRoutes);
+app.use('/api/request-solde', requestSoldeRoutes);
+app.use('/api/upload', uploadRoutes);
+
+// Make sure you have this line to serve static files
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Database connection
 const AppDataSource = new DataSource({
@@ -46,15 +71,14 @@ const AppDataSource = new DataSource({
   port: 3306,
   username: "root",
   password: "",
-  database: "b2b_db3",
-  entities: [User, Flight, Location, Airport, News, Coupon, Reservation], // Add Reservation here
+  database: "b2b_db2",
+  entities: [User, Flight, Location, Airport, News, Coupon, Reservation, Compte, RequestSolde],
   synchronize: true,
   logging: true,
   charset: "utf8mb4",
   extra: {
     charset: "utf8mb4_unicode_ci"
   },
-  // Add this to ensure tables are created with InnoDB engine
   entitySkipConstructor: true
 });
 
@@ -68,5 +92,8 @@ AppDataSource.initialize()
   .catch((err) => {
     console.error("Error during Data Source initialization:", err);
   });
+
+// Add this line near the end of your file, after initializing AppDataSource
+export { AppDataSource };
 
 export default app;

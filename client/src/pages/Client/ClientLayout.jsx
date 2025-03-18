@@ -11,6 +11,7 @@ import {
   Divider
 } from '@mui/material';
 import FlightIcon from '@mui/icons-material/Flight';
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 
 const ClientLayout = () => {
   const isLoggedIn = localStorage.getItem('token') && localStorage.getItem('user');
@@ -31,6 +32,14 @@ const ClientLayout = () => {
           {isLoggedIn ? (
             <>
               <Button color="inherit" component={Link} to="/client/reservations">Mes Réservations</Button>
+              <Button 
+                color="inherit" 
+                component={Link} 
+                to="/client/request-solde"
+                startIcon={<AccountBalanceWalletIcon />}
+              >
+                Mon Solde
+              </Button>
               <Button color="inherit" component={Link} to="/client/profile">
                 {user?.nom || 'Mon Profil'}
               </Button>

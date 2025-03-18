@@ -5,7 +5,7 @@ const router = express.Router();
 
 router.get('/', getUsers);
 router.get('/:id', getUserById as express.RequestHandler);
-router.post('/', addUser);
+router.post('/', addUser  as express.RequestHandler);
 router.put('/:id', updateUser as express.RequestHandler);
 router.delete('/:id', deleteUser as express.RequestHandler);
 

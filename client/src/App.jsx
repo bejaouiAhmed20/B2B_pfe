@@ -18,15 +18,16 @@ import DashboardLayout from './pages/Admin/dashboard';
 import AddFlight from './pages/Admin/AddFlight';
 import Reservations from './pages/Admin/Reservations';
 import AddReservation from './pages/Admin/AddReservation';
-
-// Import client components
-import ClientHome from './pages/Client/Home';
-import Flight from './pages/Client/Flight';
-import FlightDescription from './pages/Client/FlightDescription';
+import RequestSoldeManagement from './pages/Admin/RequestSoldeManagement';
 import LoginClient from './pages/Auth/LoginClient';
 import ClientLayout from './pages/Client/ClientLayout';
+import Flight from './pages/Client/Flight';
+import FlightDescription from './pages/Client/FlightDescription';
 import Profile from './pages/Client/Profile';
-import ReservationsClient from './pages/Client/Reservations';
+import RequestSolde from './pages/Client/RequestSolde';
+import Home from './pages/client/Home';
+// Import the client Reservations component with an alias to avoid naming conflict
+import ReservationsClient from './pages/client/Reservations';
 
 function App() {
   return (
@@ -38,12 +39,12 @@ function App() {
         
         {/* Client Routes */}
         <Route path="/client" element={<ClientLayout />}>
-          <Route index element={<ClientHome />} />
+          <Route index element={<Home />} />
           <Route path="flights" element={<Flight />} />
           <Route path="flights/:id" element={<FlightDescription />} />
           <Route path='profile' element={<Profile />} />
           <Route path='reservations' element={<ReservationsClient />} />
-         
+          <Route path='request-solde' element={<RequestSolde />} />
         </Route>
         
         <Route path="/admin" element={<DashboardLayout />}>
@@ -63,6 +64,7 @@ function App() {
           <Route path="popups" element={<Popups />} />
           <Route path="/admin/reservations" element={<Reservations />} />
           <Route path="/admin/reservations/add" element={<AddReservation />} />
+          <Route path="request-solde" element={<RequestSoldeManagement />} />
         </Route>
       </Routes>
     </BrowserRouter>
