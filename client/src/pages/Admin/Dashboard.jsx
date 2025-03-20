@@ -31,6 +31,7 @@ import NewspaperIcon from '@mui/icons-material/Newspaper';
 import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 import LogoutIcon from '@mui/icons-material/Logout';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import DescriptionIcon from '@mui/icons-material/Description';
 import axios from 'axios';
 
 const drawerWidth = 250;
@@ -43,10 +44,12 @@ const menuItems = [
   { text: 'Manage Airports', icon: <AirportShuttleIcon />, path: '/admin/airports' },
   { text: 'Manage News', icon: <NewReleasesIcon />, path: '/admin/news' },
   { text: 'Manage Coupon', icon: <LocalOfferIcon />, path: '/admin/coupons' },
+  { text: 'Manage Contracts', icon: <DescriptionIcon />, path: '/admin/contracts' },
   { text: 'Manage Popups', icon: <NewspaperIcon />, path: '/admin/popups' },
   { text: 'Manage Reservations', icon: <FlightIcon />, path: '/admin/reservations' },
   { text: 'Manage Solde Requests', icon: <AccountBalanceWalletIcon />, path: '/admin/request-solde' }
 ];
+
 const lightTheme = createTheme({
   palette: {
     mode: 'light',
@@ -111,6 +114,15 @@ export default function DashboardLayout() {
           }}
         >
           <Toolbar>
+            <IconButton
+              color="inherit"
+              aria-label="open drawer"
+              edge="start"
+              onClick={handleDrawerToggle}
+              sx={{ mr: 2, display: { sm: 'none' } }}
+            >
+              <MenuIcon />
+            </IconButton>
             <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
               Admin Dashboard
             </Typography>
@@ -131,7 +143,7 @@ export default function DashboardLayout() {
 
         <Drawer
           variant={isMobile ? "temporary" : "permanent"}
-          open={open}
+          open={isMobile ? open : true}
           onClose={isMobile ? handleDrawerToggle : undefined}
           sx={{
             width: drawerWidth,
@@ -139,17 +151,20 @@ export default function DashboardLayout() {
             '& .MuiDrawer-paper': {
               width: drawerWidth,
               boxSizing: 'border-box',
-              overflowX: 'hidden', // Hide horizontal scrollbar
+              overflowY: 'auto',
               '&::-webkit-scrollbar': {
-                display: 'none', // Hide scrollbar for Chrome/Safari/Opera
+                width: '4px',
               },
-              scrollbarWidth: 'none', // Hide scrollbar for Firefox
-              msOverflowStyle: 'none', // Hide scrollbar for IE/Edge
+              '&::-webkit-scrollbar-thumb': {
+                backgroundColor: 'rgba(0,0,0,0.2)',
+                borderRadius: '4px',
+              },
+              scrollbarWidth: 'thin',
             },
           }}
         >
           <Toolbar />
-          <Box sx={{ overflow: 'hidden' }}>
+          <Box sx={{ overflow: 'auto' }}>
             <List>
               {menuItems.map((item) => (
                 <ListItem
@@ -159,20 +174,24 @@ export default function DashboardLayout() {
                   to={item.path}
                   sx={{
                     px: 2,
-                    py: 1.5,
+                    py: 1,
                     borderRadius: '8px',
                     mx: 1,
-                    my: 0.5,
+                    my: 0.3,
                     '&:hover': {
                       backgroundColor: 'action.hover',
                     },
                   }}
                 >
-                  <ListItemIcon sx={{ minWidth: 0, mr: open ? 3 : 'auto' }}>
+                  <ListItemIcon sx={{ minWidth: 0, mr: open ? 2 : 'auto' }}>
                     {item.icon}
                   </ListItemIcon>
                   <ListItemText
                     primary={item.text}
+                    primaryTypographyProps={{ 
+                      noWrap: true,
+                      fontSize: '0.9rem'
+                    }}
                     sx={{
                       opacity: open ? 1 : 0,
                       transition: 'opacity 0.3s ease-in-out',
@@ -186,21 +205,25 @@ export default function DashboardLayout() {
                 onClick={handleLogout}
                 sx={{
                   px: 2,
-                  py: 1.5,
+                  py: 1,
                   borderRadius: '8px',
                   mx: 1,
-                  my: 0.5,
+                  my: 0.3,
                   '&:hover': {
                     backgroundColor: 'action.hover',
                   },
                   color: 'error.main'
                 }}
               >
-                <ListItemIcon sx={{ minWidth: 0, mr: open ? 3 : 'auto', color: 'inherit' }}>
+                <ListItemIcon sx={{ minWidth: 0, mr: open ? 2 : 'auto', color: 'inherit' }}>
                   <LogoutIcon />
                 </ListItemIcon>
                 <ListItemText
                   primary="Logout"
+                  primaryTypographyProps={{ 
+                    noWrap: true,
+                    fontSize: '0.9rem'
+                  }}
                   sx={{
                     opacity: open ? 1 : 0,
                     transition: 'opacity 0.3s ease-in-out',

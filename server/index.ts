@@ -14,6 +14,7 @@ import reservationRoutes from './routes/ReservationRoutes/ReservationRoutes';
 import compteRoutes from './routes/CompteRoutes/compteRoutes';
 import uploadRoutes from './routes/UploadRoutes/uploadRoutes';
 import requestSoldeRoutes from './routes/RequestSoldeRoutes/requestSoldeRoutes';
+import contractRoutes from './routes/ContractRoutes/contractRoutes';
 
 
 import { User } from './models/User';
@@ -25,6 +26,7 @@ import { Coupon } from './models/Coupon';
 import { Reservation } from './models/Reservation';
 import { Compte } from './models/Compte';
 import { RequestSolde } from './models/RequestSolde';
+import { Contract } from './models/Contract';
 
 const app = express();
 
@@ -45,21 +47,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/reservations', reservationRoutes);
 app.use('/api/comptes', compteRoutes);
-// Add this near your other route imports
-
-// Register routes
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/flights', flightRoutes);
-app.use('/api/locations', locationRoutes);
-app.use('/api/airports', airportRoutes);
-app.use('/api/news', newsRoutes);
-app.use('/api/auth', authRoutes);
-app.use('/api/coupons', couponRoutes);
-app.use('/api/reservations', reservationRoutes);
-app.use('/api/comptes', compteRoutes);
 app.use('/api/request-solde', requestSoldeRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/contracts', contractRoutes);
 
 // Make sure you have this line to serve static files
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
@@ -72,7 +62,7 @@ const AppDataSource = new DataSource({
   username: "root",
   password: "",
   database: "b2b_db2",
-  entities: [User, Flight, Location, Airport, News, Coupon, Reservation, Compte, RequestSolde],
+  entities: [User, Flight, Location, Airport, News, Coupon, Reservation, Compte, RequestSolde, Contract],
   synchronize: true,
   logging: true,
   charset: "utf8mb4",

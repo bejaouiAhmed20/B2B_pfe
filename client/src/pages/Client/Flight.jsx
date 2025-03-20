@@ -119,6 +119,18 @@ const Flight = () => {
     navigate(`/client/reservation/new`, { state: { flightId } });
   };
 
+  // Add function to check if flight is available based on departure date
+  const isFlightAvailable = (departureDate) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
+    
+    const departure = new Date(departureDate);
+    departure.setHours(0, 0, 0, 0);
+    
+    // Flight is available if departure date is in the future
+    return departure > today;
+  };
+
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Typography variant="h4" component="h1" gutterBottom>
@@ -234,8 +246,8 @@ const Flight = () => {
                   
                   <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
                     <Chip 
-                      label={flight.est_disponible ? "Disponible" : "Complet"} 
-                      color={flight.est_disponible ? "success" : "error"}
+                      label={isFlightAvailable(flight.date_depart) ? "Disponible" : "Complet"} 
+                      color={isFlightAvailable(flight.date_depart) ? "success" : "error"}
                       size="small"
                     />
                   </Box>

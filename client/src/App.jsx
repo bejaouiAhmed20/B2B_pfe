@@ -20,14 +20,18 @@ import Reservations from './pages/Admin/Reservations';
 import AddReservation from './pages/Admin/AddReservation';
 import RequestSoldeManagement from './pages/Admin/RequestSoldeManagement';
 import LoginClient from './pages/Auth/LoginClient';
-import ClientLayout from './pages/Client/ClientLayout';
-import Flight from './pages/Client/Flight';
 import FlightDescription from './pages/Client/FlightDescription';
 import Profile from './pages/Client/Profile';
 import RequestSolde from './pages/Client/RequestSolde';
 import Home from './pages/client/Home';
 // Import the client Reservations component with an alias to avoid naming conflict
 import ReservationsClient from './pages/client/Reservations';
+
+// Add these imports at the top of your file
+import Contracts from './pages/Admin/Contracts';
+import AddContract from './pages/Admin/AddContract';
+import ClientLayout from './pages/client/ClientLayout';
+import Flight from './pages/client/Flight';
 
 function App() {
   return (
@@ -65,6 +69,10 @@ function App() {
           <Route path="/admin/reservations" element={<Reservations />} />
           <Route path="/admin/reservations/add" element={<AddReservation />} />
           <Route path="request-solde" element={<RequestSoldeManagement />} />
+          // Inside your admin routes section:
+          // Fix the route paths in app.jsx - remove the unnecessary slashes
+          <Route path="/admin/contracts" element={<Contracts />} />
+          <Route path="/admin/add-contract" element={<AddContract />} />
         </Route>
       </Routes>
     </BrowserRouter>

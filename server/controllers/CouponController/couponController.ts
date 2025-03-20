@@ -98,24 +98,57 @@ export const deleteCoupon = async (req: Request, res: Response) => {
   }
 };
 
+// Add this new function to validate coupons
 export const validateCoupon = async (req: Request, res: Response) => {
   try {
     const { code } = req.body;
     
+    if (!code) {
+      return res.status(400).json({ 
+        valid: false, 
+        message: "Code coupon requis" 
+      });
+    }
+    
+    // Find the coupon by code
     const coupon = await Coupon.findOneBy({ code });
+    
     if (!coupon) {
-      return res.status(404).json({ message: "Invalid coupon code" });
+      return res.status(404).json({ 
+        valid: false, 
+        message: "Code coupon invalide" 
+      });
     }
     
     // Check if coupon is expired
-    const currentDate = new Date();
-    if (new Date(coupon.date_fin) < currentDate) {
-      return res.status(400).json({ message: "Coupon has expired" });
+    const today = new Date();
+    const expiryDate = new Date(coupon.date_fin);
+    
+    if (today > expiryDate) {
+      return res.status(400).json({ 
+        valid: false, 
+        message: "Ce coupon a expiré" 
+      });
     }
     
-    res.json(coupon);
+    // Coupon is valid
+    return res.status(200).json({
+      valid: true,
+      message: "Coupon valide",
+      coupon: {
+        id: coupon.id,
+        code: coupon.code,
+        reduction: coupon.reduction,
+        reduction_type: coupon.reduction_type,
+        date_fin: coupon.date_fin
+      }
+    });
+    
   } catch (error) {
     console.log(error);
-    res.status(500).json({ message: "There is an issue" });
+    res.status(500).json({ 
+      valid: false,
+      message: "Une erreur s'est produite lors de la validation du coupon" 
+    });
   }
 };

@@ -7,7 +7,7 @@ import {
   deleteReservation,
   getReservationsByFlightId,
   getReservationsByUserId
-} from '../../controllers/ReservationController/ReservationController'; // Assure-toi d'importer correctement les méthodes
+} from '../../controllers/ReservationController/ReservationController';
 
 const router = express.Router();
 
@@ -18,7 +18,7 @@ router.get('/', getReservations);
 router.get('/:id', getReservationById as express.RequestHandler);
 
 // Route pour ajouter une réservation
-router.post('/',addReservation as express.RequestHandler );
+router.post('/', addReservation as express.RequestHandler);
 
 // Route pour mettre à jour une réservation
 router.put('/:id', updateReservation as express.RequestHandler);
@@ -26,6 +26,7 @@ router.put('/:id', updateReservation as express.RequestHandler);
 // Route pour supprimer une réservation
 router.delete('/:id', deleteReservation as express.RequestHandler);
 
+// Important: These routes need to be placed AFTER the /:id route to avoid conflicts
 // Route pour récupérer les réservations par ID de vol
 router.get('/flight/:flightId', getReservationsByFlightId as express.RequestHandler);
 
