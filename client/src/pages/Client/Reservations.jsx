@@ -63,8 +63,23 @@ const Reservations = () => {
         const response = await axios.get(`http://localhost:5000/api/reservations/user/${userData.id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
+                                                                                                                                                                                                             
+        // Fetch flight details for each reservation
+        const reservationsWithFlights = await Promise.all(
+          response.data.map(async (reservation) => {
+            try {
+              const flightResponse = await axios.get(`http://localhost:5000/api/flights/${reservation.flight_id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+              });
+              return { ...reservation, flight: flightResponse.data };
+            } catch (flightError) {
+              console.error(`Error fetching flight details for reservation ${reservation.id}:`, flightError);
+              return reservation;
+            }
+          })
+        );
         
-        setReservations(response.data);
+        setReservations(reservationsWithFlights);
       } catch (apiError) {
         if (apiError.response && apiError.response.status === 404) {
           // No reservations found - set empty array instead of error
@@ -119,6 +134,14 @@ const Reservations = () => {
         return 'error';
       default:
         return 'default';
+    }
+  };
+
+  const handleViewFlightDetails = (flightId) => {
+    if (flightId) {
+      navigate(`/client/flights/${flightId}`);
+    } else {
+      console.error('Flight ID is missing');
     }
   };
 
@@ -273,7 +296,8 @@ const Reservations = () => {
               <CardActions sx={{ justifyContent: 'space-between', px: 2, pb: 2 }}>
                 <Button 
                   startIcon={<Info />}
-                  onClick={() => navigate(`/client/flights/${reservation.flight_id}`)}
+                  onClick={() => handleViewFlightDetails(reservation.flight_id)}
+                  disabled={!reservation.flight_id}
                 >
                   Détails du vol
                 </Button>
@@ -283,7 +307,8 @@ const Reservations = () => {
                     startIcon={<Cancel />}
                     color="error"
                     onClick={() => setCancelDialog({ open: true, reservationId: reservation.id })}
-                    disabled={reservation.statut === 'Annulée' || new Date(reservation.flight?.date_depart) < new Date()}
+                    disabled={reservation.statut === 'Annulée' || 
+                             (reservation.flight?.date_depart && new Date(reservation.flight.date_depart) < new Date())}
                   >
                     Annuler
                   </Button>
