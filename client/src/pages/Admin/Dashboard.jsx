@@ -31,6 +31,7 @@ import NewspaperIcon from '@mui/icons-material/Newspaper';
 import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 import LogoutIcon from '@mui/icons-material/Logout';
 import axios from 'axios';
+import FeedbackIcon from '@mui/icons-material/Feedback';
 
 const drawerWidth = 250;
 
@@ -43,7 +44,10 @@ const menuItems = [
   { text: 'Manage News', icon: <NewReleasesIcon />, path: '/admin/news' },
   { text: 'Manage Coupon', icon: <LocalOfferIcon />, path: '/admin/coupons' },
   { text: 'Manage Popups', icon: <NewspaperIcon />, path: '/admin/popups' },
-  { text: 'Manage Reservations', icon: <FlightIcon />, path: '/admin/reservations' }
+  { text: 'Manage Reservations', icon: <FlightIcon />, path: '/admin/reservations' },
+  { text: 'Manage Reclamation', icon: <FeedbackIcon />, path: '/admin/reclamations' }
+
+
 ];
 const lightTheme = createTheme({
   palette: {

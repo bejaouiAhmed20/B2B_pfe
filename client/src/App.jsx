@@ -27,6 +27,8 @@ import LoginClient from './pages/Auth/LoginClient';
 import ClientLayout from './pages/Client/ClientLayout';
 import Profile from './pages/Client/Profile';
 import ReservationsClient from './pages/Client/Reservations';
+import Reclamation from './pages/Client/Reclamation';
+import AdminReclamations from './pages/Admin/Reclamations';
 
 function App() {
   return (
@@ -43,9 +45,10 @@ function App() {
           <Route path="flights/:id" element={<FlightDescription />} />
           <Route path='profile' element={<Profile />} />
           <Route path='reservations' element={<ReservationsClient />} />
-         
+          <Route path="reclamations" element={<Reclamation />} />
         </Route>
         
+        {/* Admin Routes */}
         <Route path="/admin" element={<DashboardLayout />}>
           <Route index element={<DashboardHome />} />
           <Route path="/admin/clients" element={<Clients />} />
@@ -63,6 +66,7 @@ function App() {
           <Route path="popups" element={<Popups />} />
           <Route path="/admin/reservations" element={<Reservations />} />
           <Route path="/admin/reservations/add" element={<AddReservation />} />
+          <Route path="reclamations" element={<AdminReclamations />} />
         </Route>
       </Routes>
     </BrowserRouter>
