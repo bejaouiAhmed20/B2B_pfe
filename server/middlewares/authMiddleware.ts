@@ -24,7 +24,7 @@ export const auth = (req: Request, res: Response, next: NextFunction) => {
       return res.status(401).json({ message: 'Authentication required' });
     }
     
-    const decoded = jwt.verify(token, 'your_jwt_secret') as DecodedToken;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as DecodedToken;
     req.user = decoded; // Use the properly typed property
     
     next();
@@ -41,7 +41,7 @@ export const adminAuth = (req: Request, res: Response, next: NextFunction) => {
       return res.status(401).json({ message: 'Authentication required' });
     }
     
-    const decoded = jwt.verify(token, 'your_jwt_secret') as DecodedToken;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as DecodedToken;
     
     if (!decoded.est_admin) {
       return res.status(403).json({ message: 'Admin access required' });

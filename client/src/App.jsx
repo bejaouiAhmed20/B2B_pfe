@@ -32,6 +32,8 @@ import Contracts from './pages/Admin/Contracts';
 import AddContract from './pages/Admin/AddContract';
 import ClientLayout from './pages/client/ClientLayout';
 import Flight from './pages/client/Flight';
+import ForgotPassword from './pages/Auth/ForgotPassword';
+import ResetPassword from './pages/Auth/ResetPassword';
 
 function App() {
   return (
@@ -74,6 +76,9 @@ function App() {
           <Route path="/admin/contracts" element={<Contracts />} />
           <Route path="/admin/add-contract" element={<AddContract />} />
         </Route>
+        // Add these routes to your existing routes
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
       </Routes>
     </BrowserRouter>
   );

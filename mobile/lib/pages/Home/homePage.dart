@@ -4,6 +4,9 @@ import 'package:mobile/widgets/destination_card.dart';
 import 'package:mobile/widgets/flight_card.dart';
 import 'package:mobile/pages/explore_page.dart';
 import 'package:mobile/pages/bookings_page.dart';
+import 'package:mobile/services/auth_service.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class FlightHomePage extends StatefulWidget {
   const FlightHomePage({super.key});
@@ -25,12 +28,12 @@ class _FlightHomePageState extends State<FlightHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        iconTheme: IconThemeData(color: Colors.white),
+        iconTheme: const IconThemeData(color: Colors.white),
         title: const Text(
-          'Flight Booking',
+          'Tunisair B2B',
           style: TextStyle(color: Colors.white),
         ),
-        backgroundColor: Colors.redAccent,
+        backgroundColor: const Color(0xFFCC0A2B),
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications),
@@ -59,227 +62,309 @@ class _FlightHomePageState extends State<FlightHomePage> {
   }
 }
 
-class _HomeContent extends StatelessWidget {
+class _HomeContent extends StatefulWidget {
   const _HomeContent();
 
   @override
+  State<_HomeContent> createState() => _HomeContentState();
+}
+
+class _HomeContentState extends State<_HomeContent> {
+  final AuthService _authService = AuthService();
+  List<dynamic> flights = [];
+  bool isLoading = true;
+  String error = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchFlights();
+  }
+
+  Future<void> _fetchFlights() async {
+    try {
+      setState(() {
+        isLoading = true;
+        error = '';
+      });
+
+      final token = await _authService.getToken();
+      final response = await http.get(
+        Uri.parse('${_authService.baseUrl}/flights'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      ).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw Exception('Connection timeout. Please try again later.');
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          flights = data;
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          error = 'Failed to load flights: ${response.body}';
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        error = 'Error: ${e.toString()}';
+        isLoading = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Welcome Section
-
-          // Quick Actions
-
-          // Search Bar
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.2),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.search, color: Colors.grey),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    decoration: InputDecoration(
-                      hintText: 'Search for flights...',
-                      border: InputBorder.none,
+    return RefreshIndicator(
+      onRefresh: _fetchFlights,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Welcome Section
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFCC0A2B).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.flight_takeoff, color: Color(0xFFCC0A2B), size: 40),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Welcome to Tunisair B2B',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Book your next business flight with ease',
+                          style: TextStyle(
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Popular Destinations Section
-          Text(
-            'Popular Destinations',
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 180,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: const [
-                DestinationCard(
-                  imageUrl: 'https://picsum.photos/300/200?random=1',
-                  city: 'Paris',
-                  country: 'France',
-                ),
-                DestinationCard(
-                  imageUrl: 'https://picsum.photos/300/200?random=2',
-                  city: 'Tokyo',
-                  country: 'Japan',
-                ),
-                DestinationCard(
-                  imageUrl: 'https://picsum.photos/300/200?random=3',
-                  city: 'New York',
-                  country: 'USA',
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Upcoming Flights Section
-          Text(
-            'Upcoming Flights',
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          const Column(
-            children: [
-              FlightCard(
-                imageUrl: 'https://picsum.photos/300/200?random=4',
-                airline: 'Air France',
-                departure: 'Paris (CDG)',
-                arrival: 'New York (JFK)',
-                date: 'Oct 25, 2023',
-                time: '08:30 AM',
+                ],
               ),
-              FlightCard(
-                imageUrl: 'https://picsum.photos/300/200?random=5',
-                airline: 'Japan Airlines',
-                departure: 'Tokyo (NRT)',
-                arrival: 'Los Angeles (LAX)',
-                date: 'Nov 10, 2023',
-                time: '10:15 PM',
-              ),
-            ],
-          ),
-          // Special Offers Section
-          Text(
-            'Special Offers',
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 120,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
+            ),
+            const SizedBox(height: 24),
+
+            // Quick Actions
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildOfferCard(
-                  'Summer Sale',
-                  '20% off on international flights',
-                  Colors.blue,
+                _buildQuickAction(
+                  context,
+                  Icons.flight,
+                  'Flights',
+                  () {
+                    Navigator.pushNamed(context, '/flights');
+                  },
                 ),
-                _buildOfferCard(
-                  'Weekend Deal',
-                  'Free hotel night on flight bookings',
-                  Colors.green,
+                _buildQuickAction(
+                  context,
+                  Icons.book_online,
+                  'Bookings',
+                  () {
+                    Navigator.pushNamed(context, '/reservations');
+                  },
                 ),
-                _buildOfferCard(
-                  'First Time?',
-                  'Get 15% off on your first booking',
-                  Colors.orange,
+                _buildQuickAction(
+                  context,
+                  Icons.account_balance_wallet,
+                  'Wallet',
+                  () {
+                    Navigator.pushNamed(context, '/wallet');
+                  },
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Existing Popular Destinations Section
-          Text(
-            'Popular Destinations',
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 180,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: const [
-                DestinationCard(
-                  imageUrl: 'https://picsum.photos/300/200?random=1',
-                  city: 'Paris',
-                  country: 'France',
-                ),
-                DestinationCard(
-                  imageUrl: 'https://picsum.photos/300/200?random=2',
-                  city: 'Tokyo',
-                  country: 'Japan',
-                ),
-                DestinationCard(
-                  imageUrl: 'https://picsum.photos/300/200?random=3',
-                  city: 'New York',
-                  country: 'USA',
+                _buildQuickAction(
+                  context,
+                  Icons.person,
+                  'Profile',
+                  () {
+                    Navigator.pushNamed(context, '/profile');
+                  },
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 24),
+            const SizedBox(height: 24),
 
-          // Travel Tips Section
-          Text(
-            'Travel Tips',
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          _buildTravelTip(
-            'Pack Smart',
-            'Essential tips for efficient packing',
-            Icons.luggage,
-          ),
-          _buildTravelTip(
-            'Travel Insurance',
-            'Why you need travel insurance',
-            Icons.security,
-          ),
-          const SizedBox(height: 24),
+            // Search Bar
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.search, color: Colors.grey),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      decoration: const InputDecoration(
+                        hintText: 'Search for flights...',
+                        border: InputBorder.none,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
 
-          // Existing Upcoming Flights Section
-          Text(
-            'Upcoming Flights',
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          const Column(
-            children: [
-              FlightCard(
-                imageUrl: 'https://picsum.photos/300/200?random=4',
-                airline: 'Air France',
-                departure: 'Paris (CDG)',
-                arrival: 'New York (JFK)',
-                date: 'Oct 25, 2023',
-                time: '08:30 AM',
+            // Available Flights Section
+            Text(
+              'Available Flights',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            
+            if (isLoading)
+              const Center(child: CircularProgressIndicator(color: Color(0xFFCC0A2B)))
+            else if (error.isNotEmpty)
+              Center(
+                child: Column(
+                  children: [
+                    Text(
+                      'Error loading flights',
+                      style: TextStyle(color: Colors.red[700], fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(error),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _fetchFlights,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFCC0A2B),
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('Try Again'),
+                    ),
+                  ],
+                ),
+              )
+            else if (flights.isEmpty)
+              const Center(
+                child: Text('No flights available at the moment.'),
+              )
+            else
+              Column(
+                children: flights.map<Widget>((flight) {
+                  // Get airport information from nested objects
+                  final departureAirport = flight['airport_depart'] ?? {};
+                  final arrivalAirport = flight['airport_arrivee'] ?? {};
+                  
+                  // Format dates
+                  String departureDate = 'Unknown';
+                  try {
+                    if (flight['date_depart'] != null) {
+                      final DateTime date = DateTime.parse(flight['date_depart']);
+                      departureDate = '${date.day}/${date.month}/${date.year}';
+                    }
+                  } catch (e) {
+                    print('Error parsing date: $e');
+                  }
+                  
+                  return GestureDetector(
+                    onTap: () {
+                      // Navigate to flight details page with the flight data
+                      Navigator.pushNamed(
+                        context, 
+                        '/flight-details',
+                        arguments: flight,
+                      );
+                    },
+                    child: FlightCard(
+                      imageUrl: 'https://picsum.photos/300/200?random=${flight['id'] ?? 4}',
+                      airline: flight['compagnie_aerienne'] ?? 'Tunisair',
+                      departure: departureAirport['nom'] ?? 'Unknown',
+                      arrival: arrivalAirport['nom'] ?? 'Unknown',
+                      date: departureDate,
+                      time: flight['duree'] ?? 'Unknown',
+                    ),
+                  );
+                }).toList(),
               ),
-              FlightCard(
-                imageUrl: 'https://picsum.photos/300/200?random=5',
-                airline: 'Japan Airlines',
-                departure: 'Tokyo (NRT)',
-                arrival: 'Los Angeles (LAX)',
-                date: 'Nov 10, 2023',
-                time: '10:15 PM',
+            
+            const SizedBox(height: 24),
+
+            // Special Offers Section
+            Text(
+              'Special Offers',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 120,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  _buildOfferCard(
+                    'Business Class',
+                    '15% off on business class flights',
+                    const Color(0xFFCC0A2B),
+                  ),
+                  _buildOfferCard(
+                    'Weekend Deal',
+                    'Free hotel night on flight bookings',
+                    Colors.green,
+                  ),
+                  _buildOfferCard(
+                    'First Time?',
+                    'Get 10% off on your first booking',
+                    Colors.orange,
+                  ),
+                ],
               ),
-            ],
-          ),
-        ],
+            ),
+            const SizedBox(height: 24),
+
+            // Travel Tips Section
+            Text(
+              'Travel Tips',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            _buildTravelTip(
+              'Pack Smart',
+              'Essential tips for efficient packing',
+              Icons.luggage,
+            ),
+            _buildTravelTip(
+              'Travel Insurance',
+              'Why you need travel insurance',
+              Icons.security,
+            ),
+            const SizedBox(height: 24),
+          ],
+        ),
       ),
     );
   }
@@ -297,10 +382,10 @@ class _HomeContent extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.redAccent.withOpacity(0.1),
+              color: const Color(0xFFCC0A2B).withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: Colors.redAccent),
+            child: Icon(icon, color: const Color(0xFFCC0A2B)),
           ),
           const SizedBox(height: 8),
           Text(
@@ -347,7 +432,7 @@ class _HomeContent extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
-        leading: Icon(icon, color: Colors.redAccent),
+        leading: Icon(icon, color: const Color(0xFFCC0A2B)),
         title: Text(title),
         subtitle: Text(description),
         trailing: const Icon(Icons.arrow_forward_ios, size: 16),
