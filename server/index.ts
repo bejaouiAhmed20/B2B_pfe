@@ -19,8 +19,7 @@ import compteRoutes from './routes/CompteRoutes/compteRoutes';
 import uploadRoutes from './routes/UploadRoutes/uploadRoutes';
 import requestSoldeRoutes from './routes/RequestSoldeRoutes/requestSoldeRoutes';
 import contractRoutes from './routes/ContractRoutes/contractRoutes';
-
-
+import reclamationRoutes from './routes/ReclamationRoutes/reclamationRoutes';
 import { User } from './models/User';
 import { Flight } from './models/Flight';
 import { Location } from './models/Location';
@@ -31,7 +30,7 @@ import { Reservation } from './models/Reservation';
 import { Compte } from './models/Compte';
 import { RequestSolde } from './models/RequestSolde';
 import { Contract } from './models/Contract';
-
+import { Reclamation } from './models/Reclamation';
 const app = express();
 
 // Middleware
@@ -54,6 +53,7 @@ app.use('/api/comptes', compteRoutes);
 app.use('/api/request-solde', requestSoldeRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/contracts', contractRoutes);
+app.use('/api/reclamations', reclamationRoutes);
 
 // Make sure you have this line to serve static files
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));

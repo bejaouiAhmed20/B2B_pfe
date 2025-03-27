@@ -51,6 +51,7 @@ function App() {
           <Route path='profile' element={<Profile />} />
           <Route path='reservations' element={<ReservationsClient />} />
           <Route path='request-solde' element={<RequestSolde />} />
+          <Route path="reclamations" element={<Reclamation />} />
         </Route>
         
         <Route path="/admin" element={<DashboardLayout />}>
@@ -75,6 +76,7 @@ function App() {
           // Fix the route paths in app.jsx - remove the unnecessary slashes
           <Route path="/admin/contracts" element={<Contracts />} />
           <Route path="/admin/add-contract" element={<AddContract />} />
+          <Route path="reclamations" element={<AdminReclamations />} />
         </Route>
         // Add these routes to your existing routes
         <Route path="/forgot-password" element={<ForgotPassword />} />

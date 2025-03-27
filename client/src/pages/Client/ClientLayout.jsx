@@ -32,6 +32,10 @@ const ClientLayout = () => {
           {isLoggedIn ? (
             <>
               <Button color="inherit" component={Link} to="/client/reservations">Mes Réservations</Button>
+              <Button color="inherit" component={Link} to="/client/reclamations">
+                <FeedbackIcon sx={{ mr: 1 }} />
+                Réclamations
+              </Button>
               <Button 
                 color="inherit" 
                 component={Link} 
