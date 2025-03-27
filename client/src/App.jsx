@@ -14,7 +14,7 @@ import AddClient from './pages/Admin/AddClient';
 import Clients from './pages/Admin/clients';
 import AddLocation from './pages/Admin/AddLocation';
 import AddAirport from './pages/Admin/AddAirport';
-import DashboardLayout from './pages/Admin/dashboard';
+import DashboardLayout from './pages/Admin/Dashboard';
 import AddFlight from './pages/Admin/AddFlight';
 import Reservations from './pages/Admin/Reservations';
 import AddReservation from './pages/Admin/AddReservation';
@@ -26,6 +26,8 @@ import RequestSolde from './pages/Client/RequestSolde';
 import Home from './pages/client/Home';
 // Import the client Reservations component with an alias to avoid naming conflict
 import ReservationsClient from './pages/client/Reservations';
+import AdminReclamations from './pages/Admin/Reclamations';
+
 
 // Add these imports at the top of your file
 import Contracts from './pages/Admin/Contracts';
@@ -34,6 +36,7 @@ import ClientLayout from './pages/client/ClientLayout';
 import Flight from './pages/client/Flight';
 import ForgotPassword from './pages/Auth/ForgotPassword';
 import ResetPassword from './pages/Auth/ResetPassword';
+import Reclamation from './pages/Client/Reclamation';
 
 function App() {
   return (
@@ -51,6 +54,7 @@ function App() {
           <Route path='profile' element={<Profile />} />
           <Route path='reservations' element={<ReservationsClient />} />
           <Route path='request-solde' element={<RequestSolde />} />
+          <Route path="reclamations" element={<Reclamation />} />
         </Route>
         
         <Route path="/admin" element={<DashboardLayout />}>
@@ -75,6 +79,7 @@ function App() {
           // Fix the route paths in app.jsx - remove the unnecessary slashes
           <Route path="/admin/contracts" element={<Contracts />} />
           <Route path="/admin/add-contract" element={<AddContract />} />
+          <Route path="reclamations" element={<AdminReclamations />} />
         </Route>
         // Add these routes to your existing routes
         <Route path="/forgot-password" element={<ForgotPassword />} />

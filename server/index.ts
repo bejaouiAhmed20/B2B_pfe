@@ -19,6 +19,7 @@ import compteRoutes from './routes/CompteRoutes/compteRoutes';
 import uploadRoutes from './routes/UploadRoutes/uploadRoutes';
 import requestSoldeRoutes from './routes/RequestSoldeRoutes/requestSoldeRoutes';
 import contractRoutes from './routes/ContractRoutes/contractRoutes';
+import reclamationRoutes from './routes/ReclamationRoutes/reclamationRoutes';
 
 
 import { User } from './models/User';
@@ -31,6 +32,7 @@ import { Reservation } from './models/Reservation';
 import { Compte } from './models/Compte';
 import { RequestSolde } from './models/RequestSolde';
 import { Contract } from './models/Contract';
+import { Reclamation } from './models/Reclamation';
 
 const app = express();
 
@@ -54,6 +56,8 @@ app.use('/api/comptes', compteRoutes);
 app.use('/api/request-solde', requestSoldeRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/contracts', contractRoutes);
+app.use('/api/reclamations', reclamationRoutes);
+
 
 // Make sure you have this line to serve static files
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
@@ -65,8 +69,8 @@ const AppDataSource = new DataSource({
   port: 3306,
   username: "root",
   password: "",
-  database: "b2b_db2",
-  entities: [User, Flight, Location, Airport, News, Coupon, Reservation, Compte, RequestSolde, Contract],
+  database: "b2b_db3",
+  entities: [User, Flight, Location, Airport, News, Coupon, Reservation, Compte, RequestSolde, Contract, Reclamation],
   synchronize: true,
   logging: true,
   charset: "utf8mb4",

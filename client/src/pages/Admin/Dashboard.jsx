@@ -33,6 +33,8 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import DescriptionIcon from '@mui/icons-material/Description';
 import axios from 'axios';
+import FeedbackIcon from '@mui/icons-material/Feedback';
+
 
 const drawerWidth = 250;
 
@@ -47,7 +49,10 @@ const menuItems = [
   { text: 'Manage Contracts', icon: <DescriptionIcon />, path: '/admin/contracts' },
   { text: 'Manage Popups', icon: <NewspaperIcon />, path: '/admin/popups' },
   { text: 'Manage Reservations', icon: <FlightIcon />, path: '/admin/reservations' },
-  { text: 'Manage Solde Requests', icon: <AccountBalanceWalletIcon />, path: '/admin/request-solde' }
+  { text: 'Manage Solde Requests', icon: <AccountBalanceWalletIcon />, path: '/admin/request-solde' },
+  { text: 'Manage Reclamation', icon: <FeedbackIcon />, path: '/admin/reclamations' }
+
+  
 ];
 
 const lightTheme = createTheme({
