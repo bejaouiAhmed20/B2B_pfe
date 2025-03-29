@@ -9,17 +9,17 @@ export class FlightSeatReservation extends BaseEntity {
   id!: string;
 
   @ManyToOne(() => Flight, { onDelete: 'CASCADE' })
-  @JoinColumn()
+  @JoinColumn({ name: 'flight_id' })
   flight!: Flight;
 
   @ManyToOne(() => Seat, { onDelete: 'CASCADE' })
-  @JoinColumn()
+  @JoinColumn({ name: 'seat_id' })
   seat!: Seat;
 
   @ManyToOne(() => Reservation, { onDelete: 'CASCADE' })
-  @JoinColumn()
+  @JoinColumn({ name: 'reservation_id' })
   reservation!: Reservation;
 
-  @Column({ type: 'boolean', default: true })
+  @Column({ default: false })
   isReserved!: boolean;
 }

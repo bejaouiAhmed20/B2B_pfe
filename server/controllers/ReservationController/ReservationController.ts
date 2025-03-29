@@ -9,13 +9,37 @@ import { Seat } from '../../models/Seat';
 // Afficher toutes les réservations
 export const getReservations = async (req: Request, res: Response) => {
   try {
-    const reservations = await Reservation.find({
-      relations: ['user', 'flight', 'coupon'], // Added coupon relation
-    });
+    console.log("Fetching all reservations");
+    const includeRelations = req.query.relations === 'true';
+    
+    let reservations;
+    if (includeRelations) {
+      // Load all related entities with more comprehensive relations
+      reservations = await Reservation.find({
+        relations: ['user', 'flight', 'flight.plane', 'coupon'],
+        order: { date_reservation: 'DESC' }
+      });
+      
+      // Log for debugging
+      console.log(`Loaded ${reservations.length} reservations with relations`);
+      
+      // Check for missing flight data
+      const missingFlightData = reservations.filter(r => !r.flight || !r.flight.id);
+      if (missingFlightData.length > 0) {
+        console.log(`Warning: ${missingFlightData.length} reservations have missing flight data`);
+        console.log('Reservation IDs with missing flight data:', missingFlightData.map(r => r.id));
+      }
+    } else {
+      reservations = await Reservation.find({
+        order: { date_reservation: 'DESC' }
+      });
+      console.log(`Loaded ${reservations.length} reservations without relations`);
+    }
+    
     res.json(reservations);
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ message: "Une erreur s'est produite" });
+    console.error('Error fetching reservations:', error);
+    res.status(500).json({ message: 'Erreur lors de la récupération des réservations' });
   }
 };
 
@@ -24,11 +48,39 @@ export const getReservationById = async (req: Request, res: Response) => {
   try {
     const reservation = await Reservation.findOne({
       where: { id: req.params.id },
-      relations: ['user', 'flight', 'coupon'], // Added coupon relation
+      relations: ['user', 'flight', 'flight.plane', 'flight.plane.seats', 'coupon'],
     });
 
     if (!reservation) {
       return res.status(404).json({ message: "Réservation non trouvée" });
+    }
+
+    // Check if flight data is missing
+    if (!reservation.flight) {
+      console.log(`Warning: Reservation ${reservation.id} has missing flight data`);
+    }
+
+    // Get seat reservations for this reservation
+    if (reservation.flight) {
+      const seatReservations = await FlightSeatReservation.find({
+        where: { 
+          reservation: { id: reservation.id },
+          flight: { id: reservation.flight.id }
+        },
+        relations: ['seat']
+      });
+      
+      // Add seat information to the response
+      const responseData = {
+        ...reservation,
+        allocatedSeats: seatReservations.map(sr => ({
+          id: sr.seat.idSeat,
+          seatNumber: sr.seat.seatNumber,
+          classType: sr.seat.classType
+        }))
+      };
+      
+      return res.json(responseData);
     }
 
     res.json(reservation);
@@ -201,24 +253,98 @@ export const getReservationsByFlightId = async (req: Request, res: Response) => 
   }
 };
 
+// Update the getReservationsByUserId function to handle potential errors with FlightSeatReservation
 export const getReservationsByUserId = async (req: Request, res: Response) => {
   try {
     const userId = req.params.userId;
+    console.log(`Fetching reservations for user: ${userId}`);
+    
     const reservations = await Reservation.find({
       where: { user: { id: userId } },
-      relations: ['user', 'flight', 'coupon'] // Added coupon relation
+      relations: ['user', 'flight', 'flight.plane', 'coupon'],
+      order: { date_reservation: 'DESC' }
     });
     
+    console.log(`Found ${reservations.length} reservations for user ${userId}`);
+    
     if (reservations.length === 0) {
-      return res.status(404).json({ message: "No reservations found for this user" });
+      return res.json([]); // Return empty array instead of 404
+    }
+    
+    // Check for missing flight data
+    const missingFlightData = reservations.filter(r => !r.flight || !r.flight.id);
+    if (missingFlightData.length > 0) {
+      console.log(`Warning: ${missingFlightData.length} reservations for user ${userId} have missing flight data`);
+    }
+    
+    // For each reservation, try to get the seat reservations
+    const enhancedReservations = await Promise.all(reservations.map(async (reservation) => {
+      try {
+        if (reservation.flight) {
+          const seatReservations = await FlightSeatReservation.find({
+            where: { 
+              reservation: { id: reservation.id },
+              flight: { id: reservation.flight.id }
+            },
+            relations: ['seat']
+          });
+          
+          if (seatReservations.length > 0) {
+            return {
+              ...reservation,
+              allocatedSeats: seatReservations.map(sr => ({
+                id: sr.seat?.idSeat,
+                seatNumber: sr.seat?.seatNumber,
+                classType: sr.seat?.classType
+              }))
+            };
+          }
+        }
+        return reservation;
+      } catch (error) {
+        console.error(`Error fetching seat reservations for reservation ${reservation.id}:`, error);
+        return reservation;
+      }
+    }));
+    
+    res.json(enhancedReservations);
+  } catch (error) {
+    console.error("Error in getReservationsByUserId:", error);
+    res.status(500).json({ message: "There is an issue retrieving reservations" });
+  }
+};
+
+// Remove this entire function and comment
+// DELETE THIS ENTIRE FUNCTION BELOW:
+// Also update the getReservations function to be more robust
+/* export const getReservations = async (req: Request, res: Response) => {
+  try {
+    console.log("Fetching all reservations");
+    const includeRelations = req.query.relations === 'true';
+    
+    let reservations;
+    if (includeRelations) {
+      // Load all related entities with more comprehensive relations
+      reservations = await Reservation.find({
+        relations: ['user', 'flight', 'coupon'],
+        order: { date_reservation: 'DESC' }
+      });
+      
+      // Log for debugging
+      console.log(`Loaded ${reservations.length} reservations with relations`);
+    } else {
+      reservations = await Reservation.find({
+        order: { date_reservation: 'DESC' }
+      });
+      console.log(`Loaded ${reservations.length} reservations without relations`);
     }
     
     res.json(reservations);
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ message: "There is an issue retrieving reservations" });
+    console.error('Error fetching reservations:', error);
+    res.status(500).json({ message: 'Erreur lors de la récupération des réservations' });
   }
-};
+}; */
 
 // Updated createReservation function
 export const createReservation = async (req: Request, res: Response) => {
