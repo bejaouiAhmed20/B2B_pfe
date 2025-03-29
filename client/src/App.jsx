@@ -14,7 +14,7 @@ import AddClient from './pages/Admin/AddClient';
 import Clients from './pages/Admin/clients';
 import AddLocation from './pages/Admin/AddLocation';
 import AddAirport from './pages/Admin/AddAirport';
-import DashboardLayout from './pages/Admin/dashboard';
+import DashboardLayout from './pages/Admin/Dashboard';
 import AddFlight from './pages/Admin/AddFlight';
 import Reservations from './pages/Admin/Reservations';
 import AddReservation from './pages/Admin/AddReservation';
@@ -26,12 +26,16 @@ import RequestSolde from './pages/Client/RequestSolde';
 import Home from './pages/client/Home';
 // Import the client Reservations component with an alias to avoid naming conflict
 import ReservationsClient from './pages/client/Reservations';
-
-// Add these imports at the top of your file
+import AdminReclamations from './pages/Admin/Reclamations';
+import Planes from './pages/Admin/Planes';
+import AddPlane from './pages/Admin/AddPlane';
+import Seats from './pages/Admin/Seats';
+import AddSeat from './pages/Admin/AddSeat';
+import ClientLayout from './pages/Client/clientLayout';
+import Flight from './pages/Client/Flight';
+import Reclamation from './pages/Client/Reclamation';
 import Contracts from './pages/Admin/Contracts';
 import AddContract from './pages/Admin/AddContract';
-import ClientLayout from './pages/client/ClientLayout';
-import Flight from './pages/client/Flight';
 import ForgotPassword from './pages/Auth/ForgotPassword';
 import ResetPassword from './pages/Auth/ResetPassword';
 
@@ -56,29 +60,32 @@ function App() {
         
         <Route path="/admin" element={<DashboardLayout />}>
           <Route index element={<DashboardHome />} />
-          <Route path="/admin/clients" element={<Clients />} />
-          <Route path="/admin/clients/add" element={<AddClient />} />
-          <Route path="/admin/flights" element={<Flights />} />
-          <Route path="/admin/flights/add" element={<AddFlight />} />   
+          <Route path="clients" element={<Clients />} />
+          <Route path="clients/add" element={<AddClient />} />
+          <Route path="flights" element={<Flights />} />
+          <Route path="flights/add" element={<AddFlight />} />   
           <Route path="locations" element={<Locations />} />
           <Route path="locations/add" element={<AddLocation />} />
           <Route path="airports" element={<Airports />} />
           <Route path="airports/add" element={<AddAirport />} />
-          <Route path="/admin/news" element={<News />} />
-          <Route path="/admin/news/add" element={<AddNews />} />
+          <Route path="news" element={<News />} />
+          <Route path="news/add" element={<AddNews />} />
           <Route path="coupons" element={<Coupons />} />
           <Route path="coupons/add" element={<AddCoupon />} />
           <Route path="popups" element={<Popups />} />
-          <Route path="/admin/reservations" element={<Reservations />} />
-          <Route path="/admin/reservations/add" element={<AddReservation />} />
+          <Route path="reservations" element={<Reservations />} />
+          <Route path="reservations/add" element={<AddReservation />} />
           <Route path="request-solde" element={<RequestSoldeManagement />} />
-          // Inside your admin routes section:
-          // Fix the route paths in app.jsx - remove the unnecessary slashes
-          <Route path="/admin/contracts" element={<Contracts />} />
-          <Route path="/admin/add-contract" element={<AddContract />} />
+          <Route path="contracts" element={<Contracts />} />
+          <Route path="contracts/add" element={<AddContract />} />
           <Route path="reclamations" element={<AdminReclamations />} />
+          {/* Add routes for Planes and Seats */}
+          <Route path="planes" element={<Planes />} />
+          <Route path="planes/add" element={<AddPlane />} />
+          <Route path="seats" element={<Seats />} />
+          <Route path="seats/add" element={<AddSeat />} />
         </Route>
-        // Add these routes to your existing routes
+        
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
       </Routes>

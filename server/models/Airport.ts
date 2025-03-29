@@ -13,10 +13,6 @@ export class Airport extends BaseEntity {
   @Column('varchar', { nullable: false })
   code!: string;
 
-  // Remove this as it will be provided by the Location relation
-  // @Column('varchar', { nullable: false })
-  // ville!: string;
-
   @Column('varchar', { nullable: false })
   pays!: string;
 
@@ -31,10 +27,10 @@ export class Airport extends BaseEntity {
   @JoinColumn({ name: 'location_id' })
   location!: Location;
 
-  // Add reverse relations for flights
+  // Fix the reverse relations for flights
   @OneToMany(() => Flight, flight => flight.airport_depart)
   departing_flights!: Flight[];
 
-  @OneToMany(() => Flight, flight => flight.airport_arrivee)
+  @OneToMany(() => Flight, flight => flight.arrival_airport)
   arriving_flights!: Flight[];
 }

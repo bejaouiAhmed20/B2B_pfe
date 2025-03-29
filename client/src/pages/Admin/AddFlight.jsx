@@ -5,30 +5,32 @@ import {
   TextField,
   Button,
   MenuItem,
+  Grid,
   Snackbar,
-  Alert,
-  Grid
+  Alert
 } from '@mui/material';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const AddFlight = () => {
   const navigate = useNavigate();
   const [airports, setAirports] = useState([]);
+  const [planes, setPlanes] = useState([]); // Add state for planes
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [formData, setFormData] = useState({
     titre: '',
     prix: '',
     date_depart: '',
     date_retour: '',
-    compagnie_aerienne: '',
     duree: '',
     airport_depart_id: '',
-    airport_arrivee_id: ''
+    airport_arrivee_id: '',
+    plane_id: '' // Changed from compagnie_aerienne
   });
 
   useEffect(() => {
     fetchAirports();
+    fetchPlanes(); // Add function to fetch planes
   }, []);
 
   const fetchAirports = async () => {
@@ -36,11 +38,19 @@ const AddFlight = () => {
       const response = await axios.get('http://localhost:5000/api/airports');
       setAirports(response.data);
     } catch (error) {
-      setSnackbar({ 
-        open: true, 
-        message: 'Erreur lors du chargement des aéroports', 
-        severity: 'error' 
-      });
+      showSnackbar('Erreur lors du chargement des aéroports', 'error');
+    }
+  };
+
+  // Add function to fetch planes
+  const fetchPlanes = async () => {
+    try {
+      const response = await axios.get('http://localhost:5000/api/planes');
+      console.log('Planes data:', response.data); // Add this to debug
+      setPlanes(response.data);
+    } catch (error) {
+      console.error('Error fetching planes:', error);
+      showSnackbar('Erreur lors du chargement des avions', 'error');
     }
   };
 
@@ -51,30 +61,31 @@ const AddFlight = () => {
     });
   };
 
+  const showSnackbar = (message, severity = 'success') => {
+    setSnackbar({ open: true, message, severity });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       await axios.post('http://localhost:5000/api/flights', formData);
-      setSnackbar({ open: true, message: 'Vol ajouté avec succès', severity: 'success' });
-      setTimeout(() => navigate('/admin/flights'), 2000);
+      showSnackbar('Vol ajouté avec succès');
+      setTimeout(() => {
+        navigate('/admin/flights');
+      }, 2000);
     } catch (error) {
-      setSnackbar({ 
-        open: true, 
-        message: error.response?.data?.message || 'Une erreur est survenue', 
-        severity: 'error' 
-      });
+      showSnackbar(error.response?.data?.message || 'Une erreur est survenue', 'error');
     }
   };
 
   return (
-    <Paper sx={{ p: 3, maxWidth: 800, mx: 'auto' }}>
+    <Paper sx={{ p: 3 }}>
       <Typography variant="h4" gutterBottom>
         Ajouter un Vol
       </Typography>
-      
       <form onSubmit={handleSubmit}>
         <Grid container spacing={2}>
-          <Grid item xs={12}>
+          <Grid item xs={12} md={6}>
             <TextField
               name="titre"
               label="Titre"
@@ -83,10 +94,8 @@ const AddFlight = () => {
               fullWidth
               required
               margin="normal"
-              placeholder="Ex: Paris - New York"
             />
           </Grid>
-          
           <Grid item xs={12} md={6}>
             <TextField
               name="prix"
@@ -102,20 +111,6 @@ const AddFlight = () => {
               }}
             />
           </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <TextField
-              name="duree"
-              label="Durée"
-              value={formData.duree}
-              onChange={handleChange}
-              fullWidth
-              required
-              margin="normal"
-              placeholder="Ex: 8h 15m"
-            />
-          </Grid>
-          
           <Grid item xs={12} md={6}>
             <TextField
               name="date_depart"
@@ -129,7 +124,6 @@ const AddFlight = () => {
               InputLabelProps={{ shrink: true }}
             />
           </Grid>
-          
           <Grid item xs={12} md={6}>
             <TextField
               name="date_retour"
@@ -143,7 +137,6 @@ const AddFlight = () => {
               InputLabelProps={{ shrink: true }}
             />
           </Grid>
-          
           <Grid item xs={12} md={6}>
             <TextField
               name="airport_depart_id"
@@ -155,6 +148,7 @@ const AddFlight = () => {
               required
               margin="normal"
             >
+              <MenuItem value="">Sélectionner un aéroport</MenuItem>
               {airports.map((airport) => (
                 <MenuItem key={airport.id} value={airport.id}>
                   {airport.nom} ({airport.code})
@@ -162,7 +156,6 @@ const AddFlight = () => {
               ))}
             </TextField>
           </Grid>
-          
           <Grid item xs={12} md={6}>
             <TextField
               name="airport_arrivee_id"
@@ -174,6 +167,7 @@ const AddFlight = () => {
               required
               margin="normal"
             >
+              <MenuItem value="">Sélectionner un aéroport</MenuItem>
               {airports.map((airport) => (
                 <MenuItem key={airport.id} value={airport.id}>
                   {airport.nom} ({airport.code})
@@ -181,32 +175,53 @@ const AddFlight = () => {
               ))}
             </TextField>
           </Grid>
-          
-          <Grid item xs={12}>
+          {/* Replace compagnie_aerienne with plane selection */}
+          <Grid item xs={12} md={6}>
             <TextField
-              name="compagnie_aerienne"
-              label="Compagnie aérienne"
-              value={formData.compagnie_aerienne}
+              name="plane_id"
+              label="Avion"
+              select
+              value={formData.plane_id}
               onChange={handleChange}
               fullWidth
               required
               margin="normal"
+            >
+              <MenuItem value="">Sélectionner un avion</MenuItem>
+              {planes.length > 0 ? (
+                planes.map((plane) => (
+                  <MenuItem key={plane.idPlane} value={plane.idPlane}>
+                    {plane.planeModel || 'Avion'} ({plane.totalSeats} sièges)
+                  </MenuItem>
+                ))
+              ) : (
+                <MenuItem disabled>Aucun avion disponible</MenuItem>
+              )}
+            </TextField>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              name="duree"
+              label="Durée"
+              value={formData.duree}
+              onChange={handleChange}
+              fullWidth
+              required
+              margin="normal"
+              placeholder="Ex: 2h 30m"
             />
           </Grid>
+          <Grid item xs={12}>
+            <Button 
+              type="submit" 
+              variant="contained" 
+              style={{ backgroundColor: '#CC0A2B', marginTop: 20 }}
+              fullWidth
+            >
+              Ajouter
+            </Button>
+          </Grid>
         </Grid>
-        
-        <div style={{ marginTop: 24, display: 'flex', gap: 16, justifyContent: 'flex-end' }}>
-          <Button onClick={() => navigate('/admin/flights')}>
-            Annuler
-          </Button>
-          <Button 
-            type="submit" 
-            variant="contained" 
-            style={{ backgroundColor: '#CC0A2B' }}
-          >
-            Ajouter
-          </Button>
-        </div>
       </form>
 
       <Snackbar

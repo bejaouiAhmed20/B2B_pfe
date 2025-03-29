@@ -1,6 +1,7 @@
-import { Entity, PrimaryGeneratedColumn, Column, BaseEntity, OneToMany, ManyToOne, JoinColumn } from 'typeorm';
-import { Reservation } from './Reservation';
+import { Entity, PrimaryGeneratedColumn, Column, BaseEntity, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { Airport } from './Airport';
+import { Plane } from './Plane';
+import { Reservation } from './Reservation';
 
 @Entity()
 export class Flight extends BaseEntity {
@@ -10,36 +11,35 @@ export class Flight extends BaseEntity {
   @Column('varchar', { nullable: false })
   titre!: string;
 
-  @Column('decimal', { precision: 10, scale: 2, nullable: false })
+  @Column('decimal', { precision: 10, scale: 2 })
   prix!: number;
 
-  @Column('datetime', { nullable: false })
+  @Column('datetime')
   date_depart!: Date;
 
-  @Column('datetime', { nullable: false })
+  @Column('datetime')
   date_retour!: Date;
 
-  
-
-  @Column('varchar', { nullable: false })
-  compagnie_aerienne!: string;
-
-  @Column('varchar', { nullable: false })
+  @Column('varchar', { nullable: true })
   duree!: string;
 
-  @Column('int', { nullable: false, default: 100 })
-  places_disponibles!: number;
-
-  // Add relations to Airport for departure and arrival
-  @ManyToOne(() => Airport, { eager: true })
+  @ManyToOne(() => Airport)
   @JoinColumn({ name: 'airport_depart_id' })
   airport_depart!: Airport;
 
-  @ManyToOne(() => Airport, { eager: true })
+  @ManyToOne(() => Airport)
   @JoinColumn({ name: 'airport_arrivee_id' })
-  airport_arrivee!: Airport;
+  arrival_airport!: Airport;
 
-  @OneToMany(() => Reservation, (reservation) => reservation.flight)
+  @ManyToOne(() => Plane)
+  @JoinColumn({ name: 'plane_id' })
+  plane!: Plane;
+
+  // Add the missing relationship to Reservation
+  @OneToMany(() => Reservation, reservation => reservation.flight)
   reservations!: Reservation[];
+
+  @Column('varchar', { default: 'active' })
+  status!: string;
 }
 

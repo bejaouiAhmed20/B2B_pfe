@@ -1,15 +1,16 @@
 import { Request, Response } from 'express';
 import { Flight } from '../../models/Flight';
 import { Airport } from '../../models/Airport';
+import { Plane } from '../../models/Plane';
 
 export const getFlights = async (req: Request, res: Response) => {
   try {
     const flights = await Flight.find({
-      relations: ['airport_depart', 'airport_arrivee']
+      relations: ['airport_depart', 'arrival_airport', 'plane']
     });
     res.json(flights);
   } catch (error) {
-    console.log(error);
+    console.error(error);
     res.status(500).json({ message: "There is an issue" });
   }
 };
@@ -18,7 +19,7 @@ export const getFlightById = async (req: Request, res: Response) => {
   try {
     const flight = await Flight.findOne({
       where: { id: req.params.id },
-      relations: ['airport_depart', 'airport_arrivee']
+      relations: ['airport_depart', 'arrival_airport', 'plane']
     });
     
     if (!flight) {
@@ -27,7 +28,7 @@ export const getFlightById = async (req: Request, res: Response) => {
     
     res.json(flight);
   } catch (error) {
-    console.log(error);
+    console.error(error);
     res.status(500).json({ message: "There is an issue" });
   }
 };
@@ -39,10 +40,10 @@ export const addFlight = async (req: Request, res: Response) => {
       prix, 
       date_depart, 
       date_retour, 
-      compagnie_aerienne, 
       duree,
       airport_depart_id,
-      airport_arrivee_id
+      airport_arrivee_id,
+      plane_id
     } = req.body;
 
     // Find the departure airport
@@ -57,16 +58,22 @@ export const addFlight = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Arrival airport not found" });
     }
 
+    // Find the plane
+    const plane = await Plane.findOneBy({ idPlane: plane_id });
+    if (!plane) {
+      return res.status(404).json({ message: "Plane not found" });
+    }
+
     // Create a new flight
     const flight = new Flight();
     flight.titre = titre;
     flight.prix = prix;
     flight.date_depart = new Date(date_depart);
     flight.date_retour = new Date(date_retour);
-    flight.compagnie_aerienne = compagnie_aerienne;
     flight.duree = duree;
     flight.airport_depart = departureAirport;
-    flight.airport_arrivee = arrivalAirport;
+    flight.arrival_airport = arrivalAirport;
+    flight.plane = plane;
 
     await flight.save();
     res.status(201).json(flight);
@@ -88,10 +95,10 @@ export const updateFlight = async (req: Request, res: Response) => {
       prix, 
       date_depart, 
       date_retour, 
-      compagnie_aerienne, 
       duree,
       airport_depart_id,
-      airport_arrivee_id
+      airport_arrivee_id,
+      plane_id
     } = req.body;
 
     // Update basic properties
@@ -99,7 +106,6 @@ export const updateFlight = async (req: Request, res: Response) => {
     if (prix) flight.prix = prix;
     if (date_depart) flight.date_depart = new Date(date_depart);
     if (date_retour) flight.date_retour = new Date(date_retour);
-    if (compagnie_aerienne) flight.compagnie_aerienne = compagnie_aerienne;
     if (duree) flight.duree = duree;
 
     // Update departure airport if provided
@@ -117,7 +123,16 @@ export const updateFlight = async (req: Request, res: Response) => {
       if (!arrivalAirport) {
         return res.status(404).json({ message: "Arrival airport not found" });
       }
-      flight.airport_arrivee = arrivalAirport;
+      flight.arrival_airport = arrivalAirport;
+    }
+
+    // Update plane if provided
+    if (plane_id) {
+      const plane = await Plane.findOneBy({ idPlane: plane_id });
+      if (!plane) {
+        return res.status(404).json({ message: "Plane not found" });
+      }
+      flight.plane = plane;
     }
 
     await flight.save();
@@ -141,5 +156,29 @@ export const deleteFlight = async (req: Request, res: Response) => {
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "There is an issue" });
+  }
+};
+
+export const assignPlaneToFlight = async (req: Request, res: Response) => {
+  try {
+    const { flightId, planeId } = req.body;
+    
+    const flight = await Flight.findOneBy({ id: flightId });
+    if (!flight) {
+      return res.status(404).json({ message: 'Flight not found' });
+    }
+    
+    const plane = await Plane.findOneBy({ idPlane: planeId });
+    if (!plane) {
+      return res.status(404).json({ message: 'Plane not found' });
+    }
+    
+    flight.plane = plane;
+    await flight.save();
+    
+    res.status(200).json({ message: 'Plane assigned to flight successfully', flight });
+  } catch (error) {
+    console.error('Failed to assign plane to flight:', error);
+    res.status(500).json({ message: 'Failed to assign plane to flight' });
   }
 };

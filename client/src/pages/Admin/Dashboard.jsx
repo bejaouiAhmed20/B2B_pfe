@@ -34,6 +34,9 @@ import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import DescriptionIcon from '@mui/icons-material/Description';
 import axios from 'axios';
 import FeedbackIcon from '@mui/icons-material/Feedback';
+import AirlinesIcon from '@mui/icons-material/Airlines';
+import EventSeatIcon from '@mui/icons-material/EventSeat';
+
 
 const drawerWidth = 250;
 
@@ -48,8 +51,12 @@ const menuItems = [
   { text: 'Manage Contracts', icon: <DescriptionIcon />, path: '/admin/contracts' },
   { text: 'Manage Popups', icon: <NewspaperIcon />, path: '/admin/popups' },
   { text: 'Manage Reservations', icon: <FlightIcon />, path: '/admin/reservations' },
+  { text: 'Manage Planes', icon: <AirlinesIcon />, path: '/admin/planes' },
+  { text: 'Manage Seats', icon: <EventSeatIcon />, path: '/admin/seats' },
   { text: 'Manage Solde Requests', icon: <AccountBalanceWalletIcon />, path: '/admin/request-solde' },
   { text: 'Manage Reclamation', icon: <FeedbackIcon />, path: '/admin/reclamations' }
+
+  
 ];
 
 const lightTheme = createTheme({

@@ -43,7 +43,7 @@ const ReservationForm = ({
           Réservation
         </Typography>
         
-ok        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
           <Typography variant="h4" color="primary">
             <AttachMoney sx={{ verticalAlign: 'top', fontSize: '1.5rem' }} />
             {flight.prix} € <Typography component="span" variant="body2">/ personne</Typography>
@@ -172,7 +172,6 @@ ok        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
           {/* User balance information */}
           <Divider sx={{ my: 2 }} />
           
-          // Inside the Box component that displays the user balance
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
             <Typography variant="body2" fontWeight="medium">Votre solde actuel</Typography>
             <Typography 
@@ -184,7 +183,6 @@ ok        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
             </Typography>
           </Box>
           
-          // And in the error message for insufficient balance
           {isFlightAvailable(flight.date_depart) && Number(userBalance) < reservation.prix_total && (
             <Typography variant="body2" color="error" align="center" sx={{ mt: 2 }}>
               Solde insuffisant: {(Number(userBalance)).toFixed(2)}€ / {reservation.prix_total.toFixed(2)}€ requis
@@ -198,7 +196,6 @@ ok        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
           )}
         </Box>
         
-        // Inside the ReservationForm component, modify the button section:
         
         <Button
           variant="contained"

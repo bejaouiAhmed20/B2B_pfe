@@ -20,6 +20,11 @@ import uploadRoutes from './routes/UploadRoutes/uploadRoutes';
 import requestSoldeRoutes from './routes/RequestSoldeRoutes/requestSoldeRoutes';
 import contractRoutes from './routes/ContractRoutes/contractRoutes';
 import reclamationRoutes from './routes/ReclamationRoutes/reclamationRoutes';
+import seatReservationRoutes from './routes/SeatReservationRoutes/seatReservationRoutes';
+import planeRoutes from './routes/PlaneRoutes/planeRoutes';
+import seatRoutes from './routes/SeatRoutes/seatRoutes';
+import { SeatReservation } from './models/SeatReservation';
+
 import { User } from './models/User';
 import { Flight } from './models/Flight';
 import { Location } from './models/Location';
@@ -31,6 +36,9 @@ import { Compte } from './models/Compte';
 import { RequestSolde } from './models/RequestSolde';
 import { Contract } from './models/Contract';
 import { Reclamation } from './models/Reclamation';
+import { Plane } from './models/Plane';
+import { Seat } from './models/Seat';
+
 const app = express();
 
 // Middleware
@@ -55,18 +63,42 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/contracts', contractRoutes);
 app.use('/api/reclamations', reclamationRoutes);
 
+
 // Make sure you have this line to serve static files
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Database connection
+// Add this line to the routes section
+app.use('/api/seat-reservations', seatReservationRoutes);
+
+// Add these with your other app.use statements
+app.use('/api/planes', planeRoutes);
+app.use('/api/seats', seatRoutes);
+
+// Update the entities array in the DataSource configuration
 const AppDataSource = new DataSource({
   type: "mysql",
   host: "localhost",
   port: 3306,
   username: "root",
   password: "",
-  database: "b2b_db2",
-  entities: [User, Flight, Location, Airport, News, Coupon, Reservation, Compte, RequestSolde, Contract],
+  database: "b2b_db3",
+  entities: [
+    User, 
+    Flight, 
+    Location, 
+    Airport, 
+    News, 
+    Coupon, 
+    Reservation, 
+    Compte, 
+    RequestSolde, 
+    Contract, 
+    Reclamation, 
+    Plane, 
+    Seat, 
+    SeatReservation
+  ],
   synchronize: true,
   logging: true,
   charset: "utf8mb4",

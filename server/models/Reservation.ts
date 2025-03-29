@@ -1,7 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, BaseEntity, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, BaseEntity, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { User } from './User';
 import { Flight } from './Flight';
 import { Coupon } from './Coupon'; // Import the Coupon model
+import { SeatReservation } from './SeatReservation';
 
 @Entity()
 export class Reservation extends BaseEntity {
@@ -46,4 +47,8 @@ export class Reservation extends BaseEntity {
   @ManyToOne(() => Coupon, { eager: true, nullable: true })
   @JoinColumn({ name: 'coupon_id' })
   coupon!: Coupon | null;
+
+  // Relation One-to-Many with SeatReservation entity
+  @OneToMany(() => SeatReservation, (seatReservation) => seatReservation.reservation)
+  seatReservations!: SeatReservation[];
 }

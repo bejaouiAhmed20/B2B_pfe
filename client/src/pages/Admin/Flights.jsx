@@ -28,6 +28,7 @@ const Flights = () => {
   const navigate = useNavigate();
   const [flights, setFlights] = useState([]);
   const [airports, setAirports] = useState([]);
+  const [planes, setPlanes] = useState([]); // Add state for planes
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [editDialog, setEditDialog] = useState({ open: false, flight: null });
@@ -37,15 +38,16 @@ const Flights = () => {
     prix: '',
     date_depart: '',
     date_retour: '',
-    compagnie_aerienne: '',
     duree: '',
     airport_depart_id: '',
-    airport_arrivee_id: ''
+    airport_arrivee_id: '',
+    plane_id: '' // Changed from compagnie_aerienne
   });
 
   useEffect(() => {
     fetchFlights();
     fetchAirports();
+    fetchPlanes(); // Add function to fetch planes
   }, []);
 
   const fetchFlights = async () => {
@@ -53,6 +55,7 @@ const Flights = () => {
       const response = await axios.get('http://localhost:5000/api/flights');
       setFlights(response.data);
     } catch (error) {
+      console.error('Error fetching flights:', error);
       showSnackbar('Erreur lors du chargement des vols', 'error');
     }
   };
@@ -62,7 +65,19 @@ const Flights = () => {
       const response = await axios.get('http://localhost:5000/api/airports');
       setAirports(response.data);
     } catch (error) {
+      console.error('Error fetching airports:', error);
       showSnackbar('Erreur lors du chargement des aéroports', 'error');
+    }
+  };
+
+  // Add function to fetch planes
+  const fetchPlanes = async () => {
+    try {
+      const response = await axios.get('http://localhost:5000/api/planes');
+      setPlanes(response.data);
+    } catch (error) {
+      console.error('Error fetching planes:', error);
+      showSnackbar('Erreur lors du chargement des avions', 'error');
     }
   };
 
@@ -82,10 +97,10 @@ const Flights = () => {
       prix: flight.prix,
       date_depart: formatDateForInput(flight.date_depart),
       date_retour: formatDateForInput(flight.date_retour),
-      compagnie_aerienne: flight.compagnie_aerienne,
       duree: flight.duree,
       airport_depart_id: flight.airport_depart?.id || '',
-      airport_arrivee_id: flight.airport_arrivee?.id || ''
+      airport_arrivee_id: flight.arrival_airport?.id || '', // Changed from airport_arrivee
+      plane_id: flight.plane?.idPlane || '' // Changed from compagnie_aerienne
     });
   };
 
@@ -96,10 +111,10 @@ const Flights = () => {
       prix: '',
       date_depart: '',
       date_retour: '',
-      compagnie_aerienne: '',
       duree: '',
       airport_depart_id: '',
-      airport_arrivee_id: ''
+      airport_arrivee_id: '',
+      plane_id: '' // Changed from compagnie_aerienne
     });
   };
 
@@ -148,11 +163,6 @@ const Flights = () => {
     return date.toISOString().slice(0, 16);
   };
 
-  const getAirportName = (airportId) => {
-    const airport = airports.find(a => a.id === airportId);
-    return airport ? `${airport.nom} (${airport.code})` : '-';
-  };
-
   return (
     <Paper sx={{ p: 3 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
@@ -178,7 +188,7 @@ const Flights = () => {
               <TableCell>Retour</TableCell>
               <TableCell>Aéroport de départ</TableCell>
               <TableCell>Aéroport d'arrivée</TableCell>
-              <TableCell>Compagnie</TableCell>
+              <TableCell>Avion</TableCell> {/* Changed from Compagnie */}
               <TableCell>Durée</TableCell>
               <TableCell>Actions</TableCell>
             </TableRow>
@@ -193,8 +203,8 @@ const Flights = () => {
                   <TableCell>{formatDate(flight.date_depart)}</TableCell>
                   <TableCell>{formatDate(flight.date_retour)}</TableCell>
                   <TableCell>{flight.airport_depart ? `${flight.airport_depart.nom} (${flight.airport_depart.code})` : '-'}</TableCell>
-                  <TableCell>{flight.airport_arrivee ? `${flight.airport_arrivee.nom} (${flight.airport_arrivee.code})` : '-'}</TableCell>
-                  <TableCell>{flight.compagnie_aerienne}</TableCell>
+                  <TableCell>{flight.arrival_airport ? `${flight.arrival_airport.nom} (${flight.arrival_airport.code})` : '-'}</TableCell>
+                  <TableCell>{flight.plane ? `${flight.plane.name} - ${flight.plane.model}` : '-'}</TableCell> {/* Display plane info */}
                   <TableCell>{flight.duree}</TableCell>
                   <TableCell>
                     <IconButton onClick={() => handleEditOpen(flight)} color="primary">
@@ -303,15 +313,23 @@ const Flights = () => {
                 </MenuItem>
               ))}
             </TextField>
+            {/* Replace compagnie_aerienne with plane selection */}
             <TextField
-              name="compagnie_aerienne"
-              label="Compagnie aérienne"
-              value={formData.compagnie_aerienne}
+              name="plane_id"
+              label="Avion"
+              select
+              value={formData.plane_id}
               onChange={handleChange}
               fullWidth
               required
               margin="dense"
-            />
+            >
+              {planes.map((plane) => (
+                <MenuItem key={plane.idPlane} value={plane.idPlane}>
+                  {plane.name} - {plane.model}
+                </MenuItem>
+              ))}
+            </TextField>
             <TextField
               name="duree"
               label="Durée"
@@ -349,4 +367,4 @@ const Flights = () => {
   );
 };
 
-export default Flights
+export default Flights;
