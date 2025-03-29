@@ -50,6 +50,21 @@ const ReservationForm = ({
           </Typography>
         </Box>
         
+        {/* Seat availability information */}
+        <Box sx={{ mb: 3, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+          <Typography variant="subtitle2" gutterBottom>
+            Disponibilité des sièges:
+          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+            <Typography variant="body2">
+              Économique: {flight.availableSeats?.economy || 0} sièges
+            </Typography>
+            <Typography variant="body2">
+              Affaires: {flight.availableSeats?.business || 0} sièges
+            </Typography>
+          </Box>
+        </Box>
+        
         <FormControl fullWidth sx={{ mb: 3 }}>
           <InputLabel>Nombre de passagers</InputLabel>
           <Select
@@ -58,8 +73,27 @@ const ReservationForm = ({
             label="Nombre de passagers"
           >
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
-              <MenuItem key={num} value={num}>{num}</MenuItem>
+              <MenuItem key={num} value={num} disabled={
+                (reservation.classType === 'economy' && num > (flight.availableSeats?.economy || 0)) ||
+                (reservation.classType === 'business' && num > (flight.availableSeats?.business || 0))
+              }>
+                {num}
+              </MenuItem>
             ))}
+          </Select>
+        </FormControl>
+        
+        {/* Class selection */}
+        <FormControl fullWidth sx={{ mb: 3 }}>
+          <InputLabel>Classe</InputLabel>
+          <Select
+            value={reservation.classType}
+            onChange={(e) => handlePassengerChange({ target: { value: reservation.nombre_passagers } }, e.target.value)}
+            label="Classe"
+            disabled={flight.availableSeats?.economy === 0 && flight.availableSeats?.business === 0}
+          >
+            <MenuItem value="economy" disabled={flight.availableSeats?.economy === 0}>Économique</MenuItem>
+            <MenuItem value="business" disabled={flight.availableSeats?.business === 0}>Affaires</MenuItem>
           </Select>
         </FormControl>
         
@@ -132,6 +166,13 @@ const ReservationForm = ({
             </Typography>
           </Box>
           
+          {/* Display seat information if available */}
+          {reservation.seats && reservation.seats.length > 0 && (
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+              <Typography variant="body2" color="text.secondary">Sièges</Typography>
+              <Typography variant="body2">{reservation.seats.map(seat => seat.seatNumber).join(', ')}</Typography>
+            </Box>
+          )}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
             <Typography variant="body2" color="text.secondary">Prix unitaire (ajusté)</Typography>
             <Typography variant="body2" fontWeight="medium">{(flight.prix * getCurrentFareMultiplier()).toFixed(2)} €</Typography>

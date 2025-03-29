@@ -1,36 +1,28 @@
 import express from 'express';
-import {
-  getReservations,
-  getReservationById,
-  addReservation,
-  updateReservation,
+import { 
+  getReservations, 
+  getReservationById, 
+  createReservation, 
+  updateReservation, 
   deleteReservation,
   getReservationsByFlightId,
   getReservationsByUserId
 } from '../../controllers/ReservationController/ReservationController';
+import { auth, adminAuth } from '../../middlewares/authMiddleware';
 
 const router = express.Router();
 
-// Route pour récupérer toutes les réservations
+// Public routes
 router.get('/', getReservations);
-
-// Route pour récupérer une réservation par son ID
 router.get('/:id', getReservationById as express.RequestHandler);
-
-// Route pour ajouter une réservation
-router.post('/', addReservation as express.RequestHandler);
-
-// Route pour mettre à jour une réservation
-router.put('/:id', updateReservation as express.RequestHandler);
-
-// Route pour supprimer une réservation
-router.delete('/:id', deleteReservation as express.RequestHandler);
-
-// Important: These routes need to be placed AFTER the /:id route to avoid conflicts
-// Route pour récupérer les réservations par ID de vol
 router.get('/flight/:flightId', getReservationsByFlightId as express.RequestHandler);
-
-// Route pour récupérer les réservations par ID d'utilisateur
 router.get('/user/:userId', getReservationsByUserId as express.RequestHandler);
+
+// Make the POST route public (no auth middleware)
+router.post('/', createReservation as express.RequestHandler);
+
+// Protected routes
+router.put('/:id', auth as express.RequestHandler, updateReservation as express.RequestHandler);
+router.delete('/:id', auth as express.RequestHandler, deleteReservation as express.RequestHandler);
 
 export default router;

@@ -2,7 +2,9 @@ import { Request, Response } from 'express';
 import { Reservation } from '../../models/Reservation';
 import { User } from '../../models/User';
 import { Flight } from '../../models/Flight';
-import { Coupon } from '../../models/Coupon'; // Import Coupon model
+import { Coupon } from '../../models/Coupon';
+import { FlightSeatReservation } from '../../models/FlightSeatReservation';
+import { Seat } from '../../models/Seat';
 
 // Afficher toutes les réservations
 export const getReservations = async (req: Request, res: Response) => {
@@ -215,6 +217,128 @@ export const getReservationsByUserId = async (req: Request, res: Response) => {
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "There is an issue retrieving reservations" });
+  }
+};
+
+// Updated createReservation function
+export const createReservation = async (req: Request, res: Response) => {
+  try {
+    const { 
+      date_reservation, 
+      statut, 
+      prix_total, 
+      nombre_passagers, 
+      user_id, 
+      flight_id,
+      coupon,
+      discount_amount,
+      class_type, 
+      fare_type
+    } = req.body;
+
+    // Vérifie si l'utilisateur existe
+    const user = await User.findOneBy({ id: user_id });
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+
+    // Vérifie si le vol existe
+    const flight = await Flight.findOne({
+      where: { id: flight_id },
+      relations: ['plane', 'plane.seats']
+    });
+    
+    if (!flight) {
+      return res.status(404).json({ message: "Vol non trouvé" });
+    }
+
+    // Check if there are enough seats available
+    if (!flight.plane || !flight.plane.seats) {
+      return res.status(400).json({ message: "Ce vol n'a pas d'avion ou de sièges assignés" });
+    }
+
+    // Get already reserved seats for this flight
+    const reservedSeats = await FlightSeatReservation.find({
+      where: { 
+        flight: { id: flight_id },
+        isReserved: true 
+      },
+      relations: ['seat']
+    });
+    
+    const reservedSeatIds = reservedSeats.map(rs => rs.seat.idSeat);
+    console.log(`Found ${reservedSeatIds.length} already reserved seats for flight ${flight_id}`);
+
+    // Filter available seats by class
+    const availableSeats = flight.plane.seats
+      .filter(seat => !reservedSeatIds.includes(seat.idSeat) && seat.classType === (class_type || 'economy'));
+    
+    console.log(`Found ${availableSeats.length} available ${class_type || 'economy'} seats`);
+
+    if (availableSeats.length < nombre_passagers) {
+      return res.status(400).json({ 
+        message: `Pas assez de sièges disponibles. Seulement ${availableSeats.length} sièges disponibles.` 
+      });
+    }
+
+    // Create reservation object with basic fields
+    const reservationData: any = {
+      date_reservation,
+      statut,
+      prix_total,
+      nombre_passagers,
+      user,
+      flight,
+      coupon_code: coupon || null,
+      discount_amount: discount_amount || 0,
+      class_type: class_type || 'economy',
+      fare_type: fare_type || 'light'
+    };
+
+    // If coupon code is provided, find the coupon and link it
+    if (coupon) {
+      const couponEntity = await Coupon.findOne({ where: { code: coupon } });
+      if (couponEntity) {
+        reservationData.coupon = couponEntity;
+      }
+    }
+
+    // Create the reservation
+    const reservation = Reservation.create(reservationData);
+    await reservation.save();
+    console.log(`Created reservation with ID: ${reservation.id}`);
+
+    // Randomly select seats
+    const shuffledSeats = availableSeats.sort(() => 0.5 - Math.random());
+    const allocatedSeats = shuffledSeats.slice(0, nombre_passagers);
+    
+    // Create flight seat reservations
+    const seatReservations = [];
+    for (const seat of allocatedSeats) {
+      const flightSeatReservation = new FlightSeatReservation();
+      flightSeatReservation.flight = flight;
+      flightSeatReservation.reservation = reservation;
+      flightSeatReservation.seat = seat;
+      flightSeatReservation.isReserved = true;
+      
+      await flightSeatReservation.save();
+      seatReservations.push(flightSeatReservation);
+    }
+    
+    console.log(`Created ${seatReservations.length} seat reservations for reservation ${reservation.id}`);
+
+    // Return the reservation with seat information
+    res.status(201).json({
+      ...reservation,
+      allocatedSeats: allocatedSeats.map(seat => ({
+        id: seat.idSeat,
+        seatNumber: seat.seatNumber,
+        classType: seat.classType
+      }))
+    });
+  } catch (error) {
+    console.error('Error creating reservation:', error);
+    res.status(500).json({ message: "Une erreur s'est produite lors de la création de la réservation" });
   }
 };
 

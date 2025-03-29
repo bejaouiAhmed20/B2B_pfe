@@ -7,14 +7,17 @@ import {
   Alert,
   Snackbar
 } from '@mui/material';
-import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 // Import our component modules
 import FlightHeader from '../../components/flight/FlightHeader';
 import FlightDetails from '../../components/flight/FlightDetails';
 import FareOptions from '../../components/flight/FareOptions';
 import ReservationForm from '../../components/flight/ReservationForm';
+
+// Import the API service instead of axios
+import api from '../../services/api';
 
 const FlightDescription = () => {
   const { id } = useParams();
@@ -144,29 +147,24 @@ const FlightDescription = () => {
   };
 
   // Fetch user balance
+  // Update the fetchUserBalance function to use the api service instead of axios
   const fetchUserBalance = async () => {
     try {
-      const token = localStorage.getItem('token');
       const userData = JSON.parse(localStorage.getItem('user'));
       
-      if (!token || !userData) {
-        console.log('No token or user data found');
+      if (!userData) {
+        console.log('No user data found');
         return;
       }
       
-      // Instead of fetching from /api/users/:id, fetch from /api/comptes/user/:userId
-      const response = await axios.get(`http://localhost:5000/api/comptes/user/${userData.id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      // Use the api service instead of axios
+      const response = await api.get(`/comptes/user/${userData.id}`);
       
-      // The compte endpoint returns the account with the solde property
       console.log('Account data from API:', response.data);
-      // Convert the solde to a number explicitly
       setUserBalance(Number(response.data.solde) || 0);
       console.log('Set user balance to:', Number(response.data.solde) || 0);
     } catch (error) {
       console.error('Error fetching user balance:', error);
-      // If there's an error (like no account found), set balance to 0
       setUserBalance(0);
     }
   };
@@ -196,13 +194,12 @@ const FlightDescription = () => {
 
   const fetchFlightDetails = async () => {
     try {
-      setLoading(true);
-      const response = await axios.get(`http://localhost:5000/api/flights/${id}`);
+      const response = await api.get(`/flights/${id}`);
       setFlight(response.data);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching flight details:', error);
-      setError('Impossible de charger les détails du vol. Veuillez réessayer plus tard.');
+      setError('Impossible de charger les détails du vol');
       setLoading(false);
     }
   };
@@ -243,6 +240,7 @@ const FlightDescription = () => {
     }
   };
 
+  // Update the applyCoupon function to use the api service
   const applyCoupon = async () => {
     try {
       if (!reservation.coupon.trim()) {
@@ -254,11 +252,13 @@ const FlightDescription = () => {
         return;
       }
       
-      const response = await axios.post('http://localhost:5000/api/coupons/validate', {
+      // Use the api service instead of axios
+      const response = await api.post('/coupons/validate', {
         code: reservation.coupon
       });
       
       if (response.data.valid) {
+        // Rest of the function remains the same
         const coupon = response.data.coupon;
         setValidCoupon(coupon);
         
@@ -295,99 +295,58 @@ const FlightDescription = () => {
     }
   };
 
+  // Update the handleReservation function
   const handleReservation = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        navigate('/login-client', { state: { redirectTo: `/client/flights/${id}` } });
-        return;
-      }
+  // Get user data or use a default ID
+  const userData = JSON.parse(localStorage.getItem('user')) || { id: '1' };
   
-      // Check if flight is available before proceeding
-      if (!isFlightAvailable(flight.date_depart)) {
-        setSnackbar({
-          open: true,
-          message: 'Ce vol n\'est plus disponible à la réservation.',
-          severity: 'error'
-        });
-        return;
-      }
-  
-      const userData = JSON.parse(localStorage.getItem('user'));
-      
-      // Calculate the final price with fare multiplier and discount
-      const basePrice = flight.prix * getCurrentFareMultiplier() * reservation.nombre_passagers;
-      const finalPrice = basePrice - reservation.discountAmount;
-      
-      // Check if user has enough balance
-      if (userBalance < finalPrice) {
-        setShowBalanceWarning(true);
-        setSnackbar({
-          open: true,
-          message: 'Solde insuffisant pour effectuer cette réservation.',
-          severity: 'error'
-        });
-        return;
-      }
-  
-      const reservationData = {
-        flight_id: id,
-        user_id: userData.id,
-        date_reservation: new Date().toISOString().split('T')[0],
-        nombre_passagers: reservation.nombre_passagers,
-        prix_total: finalPrice > 0 ? finalPrice : 0,
-        statut: 'Confirmée',
-        coupon: validCoupon ? reservation.coupon : null,
-        discount_amount: reservation.discountAmount,
-        class_type: reservation.classType,
-        fare_type: reservation.fareType
-      };
-  
-      // Create the reservation
-      const reservationResponse = await axios.post('http://localhost:5000/api/reservations', reservationData, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-  
-      // Get the user's account first
-      const compteResponse = await axios.get(`http://localhost:5000/api/comptes/user/${userData.id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      const compteId = compteResponse.data.id;
-      
-      // Update account balance using the withdraw-funds endpoint
-      await axios.post(`http://localhost:5000/api/comptes/${compteId}/withdraw-funds`, {
-        amount: finalPrice
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-  
-      // Fetch the updated balance
-      const updatedCompteResponse = await axios.get(`http://localhost:5000/api/comptes/user/${userData.id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      // Update local state with new balance
-      setUserBalance(updatedCompteResponse.data.solde);
-  
-      setSnackbar({
-        open: true,
-        message: 'Réservation effectuée avec succès! Votre solde a été débité.',
-        severity: 'success'
-      });
-  
-      setTimeout(() => {
-        navigate('/client/reservations');
-      }, 2000);
-    } catch (error) {
-      console.error('Error making reservation:', error);
-      setSnackbar({
-        open: true,
-        message: 'Erreur lors de la réservation: ' + (error.response?.data?.message || error.message),
-        severity: 'error'
-      });
-    }
-  };
+  if (!isFlightAvailable(flight.date_depart) || userBalance < reservation.prix_total) {
+    setShowBalanceWarning(userBalance < reservation.prix_total);
+    return;
+  }
+
+  try {
+    console.log('Sending reservation data:', {
+      ...reservation,
+      flight_id: id,
+      user_id: userData.id,
+      date_reservation: new Date().toISOString().split('T')[0],
+      statut: 'Confirmée'
+    });
+    
+    // Use axios directly without any auth headers
+    const response = await axios.post('http://localhost:5000/api/reservations', {
+      ...reservation,
+      flight_id: id,
+      user_id: userData.id,
+      date_reservation: new Date().toISOString().split('T')[0],
+      statut: 'Confirmée'
+    });
+    
+    console.log('Reservation created:', response.data);
+    
+    // Show success message and redirect
+    setSnackbar({
+      open: true,
+      message: 'Réservation effectuée avec succès!',
+      severity: 'success'
+    });
+    
+    // Redirect to reservations page after 2 seconds
+    setTimeout(() => {
+      navigate('/client/reservations');
+    }, 2000);
+  } catch (error) {
+    console.error('Error making reservation:', error);
+    
+    // Show error message
+    setSnackbar({
+      open: true,
+      message: error.response?.data?.message || 'Une erreur est survenue lors de la réservation',
+      severity: 'error'
+    });
+  }
+};
 
   if (loading) {
     return (

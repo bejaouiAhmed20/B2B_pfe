@@ -24,6 +24,7 @@ import seatReservationRoutes from './routes/SeatReservationRoutes/seatReservatio
 import planeRoutes from './routes/PlaneRoutes/planeRoutes';
 import seatRoutes from './routes/SeatRoutes/seatRoutes';
 import { SeatReservation } from './models/SeatReservation';
+import { FlightSeatReservation } from './models/FlightSeatReservation';
 
 import { User } from './models/User';
 import { Flight } from './models/Flight';
@@ -97,7 +98,8 @@ const AppDataSource = new DataSource({
     Reclamation, 
     Plane, 
     Seat, 
-    SeatReservation
+    SeatReservation,
+    FlightSeatReservation
   ],
   synchronize: true,
   logging: true,

@@ -20,7 +20,6 @@ import Reservations from './pages/Admin/Reservations';
 import AddReservation from './pages/Admin/AddReservation';
 import RequestSoldeManagement from './pages/Admin/RequestSoldeManagement';
 import LoginClient from './pages/Auth/LoginClient';
-import FlightDescription from './pages/Client/FlightDescription';
 import Profile from './pages/Client/Profile';
 import RequestSolde from './pages/Client/RequestSolde';
 import Home from './pages/client/Home';
@@ -38,6 +37,7 @@ import Contracts from './pages/Admin/Contracts';
 import AddContract from './pages/Admin/AddContract';
 import ForgotPassword from './pages/Auth/ForgotPassword';
 import ResetPassword from './pages/Auth/ResetPassword';
+import FlightDescription from './pages/client/FlightDescription';
 
 function App() {
   return (

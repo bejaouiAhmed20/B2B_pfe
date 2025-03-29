@@ -28,27 +28,42 @@ const LoginClient = () => {
     });
   };
 
-  // In your handleSubmit function, make sure you're using the correct endpoint
+  // Update the handleSubmit function
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
     
     try {
-      // Fixed: Using the correct field name from formData
       const response = await axios.post('http://localhost:5000/api/auth/loginClient', {
         email: formData.email,
-        mot_de_passe: formData.mot_de_passe // Changed from password to mot_de_passe to match your form field
+        mot_de_passe: formData.mot_de_passe
       });
+      
+      // Check if token exists in response
+      if (!response.data.token) {
+        throw new Error('No token received from server');
+      }
       
       // Store token and user info in localStorage
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
       
-      // Redirect to client dashboard
-      navigate('/client');  // Changed from /client/Home to /client to match your route structure
+      console.log('Login successful, token stored');
+      
+      // Check if there's a redirect path stored
+      const redirectPath = localStorage.getItem('redirectAfterLogin');
+      if (redirectPath) {
+        localStorage.removeItem('redirectAfterLogin');
+        navigate(redirectPath);
+      } else {
+        // Default redirect to client dashboard
+        navigate('/client');
+      }
     } catch (error) {
       console.error('Login error:', error);
-      setError('Une erreur est survenue lors de la connexion. Veuillez vérifier vos identifiants.');
+      setError(error.response?.data?.message || 'Une erreur est survenue lors de la connexion. Veuillez vérifier vos identifiants.');
+    } finally {
       setLoading(false);
     }
   };
