@@ -38,6 +38,8 @@ import AddContract from './pages/Admin/AddContract';
 import ForgotPassword from './pages/Auth/ForgotPassword';
 import ResetPassword from './pages/Auth/ResetPassword';
 import FlightDescription from './pages/client/FlightDescription';
+// Import the ReservationsTable component
+import ReservationsTable from './pages/Client/ReservationsTable';
 
 function App() {
   return (
@@ -56,6 +58,7 @@ function App() {
           <Route path='reservations' element={<ReservationsClient />} />
           <Route path='request-solde' element={<RequestSolde />} />
           <Route path="reclamations" element={<Reclamation />} />
+          <Route path="reservations-table" element={<ReservationsTable />} />
         </Route>
         
         <Route path="/admin" element={<DashboardLayout />}>
