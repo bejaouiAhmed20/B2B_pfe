@@ -6,23 +6,25 @@ import {
   updateReservation, 
   deleteReservation,
   getReservationsByFlightId,
-  getReservationsByUserId
+  getReservationsByUserId,
+  cancelReservation
 } from '../../controllers/ReservationController/ReservationController';
 import { auth, adminAuth } from '../../middlewares/authMiddleware';
 
 const router = express.Router();
 
-// Public routes
-router.get('/', getReservations);
-router.get('/:id', getReservationById as express.RequestHandler);
+// Specific routes first
 router.get('/flight/:flightId', getReservationsByFlightId as express.RequestHandler);
 router.get('/user/:userId', getReservationsByUserId as express.RequestHandler);
+router.put('/:id/cancel', auth as express.RequestHandler, cancelReservation as express.RequestHandler);
 
-// Make the POST route public (no auth middleware)
-router.post('/', createReservation as express.RequestHandler);
-
-// Protected routes
+// Then more generic routes
+router.get('/:id', getReservationById as express.RequestHandler);
 router.put('/:id', auth as express.RequestHandler, updateReservation as express.RequestHandler);
 router.delete('/:id', auth as express.RequestHandler, deleteReservation as express.RequestHandler);
+
+// Most generic routes last
+router.get('/', getReservations);
+router.post('/', createReservation as express.RequestHandler);
 
 export default router;
