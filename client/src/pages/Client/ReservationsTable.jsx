@@ -21,8 +21,8 @@ import {
   Person, 
   AttachMoney 
 } from '@mui/icons-material';
-import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import { jsPDF } from "jspdf";
+import "jspdf-autotable";
 import api from '../../services/api';
 
 const ReservationsTable = () => {
