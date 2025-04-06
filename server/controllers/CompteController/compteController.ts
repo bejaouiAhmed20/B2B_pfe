@@ -207,6 +207,40 @@ export const withdrawFunds = async (req: Request, res: Response) => {
     res.status(500).json({ message: "There is an issue" });
   }
 };
+//update account balance 
+export const updateBalance = async (req: Request, res: Response) => {
+  try {
+    const userId = req.params.userId;
+    const { solde } = req.body;
+    
+    if (solde === undefined || isNaN(Number(solde))) {
+      return res.status(400).json({ message: "Valid solde value is required" });
+    }
+    
+    const compte = await Compte.findOne({
+      where: { user: { id: userId } }
+    });
+    
+    if (!compte) {
+      return res.status(404).json({ message: "Account not found for this user" });
+    }
+    
+    // Update the balance with the new value
+    compte.solde = Number(solde);
+    await compte.save();
+    
+    res.json({ 
+      message: "Balance updated successfully", 
+      compte: {
+        ...compte,
+        solde: parseFloat(compte.solde.toString())
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "There is an issue updating the balance" });
+  }
+};
 
 // Delete account
 export const deleteCompte = async (req: Request, res: Response) => {
