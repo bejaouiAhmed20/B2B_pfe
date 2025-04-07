@@ -297,56 +297,65 @@ const FlightDescription = () => {
 
   // Update the handleReservation function
   const handleReservation = async () => {
-  // Get user data or use a default ID
-  const userData = JSON.parse(localStorage.getItem('user')) || { id: '1' };
-  
-  if (!isFlightAvailable(flight.date_depart) || userBalance < reservation.prix_total) {
-    setShowBalanceWarning(userBalance < reservation.prix_total);
-    return;
-  }
+    // Get user data or use a default ID
+    const userData = JSON.parse(localStorage.getItem('user')) || { id: '1' };
+    
+    if (!isFlightAvailable(flight.date_depart) || userBalance < reservation.prix_total) {
+      setShowBalanceWarning(userBalance < reservation.prix_total);
+      return;
+    }
 
-  try {
-    console.log('Sending reservation data:', {
-      ...reservation,
-      flight_id: id,
-      user_id: userData.id,
-      date_reservation: new Date().toISOString().split('T')[0],
-      statut: 'Confirmée'
-    });
-    
-    // Use axios directly without any auth headers
-    const response = await axios.post('http://localhost:5000/api/reservations', {
-      ...reservation,
-      flight_id: id,
-      user_id: userData.id,
-      date_reservation: new Date().toISOString().split('T')[0],
-      statut: 'Confirmée'
-    });
-    
-    console.log('Reservation created:', response.data);
-    
-    // Show success message and redirect
-    setSnackbar({
-      open: true,
-      message: 'Réservation effectuée avec succès!',
-      severity: 'success'
-    });
-    
-    // Redirect to reservations page after 2 seconds
-    setTimeout(() => {
-      navigate('/client/reservations');
-    }, 2000);
-  } catch (error) {
-    console.error('Error making reservation:', error);
-    
-    // Show error message
-    setSnackbar({
-      open: true,
-      message: error.response?.data?.message || 'Une erreur est survenue lors de la réservation',
-      severity: 'error'
-    });
-  }
-};
+    try {
+      console.log('Sending reservation data:', {
+        ...reservation,
+        flight_id: id,
+        user_id: userData.id,
+        date_reservation: new Date().toISOString().split('T')[0],
+        statut: 'Confirmée'
+      });
+      
+      // First create the reservation
+      const response = await axios.post('http://localhost:5000/api/reservations', {
+        ...reservation,
+        flight_id: id,
+        user_id: userData.id,
+        date_reservation: new Date().toISOString().split('T')[0],
+        statut: 'Confirmée'
+      });
+      
+      console.log('Reservation created:', response.data);
+      
+      // Then update the user's balance
+      const newBalance = userBalance - reservation.prix_total;
+      await api.put(`/comptes/update/${userData.id}`, {
+        solde: newBalance
+      });
+      
+      // Update local balance state
+      setUserBalance(newBalance);
+      
+      // Show success message and redirect
+      setSnackbar({
+        open: true,
+        message: 'Réservation effectuée avec succès!',
+        severity: 'success'
+      });
+      
+      // Redirect to reservations page after 2 seconds
+      setTimeout(() => {
+        navigate('/client/reservations');
+      }, 2000);
+    } catch (error) {
+      console.error('Error making reservation:', error);
+      
+      // Show error message
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.message || 'Une erreur est survenue lors de la réservation',
+        severity: 'error'
+      });
+    }
+  };
 
   if (loading) {
     return (

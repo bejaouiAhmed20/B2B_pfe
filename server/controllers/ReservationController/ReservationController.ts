@@ -314,37 +314,53 @@ export const getReservationsByUserId = async (req: Request, res: Response) => {
   }
 };
 
-// Remove this entire function and comment
-// DELETE THIS ENTIRE FUNCTION BELOW:
-// Also update the getReservations function to be more robust
-/* export const getReservations = async (req: Request, res: Response) => {
+// Add this new function for cancelling a reservation
+export const cancelReservation = async (req: Request, res: Response) => {
   try {
-    console.log("Fetching all reservations");
-    const includeRelations = req.query.relations === 'true';
+    const reservationId = req.params.id;
+    const { isRefundEligible } = req.body;
     
-    let reservations;
-    if (includeRelations) {
-      // Load all related entities with more comprehensive relations
-      reservations = await Reservation.find({
-        relations: ['user', 'flight', 'coupon'],
-        order: { date_reservation: 'DESC' }
-      });
-      
-      // Log for debugging
-      console.log(`Loaded ${reservations.length} reservations with relations`);
-    } else {
-      reservations = await Reservation.find({
-        order: { date_reservation: 'DESC' }
-      });
-      console.log(`Loaded ${reservations.length} reservations without relations`);
+    console.log(`Cancelling reservation ${reservationId}, refund eligible: ${isRefundEligible}`);
+    
+    // Find the reservation
+    const reservation = await Reservation.findOne({
+      where: { id: reservationId },
+      relations: ['user', 'flight']
+    });
+
+    if (!reservation) {
+      return res.status(404).json({ message: "Réservation non trouvée" });
     }
+
+    // Update the reservation status to cancelled
+    reservation.statut = 'Annulée';
     
-    res.json(reservations);
+    // Process refund if eligible
+    if (isRefundEligible) {
+      console.log(`Processing refund for reservation ${reservationId}`);
+      // Here you would typically integrate with a payment gateway
+      // For now, we'll just log it
+    }
+
+    await reservation.save();
+    
+    // Release the reserved seats
+    await FlightSeatReservation.update(
+      { reservation: { id: reservationId } },
+      { isReserved: false }
+    );
+    
+    res.json({
+      ...reservation,
+      message: isRefundEligible 
+        ? "Réservation annulée avec succès. Un remboursement sera effectué." 
+        : "Réservation annulée avec succès. Aucun remboursement n'est applicable."
+    });
   } catch (error) {
-    console.error('Error fetching reservations:', error);
-    res.status(500).json({ message: 'Erreur lors de la récupération des réservations' });
+    console.error('Error cancelling reservation:', error);
+    res.status(500).json({ message: "Une erreur s'est produite lors de l'annulation de la réservation" });
   }
-}; */
+};
 
 // Updated createReservation function
 export const createReservation = async (req: Request, res: Response) => {

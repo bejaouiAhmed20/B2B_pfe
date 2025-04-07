@@ -37,6 +37,7 @@ const Reservations = () => {
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState(''); // Moved inside component
   const [cancelDialog, setCancelDialog] = useState({
     open: false,
     reservationId: null
@@ -68,10 +69,22 @@ const Reservations = () => {
         const reservationsWithFlights = await Promise.all(
           response.data.map(async (reservation) => {
             try {
-              const flightResponse = await axios.get(`http://localhost:5000/api/flights/${reservation.flight_id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-              });
-              return { ...reservation, flight: flightResponse.data };
+              // Check if flight object exists and has an id
+              if (reservation.flight && reservation.flight.id) {
+                const flightResponse = await axios.get(`http://localhost:5000/api/flights/${reservation.flight.id}`, {
+                  headers: { Authorization: `Bearer ${token}` }
+                });
+                return { ...reservation, flight: flightResponse.data };
+              } else if (reservation.flight_id) {
+                // Fallback to flight_id if it exists
+                const flightResponse = await axios.get(`http://localhost:5000/api/flights/${reservation.flight_id}`, {
+                  headers: { Authorization: `Bearer ${token}` }
+                });
+                return { ...reservation, flight: flightResponse.data };
+              } else {
+                console.warn(`Reservation ${reservation.id} has no flight information`);
+                return reservation;
+              }
             } catch (flightError) {
               console.error(`Error fetching flight details for reservation ${reservation.id}:`, flightError);
               return reservation;
@@ -97,24 +110,69 @@ const Reservations = () => {
     }
   };
 
+  // Update the handleCancelReservation function to handle refunds
   const handleCancelReservation = async () => {
     try {
       const token = localStorage.getItem('token');
+      const reservation = reservations.find(r => r.id === cancelDialog.reservationId);
       
-      await axios.put(`http://localhost:5000/api/reservations/${cancelDialog.reservationId}/cancel`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
+      if (!reservation) {
+        setError('Réservation introuvable');
+        setCancelDialog({ open: false, reservationId: null });
+        return;
+      }
+      
+      console.log('Cancelling reservation ID:', cancelDialog.reservationId);
+      
+      // Check if refund is eligible based on class_type and fare_type
+      const isRefundEligible = 
+        (reservation.class_type === 'economy' && reservation.fare_type === 'light') || 
+        (reservation.class_type === 'Affaires');
+      
+      console.log('Cancellation details:', {
+        id: cancelDialog.reservationId,
+        isRefundEligible: isRefundEligible,
+        amount: reservation.prix_total
       });
-
-      // Update the local state to reflect the cancellation
-      setReservations(reservations.map(reservation => 
-        reservation.id === cancelDialog.reservationId 
-          ? { ...reservation, statut: 'Annulée' } 
-          : reservation
-      ));
-
-      setCancelDialog({ open: false, reservationId: null });
+      
+      // Make the API call with proper error handling
+      try {
+        const response = await axios.put(
+          `http://localhost:5000/api/reservations/${cancelDialog.reservationId}/cancel`, 
+          { 
+            isRefundEligible: isRefundEligible,
+            amount: reservation.prix_total 
+          }, 
+          { headers: { Authorization: `Bearer ${token}` }}
+        );
+        
+        console.log('Cancel response:', response.data);
+  
+        // Update the local state
+        setReservations(reservations.map(res => 
+          res.id === cancelDialog.reservationId 
+            ? { ...res, statut: 'Annulée' } 
+            : res
+        ));
+    
+        setCancelDialog({ open: false, reservationId: null });
+        
+        // Show success message
+        if (isRefundEligible) {
+          setSuccessMessage(`Votre réservation a été annulée avec succès. Un remboursement de ${reservation.prix_total}€ sera effectué dans les prochains jours.`);
+        } else {
+          setSuccessMessage('Votre réservation a été annulée avec succès. Aucun remboursement n\'est applicable pour ce type de billet.');
+        }
+      } catch (apiError) {
+        console.error('API Error:', apiError);
+        if (apiError.response) {
+          console.error('Response status:', apiError.response.status);
+          console.error('Response data:', apiError.response.data);
+        }
+        setError('Erreur lors de l\'annulation: ' + (apiError.response?.data?.message || apiError.message));
+      }
     } catch (error) {
-      console.error('Error cancelling reservation:', error);
+      console.error('Error in handleCancelReservation:', error);
       setError('Impossible d\'annuler la réservation');
     }
   };
@@ -137,11 +195,21 @@ const Reservations = () => {
     }
   };
 
-  const handleViewFlightDetails = (flightId) => {
-    if (flightId) {
-      navigate(`/client/flights/${flightId}`);
+  // Add this new state for flight details dialog
+  const [flightDetailsDialog, setFlightDetailsDialog] = useState({
+    open: false,
+    flight: null
+  });
+  
+  // Replace the handleViewFlightDetails function with this
+  const handleViewFlightDetails = (flight) => {
+    if (flight) {
+      setFlightDetailsDialog({
+        open: true,
+        flight: flight
+      });
     } else {
-      console.error('Flight ID is missing');
+      console.error('Flight information is missing');
     }
   };
 
@@ -194,6 +262,17 @@ const Reservations = () => {
       <Typography variant="h4" component="h1" gutterBottom>
         Mes Réservations
       </Typography>
+      
+      {/* Add success message alert here */}
+      {successMessage && (
+        <Alert 
+          severity="success" 
+          sx={{ mb: 3 }}
+          onClose={() => setSuccessMessage('')}
+        >
+          {successMessage}
+        </Alert>
+      )}
       
       <Grid container spacing={3}>
         {reservations.map((reservation) => (
@@ -293,11 +372,12 @@ const Reservations = () => {
                 </Grid>
               </CardContent>
               
+              // Update the cancel button in CardActions
               <CardActions sx={{ justifyContent: 'space-between', px: 2, pb: 2 }}>
                 <Button 
                   startIcon={<Info />}
-                  onClick={() => handleViewFlightDetails(reservation.flight_id)}
-                  disabled={!reservation.flight_id}
+                  onClick={() => handleViewFlightDetails(reservation.flight)}
+                  disabled={!reservation.flight}
                 >
                   Détails du vol
                 </Button>
@@ -306,9 +386,11 @@ const Reservations = () => {
                   <Button 
                     startIcon={<Cancel />}
                     color="error"
-                    onClick={() => setCancelDialog({ open: true, reservationId: reservation.id })}
-                    disabled={reservation.statut === 'Annulée' || 
-                             (reservation.flight?.date_depart && new Date(reservation.flight.date_depart) < new Date())}
+                    onClick={() => {
+                      console.log('Cancel button clicked for reservation:', reservation.id);
+                      setCancelDialog({ open: true, reservationId: reservation.id });
+                    }}
+                    disabled={reservation.statut === 'Annulée'}
                   >
                     Annuler
                   </Button>
@@ -319,6 +401,7 @@ const Reservations = () => {
         ))}
       </Grid>
       
+      {/* Cancel Dialog */}
       <Dialog
         open={cancelDialog.open}
         onClose={() => setCancelDialog({ open: false, reservationId: null })}
@@ -328,6 +411,22 @@ const Reservations = () => {
           <DialogContentText>
             Êtes-vous sûr de vouloir annuler cette réservation ? Cette action ne peut pas être annulée.
           </DialogContentText>
+          {cancelDialog.reservationId && (
+            <DialogContentText sx={{ mt: 2 }}>
+              {(() => {
+                const reservation = reservations.find(r => r.id === cancelDialog.reservationId);
+                if (!reservation) return '';
+                
+                const isRefundEligible = 
+                  (reservation.class_type === 'economy' && reservation.fare_type === 'light') || 
+                  (reservation.class_type === 'Affaires');
+                
+                return isRefundEligible 
+                  ? "Vous êtes éligible à un remboursement pour cette annulation."
+                  : "Cette annulation ne donne pas droit à un remboursement selon nos conditions.";
+              })()}
+            </DialogContentText>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setCancelDialog({ open: false, reservationId: null })}>
@@ -335,6 +434,87 @@ const Reservations = () => {
           </Button>
           <Button onClick={handleCancelReservation} color="error" autoFocus>
             Oui, annuler ma réservation
+          </Button>
+        </DialogActions>
+      </Dialog>
+      
+      {/* Flight Details Dialog - Move this inside the component return */}
+      <Dialog
+        open={flightDetailsDialog.open}
+        onClose={() => setFlightDetailsDialog({ open: false, flight: null })}
+        maxWidth="md"
+      >
+        <DialogTitle>Détails du Vol</DialogTitle>
+        <DialogContent>
+          {flightDetailsDialog.flight ? (
+            <Box sx={{ p: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                {flightDetailsDialog.flight.titre || 'Vol'}
+              </Typography>
+              
+              <Grid container spacing={3}>
+                <Grid item xs={12} md={6}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <FlightTakeoff sx={{ mr: 2, color: '#CC0A2B' }} />
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">
+                        Départ
+                      </Typography>
+                      <Typography variant="body1">
+                        {flightDetailsDialog.flight.airport_depart?.nom || 'N/A'}, 
+                        {flightDetailsDialog.flight.airport_depart?.ville || 'N/A'}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {flightDetailsDialog.flight.date_depart ? formatDate(flightDetailsDialog.flight.date_depart) : 'N/A'}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Grid>
+                
+                <Grid item xs={12} md={6}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <FlightLand sx={{ mr: 2, color: '#1976d2' }} />
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">
+                        Arrivée
+                      </Typography>
+                      <Typography variant="body1">
+                        {flightDetailsDialog.flight.airport_arrivee?.nom || 'N/A'}, 
+                        {flightDetailsDialog.flight.airport_arrivee?.ville || 'N/A'}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {flightDetailsDialog.flight.date_retour ? formatDate(flightDetailsDialog.flight.date_retour) : 'N/A'}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Grid>
+              </Grid>
+              
+              <Divider sx={{ my: 2 }} />
+              
+              <Typography variant="body1" paragraph>
+                <strong>Compagnie:</strong> {flightDetailsDialog.flight.compagnie || 'N/A'}
+              </Typography>
+              
+              <Typography variant="body1" paragraph>
+                <strong>Type d'avion:</strong> {flightDetailsDialog.flight.plane?.model || 'N/A'}
+              </Typography>
+              
+              <Typography variant="body1" paragraph>
+                <strong>Durée:</strong> {flightDetailsDialog.flight.duree || 'N/A'}
+              </Typography>
+              
+              <Typography variant="body1" paragraph>
+                <strong>Prix:</strong> {flightDetailsDialog.flight.prix || 'N/A'} €
+              </Typography>
+            </Box>
+          ) : (
+            <Typography>Aucune information disponible</Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setFlightDetailsDialog({ open: false, flight: null })}>
+            Fermer
           </Button>
         </DialogActions>
       </Dialog>

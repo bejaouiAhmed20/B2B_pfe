@@ -8,7 +8,8 @@ import {
   deleteCompte,
   addFunds,
   withdrawFunds,
-  addFundsByUserId
+  addFundsByUserId,
+  updateBalance
 } from '../../controllers/CompteController/compteController';
 
 const router = express.Router();
@@ -39,5 +40,10 @@ router.post('/:id/withdraw-funds', withdrawFunds as express.RequestHandler );
 
 // Delete account
 router.delete('/:id', deleteCompte as express.RequestHandler);
+// ... existing code ...
+
+// Add this route to update account balance
+router.put('/update/:userId', updateBalance as express.RequestHandler);
+
 
 export default router;
