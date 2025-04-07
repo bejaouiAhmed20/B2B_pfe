@@ -83,7 +83,7 @@ const AppDataSource = new DataSource({
   port: 3306,
   username: "root",
   password: "",
-  database: "b2b_db3",
+  database: "b2b_db4",
   entities: [
     User, 
     Flight, 
