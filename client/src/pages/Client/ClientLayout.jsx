@@ -12,6 +12,8 @@ import {
 } from '@mui/material';
 import FlightIcon from '@mui/icons-material/Flight';
 import FeedbackIcon from '@mui/icons-material/Feedback';
+// Import the ChatBot component
+import ChatBot from '../../components/ChatBot';
 
 const ClientLayout = () => {
   const isLoggedIn = localStorage.getItem('token') && localStorage.getItem('user');
@@ -32,7 +34,7 @@ const ClientLayout = () => {
           {isLoggedIn ? (
             <>
               <Button color="inherit" component={Link} to="/client/reservations">Mes Réservations</Button>
-              <Button color="inherit" component={Link} to="/client/reservations-table">Tableau Réservations</Button> {/* Add this line */}
+              <Button color="inherit" component={Link} to="/client/reservations-table">Tableau Réservations</Button>
               <Button color="inherit" component={Link} to="/client/request-solde">
                 demande solde
               </Button>
@@ -74,6 +76,9 @@ const ClientLayout = () => {
           </Typography>
         </Container>
       </Box>
+
+      {/* Add the ChatBot component here */}
+      <ChatBot />
     </>
   );
 };

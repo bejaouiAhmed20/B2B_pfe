@@ -199,7 +199,9 @@ const Flights = () => {
               .map((flight) => (
                 <TableRow key={flight.id}>
                   <TableCell>{flight.titre}</TableCell>
-                  <TableCell>{flight.prix} €</TableCell>
+                  <TableCell>
+                        {flight.prix} DT
+                      </TableCell>
                   <TableCell>{formatDate(flight.date_depart)}</TableCell>
                   <TableCell>{formatDate(flight.date_retour)}</TableCell>
                   <TableCell>{flight.airport_depart ? `${flight.airport_depart.nom} (${flight.airport_depart.code})` : '-'}</TableCell>

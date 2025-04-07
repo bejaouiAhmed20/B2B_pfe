@@ -45,8 +45,7 @@ const ReservationForm = ({
         
       <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
           <Typography variant="h4" color="primary">
-            <AttachMoney sx={{ verticalAlign: 'top', fontSize: '1.5rem' }} />
-            {flight.prix} € <Typography component="span" variant="body2">/ personne</Typography>
+            {flight.prix} DT <Typography component="span" variant="body2">/ personne</Typography>
           </Typography>
         </Box>
         
@@ -88,12 +87,47 @@ const ReservationForm = ({
           <InputLabel>Classe</InputLabel>
           <Select
             value={reservation.classType}
-            onChange={(e) => handlePassengerChange({ target: { value: reservation.nombre_passagers } }, e.target.value)}
+            onChange={(e) => {
+              console.log("Class changed to:", e.target.value);
+              // When class changes, reset fare type to the first available option for that class
+              const defaultFareType = fareTypes[e.target.value][0].id;
+              handlePassengerChange(
+                { target: { value: reservation.nombre_passagers } }, 
+                e.target.value,
+                defaultFareType
+              );
+            }}
             label="Classe"
-            disabled={flight.availableSeats?.economy === 0 && flight.availableSeats?.business === 0}
           >
-            <MenuItem value="economy" disabled={flight.availableSeats?.economy === 0}>Économique</MenuItem>
-            <MenuItem value="business" disabled={flight.availableSeats?.business === 0}>Affaires</MenuItem>
+            <MenuItem value="economy" disabled={flight.availableSeats?.economy === 0}>
+              Économique {flight.availableSeats?.economy === 0 && "(Complet)"}
+            </MenuItem>
+            <MenuItem value="business" disabled={flight.availableSeats?.business === 0}>
+              Affaires {flight.availableSeats?.business === 0 && "(Complet)"}
+            </MenuItem>
+          </Select>
+        </FormControl>
+        
+        {/* Fare type selection */}
+        <FormControl fullWidth sx={{ mb: 3 }}>
+          <InputLabel>Type de tarif</InputLabel>
+          <Select
+            value={reservation.fareType}
+            onChange={(e) => {
+              console.log("Fare type changed to:", e.target.value);
+              handlePassengerChange(
+                { target: { value: reservation.nombre_passagers } }, 
+                reservation.classType, 
+                e.target.value
+              );
+            }}
+            label="Type de tarif"
+          >
+            {fareTypes[reservation.classType]?.map(fare => (
+              <MenuItem key={fare.id} value={fare.id}>
+                {fare.name} ({fare.description})
+              </MenuItem>
+            ))}
           </Select>
         </FormControl>
         
@@ -151,7 +185,7 @@ const ReservationForm = ({
           
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
             <Typography variant="body2" color="text.secondary">Prix unitaire (base)</Typography>
-            <Typography variant="body2">{flight.prix} €</Typography>
+            <Typography variant="body2">{flight.prix} DT</Typography>
           </Box>
           
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
@@ -175,7 +209,7 @@ const ReservationForm = ({
           )}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
             <Typography variant="body2" color="text.secondary">Prix unitaire (ajusté)</Typography>
-            <Typography variant="body2" fontWeight="medium">{(flight.prix * getCurrentFareMultiplier()).toFixed(2)} €</Typography>
+            <Typography variant="body2" fontWeight="medium">{(flight.prix * getCurrentFareMultiplier()).toFixed(2)} DT</Typography>
           </Box>
           
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
@@ -185,7 +219,7 @@ const ReservationForm = ({
           
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, pt: 1, borderTop: '1px dashed #e0e0e0' }}>
             <Typography variant="body2" color="text.secondary">Sous-total</Typography>
-            <Typography variant="body2" fontWeight="medium">{(flight.prix * getCurrentFareMultiplier() * reservation.nombre_passagers).toFixed(2)} €</Typography>
+            <Typography variant="body2" fontWeight="medium">{(flight.prix * getCurrentFareMultiplier() * reservation.nombre_passagers).toFixed(2)} DT</Typography>
           </Box>
           
           {reservation.discountAmount > 0 && (
@@ -194,7 +228,7 @@ const ReservationForm = ({
                 <LocalOffer sx={{ fontSize: '0.9rem', mr: 0.5 }} />
                 Réduction
               </Typography>
-              <Typography variant="body2" color="success.main" fontWeight="medium">-{reservation.discountAmount.toFixed(2)} €</Typography>
+              <Typography variant="body2" color="success.main" fontWeight="medium">-{reservation.discountAmount.toFixed(2)} DT</Typography>
             </Box>
           )}
           
@@ -207,7 +241,7 @@ const ReservationForm = ({
             alignItems: 'center'
           }}>
             <Typography variant="subtitle1" fontWeight="bold">Total</Typography>
-            <Typography variant="h5" color="primary" fontWeight="bold">{reservation.prix_total.toFixed(2)} €</Typography>
+            <Typography variant="h5" color="primary" fontWeight="bold">{reservation.prix_total.toFixed(2)} DT</Typography>
           </Box>
           
           {/* User balance information */}
@@ -220,7 +254,7 @@ const ReservationForm = ({
               fontWeight="medium" 
               color={Number(userBalance) < reservation.prix_total ? 'error.main' : 'success.main'}
             >
-              {(Number(userBalance)).toFixed(2)} €
+              {(Number(userBalance)).toFixed(2)} DT
             </Typography>
           </Box>
           

@@ -30,7 +30,6 @@ import Planes from './pages/Admin/Planes';
 import AddPlane from './pages/Admin/AddPlane';
 import Seats from './pages/Admin/Seats';
 import AddSeat from './pages/Admin/AddSeat';
-import ClientLayout from './pages/Client/clientLayout';
 import Flight from './pages/Client/Flight';
 import Reclamation from './pages/Client/Reclamation';
 import Contracts from './pages/Admin/Contracts';
@@ -40,6 +39,7 @@ import ResetPassword from './pages/Auth/ResetPassword';
 import FlightDescription from './pages/client/FlightDescription';
 // Import the ReservationsTable component
 import ReservationsTable from './pages/Client/ReservationsTable';
+import ClientLayout from './pages/Client/clientlayout';
 
 function App() {
   return (
