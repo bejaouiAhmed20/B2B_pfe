@@ -270,8 +270,8 @@ const Reservations = () => {
     const tableColumn = ["Description", "Quantité", "Prix unitaire", "Total"];
     const tableRows = [
       ["Billet d'avion", reservation.nombre_passagers, 
-       `${(reservation.prix_total / reservation.nombre_passagers).toFixed(2)} €`, 
-       `${reservation.prix_total} €`]
+       `${(reservation.prix_total / reservation.nombre_passagers).toFixed(2)} DT`, 
+       `${reservation.prix_total} DT`]
     ];
     
     // Add discount if applicable

@@ -7,7 +7,8 @@ import {
   MenuItem,
   Grid,
   Snackbar,
-  Alert
+  Alert,
+  InputAdornment
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -107,7 +108,7 @@ const AddFlight = () => {
               required
               margin="normal"
               InputProps={{
-                startAdornment: <span>€</span>,
+                endAdornment: <InputAdornment position="end">DT</InputAdornment>,
               }}
             />
           </Grid>

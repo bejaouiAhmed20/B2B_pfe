@@ -467,8 +467,9 @@ const Flight = () => {
                   </Box>
                   
                   <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
-                    <Typography variant="h5" color="primary">
-                      {flight.prix} €
+                  
+                    <Typography variant="h5" color="primary" sx={{ fontWeight: 'bold', mt: 1 }}>
+                      {flight.prix} DT
                     </Typography>
                   </Box>
                   

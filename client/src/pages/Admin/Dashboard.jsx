@@ -41,22 +41,20 @@ import EventSeatIcon from '@mui/icons-material/EventSeat';
 const drawerWidth = 250;
 
 const menuItems = [
-  { text: 'Dashboard', icon: <DashboardIcon />, path: '/admin' },
-  { text: 'Manage Clients', icon: <PeopleIcon />, path: '/admin/clients' },
-  { text: 'Manage Flights', icon: <FlightIcon />, path: '/admin/flights' },
-  { text: 'Manage Location', icon: <LocationOnIcon />, path: '/admin/locations' },
-  { text: 'Manage Airports', icon: <AirportShuttleIcon />, path: '/admin/airports' },
-  { text: 'Manage News', icon: <NewReleasesIcon />, path: '/admin/news' },
-  { text: 'Manage Coupon', icon: <LocalOfferIcon />, path: '/admin/coupons' },
-  { text: 'Manage Contracts', icon: <DescriptionIcon />, path: '/admin/contracts' },
-  { text: 'Manage Popups', icon: <NewspaperIcon />, path: '/admin/popups' },
-  { text: 'Manage Reservations', icon: <FlightIcon />, path: '/admin/reservations' },
-  { text: 'Manage Planes', icon: <AirlinesIcon />, path: '/admin/planes' },
-  { text: 'Manage Seats', icon: <EventSeatIcon />, path: '/admin/seats' },
-  { text: 'Manage Solde Requests', icon: <AccountBalanceWalletIcon />, path: '/admin/request-solde' },
-  { text: 'Manage Reclamation', icon: <FeedbackIcon />, path: '/admin/reclamations' }
-
-  
+  { text: 'Tableau de bord', icon: <DashboardIcon />, path: '/admin' },
+  { text: 'Gérer les Clients', icon: <PeopleIcon />, path: '/admin/clients' },
+  { text: 'Gérer les Vols', icon: <FlightIcon />, path: '/admin/flights' },
+  { text: 'Gérer les Emplacements', icon: <LocationOnIcon />, path: '/admin/locations' },
+  { text: 'Gérer les Aéroports', icon: <AirportShuttleIcon />, path: '/admin/airports' },
+  { text: 'Gérer les Actualités', icon: <NewReleasesIcon />, path: '/admin/news' },
+  { text: 'Gérer les Coupons', icon: <LocalOfferIcon />, path: '/admin/coupons' },
+  { text: 'Gérer les Contrats', icon: <DescriptionIcon />, path: '/admin/contracts' },
+  { text: 'Gérer les Popups', icon: <NewspaperIcon />, path: '/admin/popups' },
+  { text: 'Gérer les Réservations', icon: <FlightIcon />, path: '/admin/reservations' },
+  { text: 'Gérer les Avions', icon: <AirlinesIcon />, path: '/admin/planes' },
+  { text: 'Gérer les Sièges', icon: <EventSeatIcon />, path: '/admin/seats' },
+  { text: 'Gérer les Demandes de Solde', icon: <AccountBalanceWalletIcon />, path: '/admin/request-solde' },
+  { text: 'Gérer les Réclamations', icon: <FeedbackIcon />, path: '/admin/reclamations' }
 ];
 
 const lightTheme = createTheme({
@@ -125,7 +123,7 @@ export default function DashboardLayout() {
           <Toolbar>
             <IconButton
               color="inherit"
-              aria-label="open drawer"
+              aria-label="ouvrir le tiroir"
               edge="start"
               onClick={handleDrawerToggle}
               sx={{ mr: 2, display: { sm: 'none' } }}
@@ -133,18 +131,18 @@ export default function DashboardLayout() {
               <MenuIcon />
             </IconButton>
             <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-              Admin Dashboard
+              Tableau de Bord Admin
             </Typography>
-            <IconButton color="inherit" onClick={toggleDarkMode} aria-label="toggle dark mode" sx={{ mr: 2 }}>
+            <IconButton color="inherit" onClick={toggleDarkMode} aria-label="basculer mode sombre" sx={{ mr: 2 }}>
               {darkMode ? '☀️' : '🌙'}
             </IconButton>
-            <Tooltip title="Logout">
+            <Tooltip title="Déconnexion">
               <Button 
                 color="inherit" 
                 onClick={handleLogout} 
                 startIcon={<LogoutIcon />}
               >
-                Logout
+                Déconnexion
               </Button>
             </Tooltip>
           </Toolbar>
@@ -228,7 +226,7 @@ export default function DashboardLayout() {
                   <LogoutIcon />
                 </ListItemIcon>
                 <ListItemText
-                  primary="Logout"
+                  primary="Déconnexion"
                   primaryTypographyProps={{ 
                     noWrap: true,
                     fontSize: '0.9rem'
