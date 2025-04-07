@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import api from '../../services/api';
 import {
   Container,
   Typography,
@@ -17,7 +18,8 @@ import {
   DialogTitle,
   DialogContent,
   DialogContentText,
-  DialogActions
+  DialogActions,
+  Snackbar // Add this import
 } from '@mui/material';
 import {
   FlightTakeoff,
@@ -110,70 +112,67 @@ const Reservations = () => {
     }
   };
 
-  // Update the handleCancelReservation function to handle refunds
-  const handleCancelReservation = async () => {
+  // Add this import at the top of the file
+
+  // Add or update the handleCancelReservation function
+  // Add this state for snackbar at the top with your other state declarations
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success'
+  });
+
+  // Fix the handleCancelReservation function to use fetchUserReservations
+  const handleCancelReservation = async (reservation) => {
     try {
-      const token = localStorage.getItem('token');
-      const reservation = reservations.find(r => r.id === cancelDialog.reservationId);
+      setLoading(true);
       
-      if (!reservation) {
-        setError('Réservation introuvable');
-        setCancelDialog({ open: false, reservationId: null });
+      // Get the current user data
+      const userData = JSON.parse(localStorage.getItem('user'));
+      
+      if (!userData) {
+        setSnackbar({
+          open: true,
+          message: 'Utilisateur non connecté',
+          severity: 'error'
+        });
+        setLoading(false);
         return;
       }
       
-      console.log('Cancelling reservation ID:', cancelDialog.reservationId);
-      
-      // Check if refund is eligible based on class_type and fare_type
-      const isRefundEligible = 
-        (reservation.class_type === 'economy' && reservation.fare_type === 'light') || 
-        (reservation.class_type === 'Affaires');
-      
-      console.log('Cancellation details:', {
-        id: cancelDialog.reservationId,
-        isRefundEligible: isRefundEligible,
-        amount: reservation.prix_total
+      // First, update the reservation status
+      await api.put(`/reservations/${reservation.id}`, {
+        statut: 'Annulée'
       });
       
-      // Make the API call with proper error handling
-      try {
-        const response = await axios.put(
-          `http://localhost:5000/api/reservations/${cancelDialog.reservationId}/cancel`, 
-          { 
-            isRefundEligible: isRefundEligible,
-            amount: reservation.prix_total 
-          }, 
-          { headers: { Authorization: `Bearer ${token}` }}
-        );
-        
-        console.log('Cancel response:', response.data);
-  
-        // Update the local state
-        setReservations(reservations.map(res => 
-          res.id === cancelDialog.reservationId 
-            ? { ...res, statut: 'Annulée' } 
-            : res
-        ));
-    
-        setCancelDialog({ open: false, reservationId: null });
-        
-        // Show success message
-        if (isRefundEligible) {
-          setSuccessMessage(`Votre réservation a été annulée avec succès. Un remboursement de ${reservation.prix_total}€ sera effectué dans les prochains jours.`);
-        } else {
-          setSuccessMessage('Votre réservation a été annulée avec succès. Aucun remboursement n\'est applicable pour ce type de billet.');
-        }
-      } catch (apiError) {
-        console.error('API Error:', apiError);
-        if (apiError.response) {
-          console.error('Response status:', apiError.response.status);
-          console.error('Response data:', apiError.response.data);
-        }
-        setError('Erreur lors de l\'annulation: ' + (apiError.response?.data?.message || apiError.message));
-      }
+      // Then, get the current balance
+      const accountResponse = await api.get(`/comptes/user/${userData.id}`);
+      const currentBalance = Number(accountResponse.data.solde) || 0;
+      
+      // Calculate the new balance by adding back the reservation price
+      const newBalance = currentBalance + Number(reservation.prix_total);
+      
+      // Update the user's balance
+      await api.put(`/comptes/update/${userData.id}`, {
+        solde: newBalance
+      });
+      
+      // Show success message using setSuccessMessage instead of setSnackbar
+      setSuccessMessage('Réservation annulée avec succès! Votre compte a été remboursé.');
+      
+      // Refresh the reservations list - fixed function name
+      fetchUserReservations();
+      
+      // Close the dialog
+      setCancelDialog({ open: false, reservationId: null });
+      
+      setLoading(false);
     } catch (error) {
-      console.error('Error in handleCancelReservation:', error);
-      setError('Impossible d\'annuler la réservation');
+      console.error('Error canceling reservation:', error);
+      setError('Une erreur est survenue lors de l\'annulation');
+      setLoading(false);
+      // Close the dialog
+      setCancelDialog({ open: false, reservationId: null });
     }
   };
 
@@ -372,7 +371,7 @@ const Reservations = () => {
                 </Grid>
               </CardContent>
               
-              // Update the cancel button in CardActions
+              {/* Fix the CardActions section - remove the comment and use proper JSX */}
               <CardActions sx={{ justifyContent: 'space-between', px: 2, pb: 2 }}>
                 <Button 
                   startIcon={<Info />}
@@ -385,6 +384,7 @@ const Reservations = () => {
                 {reservation.statut !== 'Annulée' && (
                   <Button 
                     startIcon={<Cancel />}
+                    variant="contained"
                     color="error"
                     onClick={() => {
                       console.log('Cancel button clicked for reservation:', reservation.id);
@@ -432,13 +432,22 @@ const Reservations = () => {
           <Button onClick={() => setCancelDialog({ open: false, reservationId: null })}>
             Non, garder ma réservation
           </Button>
-          <Button onClick={handleCancelReservation} color="error" autoFocus>
+          <Button 
+            onClick={() => {
+              const reservation = reservations.find(r => r.id === cancelDialog.reservationId);
+              if (reservation) {
+                handleCancelReservation(reservation);
+              }
+            }} 
+            color="error" 
+            autoFocus
+          >
             Oui, annuler ma réservation
           </Button>
         </DialogActions>
       </Dialog>
       
-      {/* Flight Details Dialog - Move this inside the component return */}
+      {/* Flight Details Dialog */}
       <Dialog
         open={flightDetailsDialog.open}
         onClose={() => setFlightDetailsDialog({ open: false, flight: null })}
@@ -518,9 +527,27 @@ const Reservations = () => {
           </Button>
         </DialogActions>
       </Dialog>
+      {/* Add Snackbar here, inside the return statement */}
+<Snackbar
+  open={snackbar.open}
+  autoHideDuration={6000}
+  onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+  anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+>
+  <Alert 
+    onClose={() => setSnackbar(prev => ({ ...prev, open: false }))} 
+    severity={snackbar.severity}
+    variant="filled"
+    sx={{ width: '100%' }}
+  >
+    {snackbar.message}
+  </Alert>
+</Snackbar>
     </Container>
   );
 };
 
 // Export with the correct name
 export default Reservations;
+
+// Add this at the end of your return statement, just before the closing </Container>
