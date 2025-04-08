@@ -20,7 +20,7 @@ import {
   Snackbar,
   Alert
 } from '@mui/material';
-import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { Edit as EditIcon, Delete as DeleteIcon, Refresh as RefreshIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -42,6 +42,17 @@ const Flights = () => {
     airport_depart_id: '',
     airport_arrivee_id: '',
     plane_id: '' // Changed from compagnie_aerienne
+  });
+  const [restartDialog, setRestartDialog] = useState({ open: false, flight: null });
+  const [restartFormData, setRestartFormData] = useState({
+    titre: '',
+    prix: '',
+    date_depart: '',
+    date_retour: '',
+    duree: '',
+    airport_depart_id: '',
+    airport_arrivee_id: '',
+    plane_id: ''
   });
 
   useEffect(() => {
@@ -163,6 +174,54 @@ const Flights = () => {
     return date.toISOString().slice(0, 16);
   };
 
+  const handleRestartOpen = (flight) => {
+    setRestartDialog({ open: true, flight });
+    // Pre-fill form with flight data but with empty dates and price
+    setRestartFormData({
+      titre: flight.titre,
+      prix: '', // Empty price for user to fill
+      date_depart: '', // Empty date for user to fill
+      date_retour: '', // Empty date for user to fill
+      duree: flight.duree,
+      airport_depart_id: flight.airport_depart?.id || '',
+      airport_arrivee_id: flight.arrival_airport?.id || '',
+      plane_id: flight.plane?.idPlane || ''
+    });
+  };
+
+  const handleRestartClose = () => {
+    setRestartDialog({ open: false, flight: null });
+    setRestartFormData({
+      titre: '',
+      prix: '',
+      date_depart: '',
+      date_retour: '',
+      duree: '',
+      airport_depart_id: '',
+      airport_arrivee_id: '',
+      plane_id: ''
+    });
+  };
+
+  const handleRestartChange = (e) => {
+    setRestartFormData({
+      ...restartFormData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleRestartFlight = async (e) => {
+    e.preventDefault();
+    try {
+      await axios.post('http://localhost:5000/api/flights', restartFormData);
+      showSnackbar('Vol recréé avec succès');
+      handleRestartClose();
+      fetchFlights();
+    } catch (error) {
+      showSnackbar(error.response?.data?.message || 'Une erreur est survenue lors de la recréation du vol', 'error');
+    }
+  };
+
   return (
     <Paper sx={{ p: 3 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
@@ -188,7 +247,7 @@ const Flights = () => {
               <TableCell>Retour</TableCell>
               <TableCell>Aéroport de départ</TableCell>
               <TableCell>Aéroport d'arrivée</TableCell>
-              <TableCell>Avion</TableCell> {/* Changed from Compagnie */}
+              <TableCell>Avion</TableCell>
               <TableCell>Durée</TableCell>
               <TableCell>Actions</TableCell>
             </TableRow>
@@ -201,14 +260,17 @@ const Flights = () => {
                   <TableCell>{flight.titre}</TableCell>
                   <TableCell>
                         {flight.prix} DT
-                      </TableCell>
+                  </TableCell>
                   <TableCell>{formatDate(flight.date_depart)}</TableCell>
                   <TableCell>{formatDate(flight.date_retour)}</TableCell>
                   <TableCell>{flight.airport_depart ? `${flight.airport_depart.nom} (${flight.airport_depart.code})` : '-'}</TableCell>
                   <TableCell>{flight.arrival_airport ? `${flight.arrival_airport.nom} (${flight.arrival_airport.code})` : '-'}</TableCell>
-                  <TableCell>{flight.plane ? `${flight.plane.name} - ${flight.plane.model}` : '-'}</TableCell> {/* Display plane info */}
+                  <TableCell>{flight.plane ? `${flight.plane.planeModel}` : '-'}</TableCell>
                   <TableCell>{flight.duree}</TableCell>
                   <TableCell>
+                    <IconButton onClick={() => handleRestartOpen(flight)} color="success" title="Recréer ce vol">
+                      <RefreshIcon />
+                    </IconButton>
                     <IconButton onClick={() => handleEditOpen(flight)} color="primary">
                       <EditIcon />
                     </IconButton>
@@ -217,7 +279,7 @@ const Flights = () => {
                     </IconButton>
                   </TableCell>
                 </TableRow>
-            ))}
+              ))}
           </TableBody>
         </Table>
       </TableContainer>
@@ -315,7 +377,6 @@ const Flights = () => {
                 </MenuItem>
               ))}
             </TextField>
-            {/* Replace compagnie_aerienne with plane selection */}
             <TextField
               name="plane_id"
               label="Avion"
@@ -328,7 +389,7 @@ const Flights = () => {
             >
               {planes.map((plane) => (
                 <MenuItem key={plane.idPlane} value={plane.idPlane}>
-                  {plane.name} - {plane.model}
+                  {plane.planeModel} ({plane.totalSeats} sièges)
                 </MenuItem>
               ))}
             </TextField>
@@ -351,6 +412,126 @@ const Flights = () => {
               style={{ backgroundColor: '#CC0A2B' }}
             >
               Modifier
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
+
+      <Dialog open={restartDialog.open} onClose={handleRestartClose} maxWidth="md" fullWidth>
+        <DialogTitle>Recréer le Vol</DialogTitle>
+        <form onSubmit={handleRestartFlight}>
+          <DialogContent>
+            <TextField
+              name="titre"
+              label="Titre"
+              value={restartFormData.titre}
+              onChange={handleRestartChange}
+              fullWidth
+              required
+              margin="dense"
+            />
+            <TextField
+              name="prix"
+              label="Prix"
+              type="number"
+              value={restartFormData.prix}
+              onChange={handleRestartChange}
+              fullWidth
+              required
+              margin="dense"
+              InputProps={{
+                startAdornment: <span>DT</span>,
+              }}
+            />
+            <TextField
+              name="date_depart"
+              label="Date et heure de départ"
+              type="datetime-local"
+              value={restartFormData.date_depart}
+              onChange={handleRestartChange}
+              fullWidth
+              required
+              margin="dense"
+              InputLabelProps={{ shrink: true }}
+            />
+            <TextField
+              name="date_retour"
+              label="Date et heure de retour"
+              type="datetime-local"
+              value={restartFormData.date_retour}
+              onChange={handleRestartChange}
+              fullWidth
+              required
+              margin="dense"
+              InputLabelProps={{ shrink: true }}
+            />
+            <TextField
+              name="airport_depart_id"
+              label="Aéroport de départ"
+              select
+              value={restartFormData.airport_depart_id}
+              onChange={handleRestartChange}
+              fullWidth
+              required
+              margin="dense"
+            >
+              {airports.map((airport) => (
+                <MenuItem key={airport.id} value={airport.id}>
+                  {airport.nom} ({airport.code})
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              name="airport_arrivee_id"
+              label="Aéroport d'arrivée"
+              select
+              value={restartFormData.airport_arrivee_id}
+              onChange={handleRestartChange}
+              fullWidth
+              required
+              margin="dense"
+            >
+              {airports.map((airport) => (
+                <MenuItem key={airport.id} value={airport.id}>
+                  {airport.nom} ({airport.code})
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              name="plane_id"
+              label="Avion"
+              select
+              value={restartFormData.plane_id}
+              onChange={handleRestartChange}
+              fullWidth
+              required
+              margin="dense"
+            >
+              {planes.map((plane) => (
+                <MenuItem key={plane.idPlane} value={plane.idPlane}>
+                  {plane.planeModel} ({plane.totalSeats} sièges)
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              name="duree"
+              label="Durée"
+              value={restartFormData.duree}
+              onChange={handleRestartChange}
+              fullWidth
+              required
+              margin="dense"
+              placeholder="Ex: 2h 30m"
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleRestartClose}>Annuler</Button>
+            <Button 
+              type="submit" 
+              variant="contained" 
+              color="success"
+            >
+              Recréer le Vol
             </Button>
           </DialogActions>
         </form>
