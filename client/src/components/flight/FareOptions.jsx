@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { 
   Card, 
   CardContent, 
@@ -14,6 +14,33 @@ import {
 } from '@mui/icons-material';
 
 const FareOptions = ({ fareTypes, reservation, setReservation }) => {
+  // Ensure both naming conventions work
+  useEffect(() => {
+    // Initialize if neither format exists
+    if (!reservation.classType && !reservation.class_type) {
+      setReservation(prev => ({
+        ...prev,
+        classType: 'economy',
+        class_type: 'economy',
+        fareType: 'light',
+        fare_type: 'light'
+      }));
+    }
+  }, []);
+
+  // Helper function to update both naming conventions
+  const updateReservation = (classType, fareType) => {
+    setReservation(prev => ({ 
+      ...prev, 
+      // Set both naming conventions to ensure compatibility
+      classType: classType,
+      class_type: classType,
+      fareType: fareType,
+      fare_type: fareType
+    }));
+    console.log(`Selected: Class=${classType}, Fare=${fareType}`);
+  };
+
   return (
     <Card sx={{ mb: 3, mt: 3 }}>
       <CardContent>
@@ -33,69 +60,61 @@ const FareOptions = ({ fareTypes, reservation, setReservation }) => {
             overflow: 'hidden'
           }}>
             <Box 
-              onClick={() => setReservation(prev => ({ 
-                ...prev, 
-                classType: 'economy',
-                fareType: 'light' 
-              }))}
+              onClick={() => updateReservation('economy', 'light')}
               sx={{ 
                 flex: 1, 
                 p: 2, 
                 textAlign: 'center',
-                bgcolor: reservation.classType === 'economy' ? '#CC0A2B' : 'transparent',
-                color: reservation.classType === 'economy' ? 'white' : 'inherit',
+                bgcolor: (reservation.classType === 'economy' || reservation.class_type === 'economy') ? '#CC0A2B' : 'transparent',
+                color: (reservation.classType === 'economy' || reservation.class_type === 'economy') ? 'white' : 'inherit',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
                 '&:hover': {
-                  bgcolor: reservation.classType === 'economy' ? '#CC0A2B' : '#f5f5f5'
+                  bgcolor: (reservation.classType === 'economy' || reservation.class_type === 'economy') ? '#CC0A2B' : '#f5f5f5'
                 }
               }}
             >
-              <Typography variant="subtitle1" fontWeight={reservation.classType === 'economy' ? 'bold' : 'normal'}>
+              <Typography variant="subtitle1" fontWeight={(reservation.classType === 'economy' || reservation.class_type === 'economy') ? 'bold' : 'normal'}>
                 Économique
               </Typography>
             </Box>
             <Box 
-              onClick={() => setReservation(prev => ({ 
-                ...prev, 
-                classType: 'business',
-                fareType: 'confort' 
-              }))}
+              onClick={() => updateReservation('business', 'confort')}
               sx={{ 
                 flex: 1, 
                 p: 2, 
                 textAlign: 'center',
-                bgcolor: reservation.classType === 'business' ? '#CC0A2B' : 'transparent',
-                color: reservation.classType === 'business' ? 'white' : 'inherit',
+                bgcolor: (reservation.classType === 'business' || reservation.class_type === 'business') ? '#CC0A2B' : 'transparent',
+                color: (reservation.classType === 'business' || reservation.class_type === 'business') ? 'white' : 'inherit',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
                 '&:hover': {
-                  bgcolor: reservation.classType === 'business' ? '#CC0A2B' : '#f5f5f5'
+                  bgcolor: (reservation.classType === 'business' || reservation.class_type === 'business') ? '#CC0A2B' : '#f5f5f5'
                 }
               }}
             >
-              <Typography variant="subtitle1" fontWeight={reservation.classType === 'business' ? 'bold' : 'normal'}>
+              <Typography variant="subtitle1" fontWeight={(reservation.classType === 'business' || reservation.class_type === 'business') ? 'bold' : 'normal'}>
                 Affaires
               </Typography>
             </Box>
           </Box>
         </Box>
         
-        {/* Fare type selection with cards */}
+        {/* Use either naming convention, preferring classType if available */}
         <Typography variant="subtitle2" gutterBottom>
-          Sélectionnez votre tarif en {reservation.classType === 'economy' ? 'Économique' : 'Affaires'}
+          Sélectionnez votre tarif en {(reservation.classType || reservation.class_type) === 'economy' ? 'Économique' : 'Affaires'}
         </Typography>
         
         <Box sx={{ display: 'flex', flexDirection: 'row', gap: 2, overflowX: 'auto', pb: 1 }}>
-          {fareTypes[reservation.classType].map(fare => (
+          {fareTypes[(reservation.classType || reservation.class_type)].map(fare => (
             <Card 
               key={fare.id} 
-              onClick={() => setReservation(prev => ({ ...prev, fareType: fare.id }))}
+              onClick={() => updateReservation((reservation.classType || reservation.class_type), fare.id)}
               sx={{ 
                 minWidth: 180, 
                 cursor: 'pointer',
-                border: reservation.fareType === fare.id ? '2px solid #CC0A2B' : '1px solid #e0e0e0',
-                boxShadow: reservation.fareType === fare.id ? '0 4px 8px rgba(204, 10, 43, 0.2)' : 'none',
+                border: (reservation.fareType === fare.id || reservation.fare_type === fare.id) ? '2px solid #CC0A2B' : '1px solid #e0e0e0',
+                boxShadow: (reservation.fareType === fare.id || reservation.fare_type === fare.id) ? '0 4px 8px rgba(204, 10, 43, 0.2)' : 'none',
                 transition: 'all 0.3s ease',
                 '&:hover': {
                   transform: 'translateY(-4px)',
@@ -107,8 +126,8 @@ const FareOptions = ({ fareTypes, reservation, setReservation }) => {
               }}
             >
               <Box sx={{ 
-                bgcolor: reservation.fareType === fare.id ? '#CC0A2B' : 'grey.100', 
-                color: reservation.fareType === fare.id ? 'white' : 'text.primary',
+                bgcolor: (reservation.fareType === fare.id || reservation.fare_type === fare.id) ? '#CC0A2B' : 'grey.100', 
+                color: (reservation.fareType === fare.id || reservation.fare_type === fare.id) ? 'white' : 'text.primary',
                 p: 1.5,
                 textAlign: 'center'
               }}>
@@ -156,13 +175,14 @@ const FareOptions = ({ fareTypes, reservation, setReservation }) => {
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
             <AirplaneTicket sx={{ mr: 1 }} />
             <Typography variant="subtitle1" fontWeight="bold">
-              Détails du tarif {fareTypes[reservation.classType].find(fare => fare.id === reservation.fareType)?.name}
+              Détails du tarif {fareTypes[(reservation.classType || reservation.class_type)]
+                .find(fare => fare.id === (reservation.fareType || reservation.fare_type))?.name}
             </Typography>
           </Box>
           <Divider sx={{ my: 1, borderColor: 'primary.contrastText', opacity: 0.3 }} />
           <Grid container spacing={1}>
-            {fareTypes[reservation.classType]
-              .find(fare => fare.id === reservation.fareType)
+            {fareTypes[(reservation.classType || reservation.class_type)]
+              .find(fare => fare.id === (reservation.fareType || reservation.fare_type))
               ?.features.map((feature, index) => (
                 <Grid item xs={12} sm={6} key={index}>
                   <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>

@@ -16,7 +16,7 @@ import AddLocation from './pages/Admin/AddLocation';
 import AddAirport from './pages/Admin/AddAirport';
 import DashboardLayout from './pages/Admin/Dashboard';
 import AddFlight from './pages/Admin/AddFlight';
-import Reservations from './pages/Admin/Reservations';
+import AdminReservations from './pages/Admin/Reservations';
 import AddReservation from './pages/Admin/AddReservation';
 import RequestSoldeManagement from './pages/Admin/RequestSoldeManagement';
 import LoginClient from './pages/Auth/LoginClient';
@@ -24,7 +24,7 @@ import Profile from './pages/Client/Profile';
 import RequestSolde from './pages/Client/RequestSolde';
 import Home from './pages/client/Home';
 // Import the client Reservations component with an alias to avoid naming conflict
-import ReservationsClient from './pages/client/Reservations';
+import ClientReservations from './pages/Client/Reservations';
 import AdminReclamations from './pages/Admin/Reclamations';
 import Planes from './pages/Admin/Planes';
 import AddPlane from './pages/Admin/AddPlane';
@@ -55,7 +55,7 @@ function App() {
           <Route path="flights" element={<Flight />} />
           <Route path="flights/:id" element={<FlightDescription />} />
           <Route path='profile' element={<Profile />} />
-          <Route path='reservations' element={<ReservationsClient />} />
+          <Route path='reservations' element={<ClientReservations />} />
           <Route path='request-solde' element={<RequestSolde />} />
           <Route path="reclamations" element={<Reclamation />} />
           <Route path="reservations-table" element={<ReservationsTable />} />
@@ -76,7 +76,7 @@ function App() {
           <Route path="coupons" element={<Coupons />} />
           <Route path="coupons/add" element={<AddCoupon />} />
           <Route path="popups" element={<Popups />} />
-          <Route path="reservations" element={<Reservations />} />
+          <Route path="reservations" element={<AdminReservations />} />
           <Route path="reservations/add" element={<AddReservation />} />
           <Route path="request-solde" element={<RequestSoldeManagement />} />
           <Route path="contracts" element={<Contracts />} />
