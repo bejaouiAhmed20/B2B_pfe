@@ -12,6 +12,7 @@ import {
 } from '@mui/material';
 import FlightIcon from '@mui/icons-material/Flight';
 import FeedbackIcon from '@mui/icons-material/Feedback';
+import NewspaperIcon from '@mui/icons-material/Newspaper';
 // Import the ChatBot component
 import ChatBot from '../../components/ChatBot';
 
@@ -30,6 +31,10 @@ const ClientLayout = () => {
           </Typography>
           <Button color="inherit" component={Link} to="/client">Accueil</Button>
           <Button color="inherit" component={Link} to="/client/flights">Vols</Button>
+          <Button color="inherit" component={Link} to="/client/news">
+            <NewspaperIcon sx={{ mr: 1 }} />
+            Actualités
+          </Button>
           
           {isLoggedIn ? (
             <>

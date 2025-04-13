@@ -13,7 +13,7 @@ import axios from 'axios';
 // Import our component modules
 import FlightHeader from '../../components/flight/FlightHeader';
 import FlightDetails from '../../components/flight/FlightDetails';
-import FareOptions from '../../components/flight/FareOptions';
+import FareOptions from '../../components/flight/fareoptions';
 import ReservationForm from '../../components/flight/ReservationForm';
 
 // Import the API service instead of axios

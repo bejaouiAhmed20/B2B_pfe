@@ -18,60 +18,44 @@ import SupportAgentIcon from '@mui/icons-material/SupportAgent';
 const Home = () => {
   return (
     <Box>
-      {/* Hero Section */}
-      <Paper 
+      {/* Hero Section - Completely rewritten to fix the icon issue */}
+      <Box 
         sx={{ 
-          position: 'relative', 
-          backgroundColor: 'grey.800', 
-          color: '#fff',
+          height: '500px',
           mb: 4,
+          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url(https://images.unsplash.com/photo-1464037866556-6812c9d1c72e?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1674&q=80)`,
           backgroundSize: 'cover',
-          backgroundRepeat: 'no-repeat',
           backgroundPosition: 'center',
-          backgroundImage: 'url(https://images.unsplash.com/photo-1436491865332-7a61a109cc05?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1674&q=80)',
-          height: '500px'
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'white',
+          textAlign: 'center',
+          padding: '0 16px'
         }}
       >
-        <Box
-          sx={{
-            position: 'absolute',
-            top: 0,
-            bottom: 0,
-            right: 0,
-            left: 0,
-            backgroundColor: 'rgba(0,0,0,.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
+        <Typography component="h1" variant="h2" gutterBottom>
+          Voyagez avec Confiance
+        </Typography>
+        <Typography variant="h5" paragraph sx={{ mb: 4, maxWidth: '800px' }}>
+          Découvrez les meilleures offres de vols pour vos voyages d'affaires et de loisirs
+        </Typography>
+        <Button 
+          variant="contained" 
+          component={Link} 
+          to="/client/flights"
+          size="large"
+          sx={{ 
+            backgroundColor: '#CC0A2B',
+            '&:hover': {
+              backgroundColor: '#A00823',
+            }
           }}
         >
-          <Container maxWidth="md">
-            <Box textAlign="center">
-              <Typography component="h1" variant="h2" color="inherit" gutterBottom>
-                Voyagez avec Confiance
-              </Typography>
-              <Typography variant="h5" color="inherit" paragraph>
-                Découvrez les meilleures offres de vols pour vos voyages d'affaires et de loisirs
-              </Typography>
-              <Button 
-                variant="contained" 
-                component={Link} 
-                to="/client/flights"
-                size="large"
-                sx={{ 
-                  mt: 4, 
-                  backgroundColor: '#CC0A2B',
-                  '&:hover': {
-                    backgroundColor: '#A00823',
-                  }
-                }}
-              >
-                Voir les vols disponibles
-              </Button>
-            </Box>
-          </Container>
-        </Box>
-      </Paper>
+          VOIR LES VOLS DISPONIBLES
+        </Button>
+      </Box>
 
       {/* Services Section */}
       <Container maxWidth="lg" sx={{ mb: 8 }}>

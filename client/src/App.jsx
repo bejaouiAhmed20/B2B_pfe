@@ -40,6 +40,9 @@ import FlightDescription from './pages/client/FlightDescription';
 // Import the ReservationsTable component
 import ReservationsTable from './pages/Client/ReservationsTable';
 import ClientLayout from './pages/Client/clientlayout';
+// Import the News components for client side
+import ClientNews from './pages/Client/News';
+import NewsDetail from './pages/Client/NewsDetail';
 
 function App() {
   return (
@@ -59,8 +62,12 @@ function App() {
           <Route path='request-solde' element={<RequestSolde />} />
           <Route path="reclamations" element={<Reclamation />} />
           <Route path="reservations-table" element={<ReservationsTable />} />
+          {/* News routes */}
+          <Route path="news" element={<ClientNews />} />
+          <Route path="news/:id" element={<NewsDetail />} />
         </Route>
         
+        {/* Admin Routes */}
         <Route path="/admin" element={<DashboardLayout />}>
           <Route index element={<DashboardHome />} />
           <Route path="clients" element={<Clients />} />

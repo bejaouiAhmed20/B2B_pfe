@@ -19,7 +19,7 @@ class _FlightHomePageState extends State<FlightHomePage> {
   int _currentIndex = 0;
 
   final List<Widget> _pages = [
-    const _HomeContent(),
+    const MainHomeContent(),
     const ExplorePage(),
     const BookingsPage(),
   ];
@@ -59,6 +59,16 @@ class _FlightHomePageState extends State<FlightHomePage> {
         },
       ),
     );
+  }
+}
+
+// Renamed to avoid conflict
+class MainHomeContent extends StatelessWidget {
+  const MainHomeContent({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return const _HomeContent();
   }
 }
 
