@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/widgets/bottom_nav_bar.dart';
-import 'package:mobile/widgets/destination_card.dart';
 import 'package:mobile/widgets/flight_card.dart';
 import 'package:mobile/pages/explore_page.dart';
 import 'package:mobile/pages/bookings_page.dart';
 import 'package:mobile/services/auth_service.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:intl/intl.dart';
+import 'package:mobile/models/news.dart';
+import 'package:mobile/services/news_service.dart';
 
 class FlightHomePage extends StatefulWidget {
   const FlightHomePage({super.key});
@@ -99,18 +101,20 @@ class _HomeContentState extends State<_HomeContent> {
       });
 
       final token = await _authService.getToken();
-      final response = await http.get(
-        Uri.parse('${_authService.baseUrl}/flights'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      ).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () {
-          throw Exception('Connection timeout. Please try again later.');
-        },
-      );
+      final response = await http
+          .get(
+            Uri.parse('${_authService.baseUrl}/flights'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+          )
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              throw Exception('Connection timeout. Please try again later.');
+            },
+          );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -150,7 +154,11 @@ class _HomeContentState extends State<_HomeContent> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.flight_takeoff, color: Color(0xFFCC0A2B), size: 40),
+                  const Icon(
+                    Icons.flight_takeoff,
+                    color: Color(0xFFCC0A2B),
+                    size: 40,
+                  ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Column(
@@ -166,9 +174,7 @@ class _HomeContentState extends State<_HomeContent> {
                         const SizedBox(height: 4),
                         Text(
                           'Book your next business flight with ease',
-                          style: TextStyle(
-                            color: Colors.grey[700],
-                          ),
+                          style: TextStyle(color: Colors.grey[700]),
                         ),
                       ],
                     ),
@@ -182,22 +188,12 @@ class _HomeContentState extends State<_HomeContent> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildQuickAction(
-                  context,
-                  Icons.flight,
-                  'Flights',
-                  () {
-                    Navigator.pushNamed(context, '/flights');
-                  },
-                ),
-                _buildQuickAction(
-                  context,
-                  Icons.book_online,
-                  'Bookings',
-                  () {
-                    Navigator.pushNamed(context, '/reservations');
-                  },
-                ),
+                _buildQuickAction(context, Icons.flight, 'Flights', () {
+                  Navigator.pushNamed(context, '/flights');
+                }),
+                _buildQuickAction(context, Icons.book_online, 'Bookings', () {
+                  Navigator.pushNamed(context, '/reservations');
+                }),
                 _buildQuickAction(
                   context,
                   Icons.account_balance_wallet,
@@ -206,14 +202,9 @@ class _HomeContentState extends State<_HomeContent> {
                     Navigator.pushNamed(context, '/wallet');
                   },
                 ),
-                _buildQuickAction(
-                  context,
-                  Icons.person,
-                  'Profile',
-                  () {
-                    Navigator.pushNamed(context, '/profile');
-                  },
-                ),
+                _buildQuickAction(context, Icons.person, 'Profile', () {
+                  Navigator.pushNamed(context, '/profile');
+                }),
               ],
             ),
             const SizedBox(height: 24),
@@ -252,19 +243,26 @@ class _HomeContentState extends State<_HomeContent> {
             // Available Flights Section
             Text(
               'Available Flights',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            
+
             if (isLoading)
-              const Center(child: CircularProgressIndicator(color: Color(0xFFCC0A2B)))
+              const Center(
+                child: CircularProgressIndicator(color: Color(0xFFCC0A2B)),
+              )
             else if (error.isNotEmpty)
               Center(
                 child: Column(
                   children: [
                     Text(
                       'Error loading flights',
-                      style: TextStyle(color: Colors.red[700], fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: Colors.red[700],
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(error),
@@ -281,54 +279,59 @@ class _HomeContentState extends State<_HomeContent> {
                 ),
               )
             else if (flights.isEmpty)
-              const Center(
-                child: Text('No flights available at the moment.'),
-              )
+              const Center(child: Text('No flights available at the moment.'))
             else
               Column(
-                children: flights.map<Widget>((flight) {
-                  // Get airport information from nested objects
-                  final departureAirport = flight['airport_depart'] ?? {};
-                  final arrivalAirport = flight['airport_arrivee'] ?? {};
-                  
-                  // Format dates
-                  String departureDate = 'Unknown';
-                  try {
-                    if (flight['date_depart'] != null) {
-                      final DateTime date = DateTime.parse(flight['date_depart']);
-                      departureDate = '${date.day}/${date.month}/${date.year}';
-                    }
-                  } catch (e) {
-                    print('Error parsing date: $e');
-                  }
-                  
-                  return GestureDetector(
-                    onTap: () {
-                      // Navigate to flight details page with the flight data
-                      Navigator.pushNamed(
-                        context, 
-                        '/flight-details',
-                        arguments: flight,
+                children:
+                    flights.map<Widget>((flight) {
+                      // Get airport information from nested objects
+                      final departureAirport = flight['airport_depart'] ?? {};
+                      final arrivalAirport = flight['airport_arrivee'] ?? {};
+
+                      // Format dates
+                      String departureDate = 'Unknown';
+                      try {
+                        if (flight['date_depart'] != null) {
+                          final DateTime date = DateTime.parse(
+                            flight['date_depart'],
+                          );
+                          departureDate =
+                              '${date.day}/${date.month}/${date.year}';
+                        }
+                      } catch (e) {
+                        print('Error parsing date: $e');
+                      }
+
+                      return GestureDetector(
+                        onTap: () {
+                          // Navigate to flight details page with the flight data
+                          Navigator.pushNamed(
+                            context,
+                            '/flight-details',
+                            arguments: flight,
+                          );
+                        },
+                        child: FlightCard(
+                          imageUrl:
+                              'https://picsum.photos/300/200?random=${flight['id'] ?? 4}',
+                          airline: flight['compagnie_aerienne'] ?? 'Tunisair',
+                          departure: departureAirport['nom'] ?? 'Unknown',
+                          arrival: arrivalAirport['nom'] ?? 'Unknown',
+                          date: departureDate,
+                          time: flight['duree'] ?? 'Unknown',
+                        ),
                       );
-                    },
-                    child: FlightCard(
-                      imageUrl: 'https://picsum.photos/300/200?random=${flight['id'] ?? 4}',
-                      airline: flight['compagnie_aerienne'] ?? 'Tunisair',
-                      departure: departureAirport['nom'] ?? 'Unknown',
-                      arrival: arrivalAirport['nom'] ?? 'Unknown',
-                      date: departureDate,
-                      time: flight['duree'] ?? 'Unknown',
-                    ),
-                  );
-                }).toList(),
+                    }).toList(),
               ),
-            
+
             const SizedBox(height: 24),
 
             // Special Offers Section
             Text(
               'Special Offers',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             SizedBox(
@@ -359,7 +362,9 @@ class _HomeContentState extends State<_HomeContent> {
             // Travel Tips Section
             Text(
               'Travel Tips',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             _buildTravelTip(
@@ -449,6 +454,194 @@ class _HomeContentState extends State<_HomeContent> {
         onTap: () {
           // Handle tip tap
         },
+      ),
+    );
+  }
+}
+
+// In your HomePageContent class
+class HomePageContent extends StatefulWidget {
+  const HomePageContent({Key? key}) : super(key: key);
+
+  @override
+  State<HomePageContent> createState() => _HomePageContentState();
+}
+
+class _HomePageContentState extends State<HomePageContent> {
+  final NewsService _newsService = NewsService();
+  List<News> _recentNews = [];
+  bool _isLoadingNews = true;
+  String _newsError = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchRecentNews();
+  }
+
+  Future<void> _fetchRecentNews() async {
+    try {
+      setState(() {
+        _isLoadingNews = true;
+        _newsError = '';
+      });
+
+      final news = await _newsService.getNews();
+      setState(() {
+        // Get only the 3 most recent news items
+        _recentNews = news.take(3).toList();
+        _isLoadingNews = false;
+      });
+    } catch (e) {
+      setState(() {
+        _newsError = e.toString();
+        _isLoadingNews = false;
+      });
+    }
+  }
+
+  // Add this method to format dates
+  String _formatDate(DateTime date) {
+    return DateFormat('dd/MM/yyyy').format(date);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Hero section (keep your existing code)
+          // ...
+
+          // News section
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Actualités',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/news');
+                      },
+                      child: const Text(
+                        'Voir tout',
+                        style: TextStyle(color: Color(0xFFCC0A2B)),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+
+                // News content
+                _isLoadingNews
+                    ? const Center(child: CircularProgressIndicator())
+                    : _newsError.isNotEmpty
+                    ? Center(
+                      child: Text(
+                        'Erreur: $_newsError',
+                        style: TextStyle(color: Colors.red[700]),
+                      ),
+                    )
+                    : _recentNews.isEmpty
+                    ? const Center(child: Text('Aucune actualité disponible'))
+                    : Column(
+                      children:
+                          _recentNews.map((news) {
+                            return Card(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              child: InkWell(
+                                onTap: () {
+                                  Navigator.pushNamed(
+                                    context,
+                                    '/news-details',
+                                    arguments: news.id,
+                                  );
+                                },
+                                child: Padding(
+                                  padding: const EdgeInsets.all(12),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      if (news.imageUrl != null &&
+                                          news.imageUrl!.isNotEmpty)
+                                        ClipRRect(
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
+                                          child: Image.network(
+                                            'http://localhost:5000${news.imageUrl}',
+                                            width: 80,
+                                            height: 80,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (
+                                              context,
+                                              error,
+                                              stackTrace,
+                                            ) {
+                                              return Container(
+                                                width: 80,
+                                                height: 80,
+                                                color: Colors.grey[300],
+                                                child: const Icon(
+                                                  Icons.error,
+                                                  size: 30,
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              news.titre,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 16,
+                                              ),
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              _formatDate(news.dateCreation),
+                                              style: TextStyle(
+                                                color: Colors.grey[600],
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                    ),
+              ],
+            ),
+          ),
+
+          // Keep your existing sections below
+          // ...
+        ],
       ),
     );
   }

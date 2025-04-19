@@ -19,6 +19,7 @@ class _NewsDetailsPageState extends State<NewsDetailsPage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // Change from int to String
     final newsId = ModalRoute.of(context)?.settings.arguments as String?;
     if (newsId != null) {
       _fetchNewsDetails(newsId);
@@ -30,6 +31,7 @@ class _NewsDetailsPageState extends State<NewsDetailsPage> {
     }
   }
 
+  // Change parameter type from String to int
   Future<void> _fetchNewsDetails(String id) async {
     try {
       setState(() {
@@ -99,15 +101,20 @@ class _NewsDetailsPageState extends State<NewsDetailsPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // In the news details page where you're displaying the image
                           if (_news!.imageUrl != null && _news!.imageUrl!.isNotEmpty)
                             ClipRRect(
                               borderRadius: BorderRadius.circular(8),
                               child: Image.network(
-                                '${_newsService._authService.baseUrl}${_news!.imageUrl}',
+                                // Fix the URL construction
+                                _news!.imageUrl!.startsWith('http') 
+                                    ? _news!.imageUrl! 
+                                    : 'http://localhost:5000${_news!.imageUrl}',
                                 height: 250,
                                 width: double.infinity,
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) {
+                                  print('Error loading image: $error');  // Add debug print
                                   return Container(
                                     height: 250,
                                     width: double.infinity,

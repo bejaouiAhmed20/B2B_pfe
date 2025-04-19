@@ -231,13 +231,19 @@ class _FlightListPageState extends State<FlightListPage> {
                         suffixIcon: Icon(Icons.calendar_today),
                       ),
                       readOnly: true,
+                      // In the TextField onTap method for date selection
                       onTap: () async {
+                        final DateTime now = DateTime.now();
+                        final DateTime firstDate = now;
+                        final DateTime lastDate = DateTime(now.year + 1, now.month, now.day); // One year from now
+                        
                         final DateTime? picked = await showDatePicker(
                           context: context,
-                          initialDate: DateTime.now(),
-                          firstDate: DateTime.now(),
-                          lastDate: DateTime(2025),
+                          initialDate: now,
+                          firstDate: firstDate,
+                          lastDate: lastDate,
                         );
+                        
                         if (picked != null) {
                           setState(() {
                             departureDate = picked.toIso8601String().split('T')[0];

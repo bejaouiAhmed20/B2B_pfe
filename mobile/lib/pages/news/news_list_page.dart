@@ -101,13 +101,18 @@ class _NewsListPageState extends State<NewsListPage> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  // In the ListView.builder where you're displaying the image
                                   if (news.imageUrl != null && news.imageUrl!.isNotEmpty)
                                     Image.network(
-                                      '${_newsService._authService.baseUrl}${news.imageUrl}',
+                                      // Fix the URL construction
+                                      news.imageUrl!.startsWith('http') 
+                                          ? news.imageUrl! 
+                                          : 'http://localhost:5000${news.imageUrl}',
                                       height: 200,
                                       width: double.infinity,
                                       fit: BoxFit.cover,
                                       errorBuilder: (context, error, stackTrace) {
+                                        print('Error loading image: $error');  // Add debug print
                                         return Container(
                                           height: 200,
                                           width: double.infinity,
@@ -148,10 +153,11 @@ class _NewsListPageState extends State<NewsListPage> {
                                           alignment: Alignment.centerRight,
                                           child: TextButton(
                                             onPressed: () {
+                                              // When navigating to the news details page
                                               Navigator.pushNamed(
                                                 context,
                                                 '/news-details',
-                                                arguments: news.id,
+                                                arguments: news.id,  // This is already a String, no need to convert
                                               );
                                             },
                                             child: const Text(

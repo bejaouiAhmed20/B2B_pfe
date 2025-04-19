@@ -1,62 +1,77 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import 'package:mobile/models/news.dart';
 import 'package:mobile/services/auth_service.dart';
 
 class NewsService {
   final AuthService _authService = AuthService();
+  final Dio _dio = Dio();
   
+  // Base URL for API requests
+  String get baseUrl => 'http://localhost:5000';
+
   Future<List<News>> getNews() async {
     try {
       final token = await _authService.getToken();
-      final response = await http.get(
-        Uri.parse('${_authService.baseUrl}/news'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      ).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () {
-          throw Exception('Connection timeout. Please try again later.');
-        },
+      
+      final response = await _dio.get(
+        '$baseUrl/api/news',
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+        ),
       );
-
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        return data.map((json) => News.fromJson(json)).toList();
+      
+      // Print the response for debugging
+      print('News API Response: ${response.data}');
+      
+      // Handle different response structures
+      List<dynamic> newsData;
+      if (response.data is List) {
+        newsData = response.data;
+      } else if (response.data is Map && response.data.containsKey('data')) {
+        newsData = response.data['data'];
       } else {
-        throw Exception('Failed to load news: ${response.body}');
+        newsData = [];
       }
+      
+      return newsData.map((item) => News.fromJson(item)).toList();
     } catch (e) {
-      throw Exception('Error: ${e.toString()}');
+      print('Error fetching news: $e');
+      throw Exception('Failed to load news: $e');
     }
   }
 
   Future<News> getNewsById(String id) async {
     try {
       final token = await _authService.getToken();
-      final response = await http.get(
-        Uri.parse('${_authService.baseUrl}/news/$id'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      ).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () {
-          throw Exception('Connection timeout. Please try again later.');
-        },
+      
+      final response = await _dio.get(
+        '$baseUrl/api/news/$id',
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+        ),
       );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return News.fromJson(data);
+      
+      // Print the response for debugging
+      print('News Detail API Response: ${response.data}');
+      
+      // Handle different response structures
+      Map<String, dynamic> newsData;
+      if (response.data is Map && response.data.containsKey('data')) {
+        newsData = response.data['data'];
       } else {
-        throw Exception('Failed to load news: ${response.body}');
+        newsData = response.data;
       }
+      
+      return News.fromJson(newsData);
     } catch (e) {
-      throw Exception('Error: ${e.toString()}');
+      print('Error fetching news detail: $e');
+      throw Exception('Failed to load news details: $e');
     }
   }
 }

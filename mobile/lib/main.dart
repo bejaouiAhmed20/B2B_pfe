@@ -10,6 +10,89 @@ import 'package:mobile/widgets/app_drawer.dart';
 import 'package:mobile/pages/news/news_list_page.dart';
 import 'package:mobile/pages/news/news_details_page.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:intl/intl.dart'; // Add this import for DateFormat
+import 'package:dio/dio.dart';
+
+// Add News model class
+// Change the News model to use String id instead of int
+class News {
+  final String id;  // Changed from int to String
+  final String titre;
+  final String contenu;
+  final DateTime dateCreation;
+  final String? imageUrl;
+
+  News({
+    required this.id,
+    required this.titre,
+    required this.contenu,
+    required this.dateCreation,
+    this.imageUrl,
+  });
+
+  factory News.fromJson(Map<String, dynamic> json) {
+    return News(
+      id: json['id'],  // No need to parse as int
+      titre: json['titre'],
+      contenu: json['contenu'],
+      dateCreation: DateTime.parse(json['date_creation']),
+      imageUrl: json['image_url'],
+    );
+  }
+}
+
+// Update the NewsService to use String id
+class NewsService {
+  final AuthService _authService = AuthService();
+  
+  // Base URL for API requests
+  String get baseUrl => 'http://localhost:5000';
+
+  Future<List<News>> getNews() async {
+    try {
+      // Use HTTP client directly instead of relying on AuthService methods
+      final token = await _authService.getToken();
+      final dio = Dio();
+      
+      final response = await dio.get(
+        '$baseUrl/api/news',
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+      
+      final List<dynamic> newsData = response.data;
+      return newsData.map((item) => News.fromJson(item)).toList();
+    } catch (e) {
+      throw Exception('Failed to load news: $e');
+    }
+  }
+
+  Future<News> getNewsById(String id) async {  // Changed from int to String
+    try {
+      // Use HTTP client directly instead of relying on AuthService methods
+      final token = await _authService.getToken();
+      final dio = Dio();
+      
+      final response = await dio.get(
+        '$baseUrl/api/news/$id',
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+      
+      return News.fromJson(response.data);
+    } catch (e) {
+      throw Exception('Failed to load news details: $e');
+    }
+  }
+}
 
 void main() {
   initializeDateFormatting('fr_FR', null).then((_) {
@@ -33,6 +116,7 @@ class MainApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
+      // Make sure you have these routes defined in your main.dart
       routes: {
         '/home': (context) => const MainNavigationScreen(initialIndex: 0),
         '/make-reservation': (context) => const MakeReservationPage(),
@@ -91,7 +175,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     _pageContents = [
       const HomePageContent(),
       const FlightListPage(),
-      const ProfileContent(),
+      const ProfileScreen(), // Changed from ProfileContent to ProfileScreen
     ];
   }
   
@@ -409,6 +493,7 @@ class _NewsPreviewWidgetState extends State<NewsPreviewWidget> {
           margin: const EdgeInsets.only(bottom: 16),
           child: InkWell(
             onTap: () {
+              // Fixed null safety issue with id
               Navigator.pushNamed(
                 context,
                 '/news-details',
@@ -418,13 +503,19 @@ class _NewsPreviewWidgetState extends State<NewsPreviewWidget> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Fixed null safety issue with imageUrl
+                // In the NewsPreviewWidget class, update the Image.network section
                 if (news.imageUrl != null && news.imageUrl!.isNotEmpty)
                   Image.network(
-                    '${_newsService._authService.baseUrl}${news.imageUrl}',
+                    // Fix the URL construction - don't add baseUrl if imageUrl already has the full path
+                    news.imageUrl!.startsWith('http') 
+                        ? news.imageUrl! 
+                        : 'http://localhost:5000${news.imageUrl}',
                     height: 150,
                     width: double.infinity,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
+                      print('Error loading image: $error');  // Add debug print
                       return Container(
                         height: 150,
                         width: double.infinity,
@@ -439,7 +530,7 @@ class _NewsPreviewWidgetState extends State<NewsPreviewWidget> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        news.titre,
+                        news.titre, // This is now safe because titre is non-nullable
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -447,7 +538,7 @@ class _NewsPreviewWidgetState extends State<NewsPreviewWidget> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _formatDate(news.dateCreation),
+                        _formatDate(news.dateCreation), // This is now safe
                         style: TextStyle(
                           color: Colors.grey[600],
                           fontSize: 12,
@@ -455,7 +546,7 @@ class _NewsPreviewWidgetState extends State<NewsPreviewWidget> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        news.contenu.length > 80
+                        news.contenu.length > 80 // This is now safe
                             ? '${news.contenu.substring(0, 80)}...'
                             : news.contenu,
                         style: const TextStyle(fontSize: 14),
