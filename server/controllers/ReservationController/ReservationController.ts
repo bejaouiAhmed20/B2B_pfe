@@ -5,6 +5,36 @@ import { Flight } from '../../models/Flight';
 import { Coupon } from '../../models/Coupon';
 import { FlightSeatReservation } from '../../models/FlightSeatReservation';
 import { Seat } from '../../models/Seat';
+import nodemailer from 'nodemailer';
+
+// Helper functions for email formatting
+const formatDateFr = (date: Date): string => {
+  return date.toLocaleDateString('fr-FR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
+
+const formatEuro = (amount: number): string => {
+  return new Intl.NumberFormat('fr-FR', {
+    style: 'currency',
+    currency: 'EUR'
+  }).format(amount);
+};
+
+// Create email transporter
+const emailTransporter = nodemailer.createTransport({
+  host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+  port: parseInt(process.env.EMAIL_PORT || '587'),
+  secure: process.env.EMAIL_SECURE === 'true',
+  auth: {
+    user: process.env.EMAIL_USER || 'your-email@gmail.com',
+    pass: process.env.EMAIL_PASSWORD || 'your-password'
+  }
+});
 
 // Afficher toutes les réservations
 export const getReservations = async (req: Request, res: Response) => {
@@ -468,6 +498,100 @@ export const createReservation = async (req: Request, res: Response) => {
     }
     
     console.log(`Created ${seatReservations.length} seat reservations for reservation ${reservation.id}`);
+
+    // Send confirmation email to the client
+    try {
+      if (user.email) {
+        console.log(`Sending reservation confirmation email to ${user.email}`);
+        
+        // Format dates for email
+        const dateReservation = formatDateFr(new Date(date_reservation));
+        const dateDepart = flight.date_depart ? formatDateFr(new Date(flight.date_depart)) : 'Non spécifiée';
+        const dateArrivee = flight.date_retour ? formatDateFr(new Date(flight.date_retour)) : 'Non spécifiée';
+        
+        // Format price
+        const prixFormatted = formatEuro(parseFloat(prix_total.toString()));
+        
+        // Create HTML email content
+        const htmlContent = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="UTF-8">
+            <style>
+              body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background-color: #CC0A2B; color: white; padding: 20px; text-align: center; }
+              .content { padding: 20px; }
+              .details { background-color: #f5f5f5; padding: 15px; margin: 15px 0; border-radius: 5px; }
+              .success { color: #4CAF50; font-weight: bold; }
+              .footer { font-size: 12px; text-align: center; margin-top: 30px; color: #666; }
+              .seats { margin-top: 10px; }
+              .seat { display: inline-block; margin-right: 10px; background-color: #e0e0e0; padding: 5px 10px; border-radius: 3px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>Tunisair B2B</h1>
+              </div>
+              <div class="content">
+                <h2>Confirmation de Réservation</h2>
+                <p>Bonjour ${user.nom || 'Client'},</p>
+                <p>Nous vous confirmons que votre réservation a été <span class="success">effectuée avec succès</span>.</p>
+                
+                <div class="details">
+                  <h3>Détails de la réservation:</h3>
+                  <p><strong>Numéro de réservation:</strong> ${reservation.id}</p>
+                  <p><strong>Date de réservation:</strong> ${dateReservation}</p>
+                  <p><strong>Statut:</strong> <span class="success">${statut}</span></p>
+                  <p><strong>Prix total:</strong> ${prixFormatted}</p>
+                  <p><strong>Nombre de passagers:</strong> ${nombre_passagers}</p>
+                  <p><strong>Classe:</strong> ${class_type || 'Économique'}</p>
+                  <p><strong>Type de tarif:</strong> ${fare_type || 'Light'}</p>
+                </div>
+                
+                <div class="details">
+                  <h3>Détails du vol:</h3>
+                  <p><strong>Vol:</strong> ${flight.titre || 'N/A'}</p>
+                  <p><strong>Date de départ:</strong> ${dateDepart}</p>
+                  <p><strong>Date d'arrivée:</strong> ${dateArrivee}</p>
+                </div>
+                
+                <div class="details">
+                  <h3>Sièges attribués:</h3>
+                  <div class="seats">
+                    ${allocatedSeats.map(seat => `<span class="seat">${seat.seatNumber}</span>`).join(' ')}
+                  </div>
+                </div>
+                
+                <p>Nous vous remercions pour votre confiance et vous souhaitons un excellent voyage.</p>
+                <p>Cordialement,<br>L'équipe Tunisair B2B</p>
+              </div>
+              <div class="footer">
+                <p>Ceci est un email automatique, merci de ne pas y répondre.</p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `;
+        
+        // Send the email
+        const mailResult = await emailTransporter.sendMail({
+          from: process.env.EMAIL_USER || 'noreply@tunisairb2b.com',
+          to: user.email,
+          subject: 'Tunisair B2B - Confirmation de votre réservation',
+          html: htmlContent
+        });
+        
+        console.log('Reservation confirmation email sent successfully:', mailResult.messageId);
+      } else {
+        console.log('User email not found, skipping confirmation email');
+      }
+    } catch (emailError) {
+      console.error('Failed to send reservation confirmation email:', emailError);
+      // Continue with the process even if email fails
+    }
 
     // Return the reservation with seat information
     res.status(201).json({
