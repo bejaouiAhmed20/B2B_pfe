@@ -5,14 +5,14 @@ import 'package:mobile/services/auth_service.dart';
 class NewsService {
   final AuthService _authService = AuthService();
   final Dio _dio = Dio();
-  
+
   // Base URL for API requests
-  String get baseUrl => 'http://localhost:5000';
+  static const String baseUrl = "http://192.168.1.16:5000/api";
 
   Future<List<News>> getNews() async {
     try {
       final token = await _authService.getToken();
-      
+
       final response = await _dio.get(
         '$baseUrl/api/news',
         options: Options(
@@ -22,10 +22,10 @@ class NewsService {
           },
         ),
       );
-      
+
       // Print the response for debugging
       print('News API Response: ${response.data}');
-      
+
       // Handle different response structures
       List<dynamic> newsData;
       if (response.data is List) {
@@ -35,7 +35,7 @@ class NewsService {
       } else {
         newsData = [];
       }
-      
+
       return newsData.map((item) => News.fromJson(item)).toList();
     } catch (e) {
       print('Error fetching news: $e');
@@ -46,7 +46,7 @@ class NewsService {
   Future<News> getNewsById(String id) async {
     try {
       final token = await _authService.getToken();
-      
+
       final response = await _dio.get(
         '$baseUrl/api/news/$id',
         options: Options(
@@ -56,10 +56,10 @@ class NewsService {
           },
         ),
       );
-      
+
       // Print the response for debugging
       print('News Detail API Response: ${response.data}');
-      
+
       // Handle different response structures
       Map<String, dynamic> newsData;
       if (response.data is Map && response.data.containsKey('data')) {
@@ -67,7 +67,7 @@ class NewsService {
       } else {
         newsData = response.data;
       }
-      
+
       return News.fromJson(newsData);
     } catch (e) {
       print('Error fetching news detail: $e');

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mobile/services/auth_service.dart';
 
 class ProfileUpdateScreen extends StatefulWidget {
-  const ProfileUpdateScreen({Key? key}) : super(key: key);
+  final Map<String, dynamic> userData;
+  
+  const ProfileUpdateScreen({Key? key, required this.userData}) : super(key: key);
 
   @override
   _ProfileUpdateScreenState createState() => _ProfileUpdateScreenState();
@@ -13,63 +15,33 @@ class ProfileUpdateScreen extends StatefulWidget {
 class _ProfileUpdateScreenState extends State<ProfileUpdateScreen> {
   final _formKey = GlobalKey<FormState>();
   
-  // User profile data
-  String _name = '';
-  String _email = '';
-  String _phone = '';
-  String _company = '';
-  String _address = '';
-  bool _isLoading = true;
+  late TextEditingController _nameController;
+  late TextEditingController _emailController;
+  late TextEditingController _phoneController;
+  late TextEditingController _companyController;
+  late TextEditingController _addressController;
+  
+  bool _isLoading = false;
+  final AuthService _authService = AuthService();
   
   @override
   void initState() {
     super.initState();
-    _loadUserProfile();
+    _nameController = TextEditingController(text: widget.userData['nom'] ?? '');
+    _emailController = TextEditingController(text: widget.userData['email'] ?? '');
+    _phoneController = TextEditingController(text: widget.userData['numero_telephone'] ?? '');
+    _companyController = TextEditingController(text: widget.userData['entreprise'] ?? '');
+    _addressController = TextEditingController(text: widget.userData['adresse'] ?? '');
   }
   
-  Future<void> _loadUserProfile() async {
-    setState(() {
-      _isLoading = true;
-    });
-    
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('token') ?? '';
-      
-      final response = await http.get(
-        Uri.parse('http://your-api-url/api/profile'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
-      
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        setState(() {
-          _name = data['name'] ?? '';
-          _email = data['email'] ?? '';
-          _phone = data['phone'] ?? '';
-          _company = data['company'] ?? '';
-          _address = data['address'] ?? '';
-          _isLoading = false;
-        });
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to load profile')),
-        );
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}')),
-      );
-      setState(() {
-        _isLoading = false;
-      });
-    }
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _companyController.dispose();
+    _addressController.dispose();
+    super.dispose();
   }
   
   Future<void> _updateProfile() async {
@@ -77,43 +49,43 @@ class _ProfileUpdateScreenState extends State<ProfileUpdateScreen> {
       return;
     }
     
-    _formKey.currentState!.save();
-    
     setState(() {
       _isLoading = true;
     });
     
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('token') ?? '';
+      final token = await _authService.getToken();
+      final userId = await _authService.getUserId();
+      
+      if (token == null || userId == null) {
+        throw Exception('Authentication data not found');
+      }
       
       final response = await http.put(
-        Uri.parse('http://your-api-url/api/profile'),
+        Uri.parse('${_authService.baseUrl}/users/$userId'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
         body: json.encode({
-          'name': _name,
-          'email': _email,
-          'phone': _phone,
-          'company': _company,
-          'address': _address,
+          'nom': _nameController.text,
+          'numero_telephone': _phoneController.text,
+          'entreprise': _companyController.text,
+          'adresse': _addressController.text,
         }),
       );
       
       if (response.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile updated successfully')),
+          const SnackBar(content: Text('Profil mis à jour avec succès')),
         );
+        Navigator.pop(context, true); // Return true to indicate success
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to update profile')),
-        );
+        throw Exception('Failed to update profile: ${response.statusCode}');
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}')),
+        SnackBar(content: Text('Erreur: ${e.toString()}')),
       );
     } finally {
       setState(() {
@@ -126,11 +98,11 @@ class _ProfileUpdateScreenState extends State<ProfileUpdateScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Update Profile'),
+        title: const Text('Modifier le Profil'),
         backgroundColor: Colors.red[800],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFFCC0A2B)))
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
               child: Form(
@@ -139,84 +111,54 @@ class _ProfileUpdateScreenState extends State<ProfileUpdateScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     TextFormField(
-                      initialValue: _name,
+                      controller: _nameController,
                       decoration: const InputDecoration(
-                        labelText: 'Full Name',
+                        labelText: 'Nom complet',
                         border: OutlineInputBorder(),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter your name';
+                          return 'Veuillez entrer votre nom';
                         }
                         return null;
-                      },
-                      onSaved: (value) {
-                        _name = value ?? '';
                       },
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
-                      initialValue: _email,
+                      controller: _emailController,
+                      readOnly: true, // Email shouldn't be editable
                       decoration: const InputDecoration(
                         labelText: 'Email',
                         border: OutlineInputBorder(),
+                        enabled: false,
                       ),
-                      keyboardType: TextInputType.emailAddress,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your email';
-                        }
-                        if (!value.contains('@')) {
-                          return 'Please enter a valid email';
-                        }
-                        return null;
-                      },
-                      onSaved: (value) {
-                        _email = value ?? '';
-                      },
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
-                      initialValue: _phone,
+                      controller: _phoneController,
                       decoration: const InputDecoration(
-                        labelText: 'Phone Number',
+                        labelText: 'Téléphone',
                         border: OutlineInputBorder(),
                       ),
-                      keyboardType: TextInputType.phone,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your phone number';
-                        }
-                        return null;
-                      },
-                      onSaved: (value) {
-                        _phone = value ?? '';
-                      },
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
-                      initialValue: _company,
+                      controller: _companyController,
                       decoration: const InputDecoration(
-                        labelText: 'Company',
+                        labelText: 'Entreprise',
                         border: OutlineInputBorder(),
                       ),
-                      onSaved: (value) {
-                        _company = value ?? '';
-                      },
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
-                      initialValue: _address,
+                      controller: _addressController,
                       decoration: const InputDecoration(
-                        labelText: 'Address',
+                        labelText: 'Adresse',
                         border: OutlineInputBorder(),
                       ),
                       maxLines: 3,
-                      onSaved: (value) {
-                        _address = value ?? '';
-                      },
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 32),
                     ElevatedButton(
                       onPressed: _updateProfile,
                       style: ElevatedButton.styleFrom(
@@ -224,7 +166,7 @@ class _ProfileUpdateScreenState extends State<ProfileUpdateScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
                       child: const Text(
-                        'Update Profile',
+                        'Enregistrer les modifications',
                         style: TextStyle(fontSize: 16),
                       ),
                     ),
