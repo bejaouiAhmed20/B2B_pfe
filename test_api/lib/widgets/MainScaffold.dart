@@ -35,8 +35,12 @@ class _MainScaffoldState extends State<MainScaffold> {
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
-      Navigator.pop(context); // close drawer when item tapped
     });
+    
+    // Only close drawer if it's open
+    if (Scaffold.of(context).isDrawerOpen) {
+      Navigator.pop(context);
+    }
   }
 
   Future<void> _logout() async {
@@ -55,7 +59,7 @@ class _MainScaffoldState extends State<MainScaffold> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Tunisair B2B"),
-        backgroundColor: Colors.blue,
+        backgroundColor: Colors.red,
       ),
       drawer: Drawer(
         child: Column(
@@ -65,9 +69,9 @@ class _MainScaffoldState extends State<MainScaffold> {
               accountEmail: const Text("bejauiam25@gmail.com"),
               currentAccountPicture: const CircleAvatar(
                 backgroundColor: Colors.white,
-                child: Icon(Icons.person, color: Colors.blue),
+                child: Icon(Icons.person, color: Colors.red),
               ),
-              decoration: const BoxDecoration(color: Colors.blue),
+              decoration: const BoxDecoration(color: Colors.red),
             ),
             ListTile(
               leading: const Icon(Icons.home),
@@ -107,7 +111,7 @@ class _MainScaffoldState extends State<MainScaffold> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
-        selectedItemColor: Colors.blue,
+        selectedItemColor: Colors.red,
         unselectedItemColor: Colors.grey,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: "Accueil"),

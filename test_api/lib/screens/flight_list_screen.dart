@@ -114,14 +114,12 @@ class _FlightListScreenState extends State<FlightListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Rechercher un vol"),
-        backgroundColor: Colors.blue,
-      ),
+     
       body: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
           children: [
+            const Text("Rechercher un vol"),
             TextField(
               controller: _locationController,
               decoration: const InputDecoration(

@@ -12,9 +12,42 @@ void main() async {
   final prefs = await SharedPreferences.getInstance();
   final userId = prefs.getString('userId');
 
-  runApp(
-    MaterialApp(
-      home: userId != null ? MainScaffold(userId: userId) : const LoginScreen(),
-    ),
-  );
+  runApp(MyApp(userId: userId));
+}
+
+class MyApp extends StatelessWidget {
+  final String? userId;
+  
+  const MyApp({Key? key, this.userId}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Tunisair B2B',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primaryColor: Colors.red,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.red,
+          foregroundColor: Colors.white,
+          iconTheme: IconThemeData(color: Colors.white),
+        ),
+        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+          selectedItemColor: Colors.red,
+          unselectedItemColor: Colors.grey,
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red,
+            foregroundColor: Colors.white,
+          ),
+        ),
+      ),
+      home: userId != null ? MainScaffold(userId: userId!) : const LoginScreen(),
+      routes: {
+        '/login': (context) => const LoginScreen(),
+        '/home': (context) => userId != null ? MainScaffold(userId: userId!) : const LoginScreen(),
+      },
+    );
+  }
 }
