@@ -39,7 +39,8 @@ class _ReservationListScreenState extends State<ReservationListScreen> {
             return Center(child: Text("Erreur: ${snapshot.error}"));
 
           final reservations = snapshot.data!;
-          if (reservations.isEmpty) return const Center(child: Text("Aucune réservation."));
+          if (reservations.isEmpty)
+            return const Center(child: Text("Aucune réservation."));
 
           return ListView.builder(
             itemCount: reservations.length,
@@ -47,23 +48,36 @@ class _ReservationListScreenState extends State<ReservationListScreen> {
               final r = reservations[index];
               return Card(
                 margin: const EdgeInsets.all(12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 child: ListTile(
-                  title: Text("Vol: ${r.flight.titre}"),
+                  title: Text("Vol: ${r.flight?.titre ?? 'Inconnu'}"),
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Départ: ${formatDate(r.flight.dateDepart)}"),
-                      Text("Retour: ${formatDate(r.flight.dateRetour)}"),
-                      Text("Type: ${r.classType}, Tarif: ${r.fareType}"),
-                      Text("Nombre de passagers: ${r.nombrePassagers}"),
+                      if (r.flight?.dateDepart != null)
+                        Text("Départ: ${formatDate(r.flight!.dateDepart)}"),
+                      if (r.flight?.dateRetour != null)
+                        Text("Retour: ${formatDate(r.flight!.dateRetour)}"),
+                      Text("Classe: ${r.classType ?? 'Non spécifié'}"),
+                      Text("Tarif: ${r.fareType ?? 'Non spécifié'}"),
+                      Text("Passagers: ${r.nombrePassagers}"),
                       Text("Prix: ${r.prixTotal} €"),
-                      if (r.allocatedSeats.isNotEmpty)
+                      if (r.allocatedSeats != null &&
+                          r.allocatedSeats.isNotEmpty)
                         Wrap(
                           spacing: 8,
-                          children: r.allocatedSeats
-                              .map((seat) => Chip(label: Text("Seat ${seat.seatNumber}")))
-                              .toList(),
+                          children:
+                              r.allocatedSeats
+                                  .map(
+                                    (seat) => Chip(
+                                      label: Text(
+                                        "Seat ${seat.seatNumber ?? '-'}",
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
                         ),
                     ],
                   ),

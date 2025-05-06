@@ -30,26 +30,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => EditProfileScreen(userId: user.id),
-      ),
+      ),  // Added missing closing parenthesis here
     );
-
-    if (updated == true) {
-      setState(() {
-        _loadUser(); // Reload updated user data
-      });
-    }
+    if (updated == true) setState(() => _loadUser());
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Mon Profil", style: GoogleFonts.poppins()),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        title: Text("Mon Profil", 
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: Colors.red[800],
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.red[800]!, Colors.red[400]!],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
         actions: [
           IconButton(
-            icon: Icon(Icons.edit, color: Colors.blue),
+            icon: Icon(Icons.edit, color: Colors.white),
             onPressed: () async {
               final user = await _userFuture;
               _navigateToEditProfile(user);
@@ -61,20 +69,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
         future: _userFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return Center(child: CircularProgressIndicator(color: Colors.red));
           }
           if (snapshot.hasError) {
-            return Center(child: Text('Erreur: ${snapshot.error}'));
+            return Center(child: Text('Erreur: ${snapshot.error}', 
+              style: TextStyle(color: Colors.red[800])));
           }
 
           final user = snapshot.data!;
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
+          return SingleChildScrollView(
+            padding: EdgeInsets.all(20),
             child: Column(
               children: [
-                _buildHeader(user.nom, user.email),
-                const SizedBox(height: 20),
-                _buildInfoCard(user),
+                _buildProfileHeader(user),
+                SizedBox(height: 32),
+                _buildProfileInfo(user),
+                SizedBox(height: 24),
+                _buildEditButton(user),
               ],
             ),
           );
@@ -83,68 +94,171 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildHeader(String name, String email) {
-    return Row(
-      children: [
-        CircleAvatar(
-          radius: 35,
-          backgroundColor: Colors.blueAccent,
-          child: Text(
-            name[0].toUpperCase(),
-            style: const TextStyle(fontSize: 30, color: Colors.white),
+  Widget _buildProfileHeader(UserModel user) {
+    return Container(
+      padding: EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.red.withOpacity(0.1),
+            blurRadius: 12,
+            offset: Offset(0, 4),
           ),
-        ),
-        const SizedBox(width: 16),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              name,
-              style: GoogleFonts.poppins(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.red[800]!, Colors.red[400]!],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                user.nom[0].toUpperCase(),
+                style: GoogleFonts.poppins(
+                  fontSize: 32,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-            Text(email, style: GoogleFonts.poppins(color: Colors.grey[700])),
-          ],
+          ),
+          SizedBox(width: 20),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                user.nom,
+                style: GoogleFonts.poppins(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.red[800],
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                user.email,
+                style: GoogleFonts.poppins(
+                  color: Colors.grey[600],
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileInfo(UserModel user) {
+    return Column(
+      children: [
+        _buildInfoItem(
+          icon: Icons.phone,
+          title: "Téléphone",
+          value: user.numeroTelephone,
+        ),
+        _buildInfoItem(
+          icon: Icons.location_pin,
+          title: "Adresse",
+          value: user.adresse,
+        ),
+        _buildInfoItem(
+          icon: Icons.flag,
+          title: "Pays",
+          value: user.pays,
+        ),
+        _buildInfoItem(
+          icon: Icons.security,
+          title: "Rôle",
+          value: user.estAdmin ? "Administrateur" : "Utilisateur",
         ),
       ],
     );
   }
 
-  Widget _buildInfoCard(UserModel user) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 3,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-        child: Column(
-          children: [
-            _buildInfoTile(Icons.phone, 'Numéro', user.numeroTelephone),
-            _buildInfoTile(Icons.location_on, 'Adresse', user.adresse),
-            _buildInfoTile(Icons.flag, 'Pays', user.pays),
-            _buildInfoTile(
-              Icons.admin_panel_settings,
-              'Rôle',
-              user.estAdmin ? 'Admin' : 'Utilisateur',
+  Widget _buildInfoItem({
+    required IconData icon,
+    required String title,
+    required String? value,
+  }) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.red.withOpacity(0.05),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.red[50],
+              shape: BoxShape.circle,
             ),
-            _buildInfoTile(Icons.lock, 'Mot de passe', '••••••••'),
-          ],
-        ),
+            child: Icon(icon, color: Colors.red[800], size: 24),
+          ),
+          SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.poppins(
+                    color: Colors.grey[600],
+                    fontSize: 12,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  value ?? 'Non défini',
+                  style: GoogleFonts.poppins(
+                    color: Colors.grey[800],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildInfoTile(IconData icon, String label, String? value) {
-    return ListTile(
-      leading: Icon(icon, color: Colors.blue),
-      title: Text(
-        label,
-        style: GoogleFonts.poppins(fontWeight: FontWeight.w500),
+  Widget _buildEditButton(UserModel user) {
+    return ElevatedButton.icon(
+      onPressed: () => _navigateToEditProfile(user),
+      icon: Icon(Icons.edit, size: 20),
+      label: Text(
+        "MODIFIER LE PROFIL",
+        style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
       ),
-      subtitle: Text(
-        value == null || value.isEmpty ? 'Non défini' : value,
-        style: GoogleFonts.poppins(),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.red[800],
+        foregroundColor: Colors.white,
+        padding: EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        elevation: 3,
       ),
     );
   }

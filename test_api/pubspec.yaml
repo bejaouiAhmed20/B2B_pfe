@@ -9,6 +9,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  image_picker: ^1.0.4  # or latest version
   dio: ^5.4.0
   google_fonts: ^6.1.0
   intl: ^0.18.1

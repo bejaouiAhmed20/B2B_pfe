@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:my_test_api/screens/account_balance_screen.dart';
 import 'package:my_test_api/screens/flight_list_screen.dart';
 import 'package:my_test_api/screens/news_list_screen.dart';
+import 'package:my_test_api/screens/reclamation_screen.dart';
+import 'package:my_test_api/screens/request_solde_form_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/login_screen.dart';
+import '../screens/reservation_list_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class MainScaffold extends StatefulWidget {
@@ -17,6 +20,7 @@ class MainScaffold extends StatefulWidget {
 
 class _MainScaffoldState extends State<MainScaffold> {
   int _selectedIndex = 0;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   late final List<Widget> _pages;
 
@@ -36,42 +40,41 @@ class _MainScaffoldState extends State<MainScaffold> {
     setState(() {
       _selectedIndex = index;
     });
-    
-    // Only close drawer if it's open
-    if (Scaffold.of(context).isDrawerOpen) {
-      Navigator.pop(context);
+
+    if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
+      Navigator.pop(context); // Close drawer
     }
   }
 
   Future<void> _logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('userId');
-    
-    // Navigate to login screen and remove all previous routes
+
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (context) => const LoginScreen()),
-      (Route<dynamic> route) => false,
+      (route) => false,
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
       appBar: AppBar(
         title: const Text("Tunisair B2B"),
         backgroundColor: Colors.red,
       ),
       drawer: Drawer(
-        child: Column(
+        child: ListView(
           children: [
-            UserAccountsDrawerHeader(
-              accountName: const Text("Ahmed Bejaoui"),
-              accountEmail: const Text("bejauiam25@gmail.com"),
-              currentAccountPicture: const CircleAvatar(
+            const UserAccountsDrawerHeader(
+              accountName: Text("Ahmed Bejaoui"),
+              accountEmail: Text("bejauiam25@gmail.com"),
+              currentAccountPicture: CircleAvatar(
                 backgroundColor: Colors.white,
                 child: Icon(Icons.person, color: Colors.red),
               ),
-              decoration: const BoxDecoration(color: Colors.red),
+              decoration: BoxDecoration(color: Colors.red),
             ),
             ListTile(
               leading: const Icon(Icons.home),
@@ -89,6 +92,20 @@ class _MainScaffoldState extends State<MainScaffold> {
               onTap: () => _onItemTapped(2),
             ),
             ListTile(
+              leading: const Icon(Icons.book_online),
+              title: const Text("Mes Réservations"),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (context) =>
+                            ReservationListScreen(userId: widget.userId),
+                  ),
+                );
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.account_balance_wallet),
               title: const Text("Mon Compte"),
               onTap: () => _onItemTapped(3),
@@ -97,6 +114,19 @@ class _MainScaffoldState extends State<MainScaffold> {
               leading: const Icon(Icons.person),
               title: const Text("Mon Profil"),
               onTap: () => _onItemTapped(4),
+            ),
+            ListTile(
+              leading: const Icon(Icons.report_problem),
+              title: const Text("Réclamation"),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (context) => ReclamationScreen(userId: widget.userId),
+                  ),
+                );
+              },
             ),
             const Divider(),
             ListTile(
@@ -116,10 +146,7 @@ class _MainScaffoldState extends State<MainScaffold> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: "Accueil"),
           BottomNavigationBarItem(icon: Icon(Icons.article), label: "News"),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.flight),
-            label: "Vols",
-          ), // New
+          BottomNavigationBarItem(icon: Icon(Icons.flight), label: "Vols"),
           BottomNavigationBarItem(
             icon: Icon(Icons.account_balance_wallet),
             label: "Compte",

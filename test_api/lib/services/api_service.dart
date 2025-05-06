@@ -1,4 +1,6 @@
 import 'package:dio/dio.dart';
+import 'package:my_test_api/models/reclamation_model.dart';
+import 'dart:io'; // Add this import for File class
 import '../models/user_model.dart';
 import '../models/reservation_model.dart';
 import '../models/compte_model.dart';
@@ -57,5 +59,52 @@ class ApiService {
     if (response.statusCode != 200) {
       throw Exception('Failed to update user profile');
     }
+  }
+
+  Future<void> submitRequestSolde({
+    required String clientId,
+    required double montant,
+    required String description,
+    File? imageFile,
+  }) async {
+    String? imageUrl;
+
+    if (imageFile != null) {
+      final uploadResponse = await _dio.post(
+        '$baseUrl/upload',
+        data: FormData.fromMap({
+          'file': await MultipartFile.fromFile(imageFile.path),
+        }),
+      );
+      imageUrl = uploadResponse.data['filePath'];
+    }
+
+    await _dio.post(
+      '$baseUrl/request-solde',
+      data: {
+        'client_id': clientId,
+        'montant': montant,
+        'description': description,
+        'imageUrl': imageUrl ?? '',
+      },
+    );
+  }
+
+  Future<List<Reclamation>> getReclamationsByUser(String userId) async {
+    final response = await _dio.get('$baseUrl/reclamations/user/$userId');
+    return (response.data as List)
+        .map((json) => Reclamation.fromJson(json))
+        .toList();
+  }
+
+  Future<void> createReclamation(
+    String userId,
+    String sujet,
+    String description,
+  ) async {
+    await _dio.post(
+      '$baseUrl/reclamations',
+      data: {"user_id": userId, "sujet": sujet, "description": description},
+    );
   }
 }
