@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/reclamation_model.dart';
 import '../services/api_service.dart';
+import 'reclamation_detail_screen.dart';
 
 class ReclamationScreen extends StatefulWidget {
   final String userId;
@@ -51,6 +52,7 @@ class _ReclamationScreenState extends State<ReclamationScreen> {
       sujet = '';
       description = '';
       fetchReclamations();
+      _formKey.currentState?.reset();
     } catch (e) {
       print("Error submitting: $e");
       ScaffoldMessenger.of(
@@ -126,6 +128,18 @@ class _ReclamationScreenState extends State<ReclamationScreen> {
                           final r = reclamations[index];
                           return Card(
                             child: ListTile(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder:
+                                        (context) => ReclamationDetailScreen(
+                                          reclamationId: r.id,
+                                          userId: widget.userId,
+                                        ),
+                                  ),
+                                );
+                              },
                               title: Text(r.sujet),
                               subtitle: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,

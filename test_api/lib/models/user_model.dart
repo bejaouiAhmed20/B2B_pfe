@@ -19,18 +19,11 @@ class UserModel {
     required this.motDePasse,
   });
 
-  factory UserModel.fromJson(Map<String, dynamic> json) {
-    if (json == null) return UserModel(
-      id: '',
-      nom: '',
-      email: '',
-      numeroTelephone: '',
-      pays: '',
-      adresse: '',
-      estAdmin: false,
-      motDePasse: '',
-    );
-    
+  factory UserModel.fromJson(Map<String, dynamic>? json) {
+    if (json == null) {
+      return UserModel.empty();
+    }
+
     return UserModel(
       id: json['id']?.toString() ?? '',
       nom: json['nom']?.toString() ?? '',
@@ -40,6 +33,19 @@ class UserModel {
       adresse: json['adresse']?.toString() ?? '',
       estAdmin: json['est_admin'] ?? false,
       motDePasse: json['mot_de_passe']?.toString() ?? '',
+    );
+  }
+
+  factory UserModel.empty() {
+    return UserModel(
+      id: '',
+      nom: 'Inconnu',
+      email: '',
+      numeroTelephone: '',
+      pays: '',
+      adresse: '',
+      estAdmin: false,
+      motDePasse: '',
     );
   }
 }
