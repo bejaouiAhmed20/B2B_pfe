@@ -107,17 +107,17 @@ class ApiService {
       data: {"user_id": userId, "sujet": sujet, "description": description},
     );
   }
- Future<Reclamation> getReclamationById(String id) async {
-  final response = await _dio.get('$baseUrl/reclamations/$id');
-  return Reclamation.fromJson(response.data);
-}
+  
+  Future<Reclamation> getReclamationById(String id) async {
+    final response = await _dio.get('$baseUrl/reclamations/$id');
+    return Reclamation.fromJson(response.data);
+  }
 
-Future<void> sendFollowUpMessage(String id, String message, String userId) async {
-  await _dio.post('$baseUrl/reclamations/$id/messages', data: {
-    'content': message,
-    'sender_type': 'client', // adapt based on your backend
-    'sender_id': userId
-  });
-} 
- 
+  Future<void> sendFollowUpMessage(String id, String message, String userId) async {
+    await _dio.post('$baseUrl/reclamations/$id/messages', data: {
+      'content': message,
+      'sender_type': 'client', // adapt based on your backend
+      'sender_id': userId
+    });
+  } 
 }

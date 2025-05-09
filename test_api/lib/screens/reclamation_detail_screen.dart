@@ -8,14 +8,13 @@ class ReclamationDetailScreen extends StatefulWidget {
   final String userId;
 
   const ReclamationDetailScreen({
-    super.key, 
+    super.key,
     required this.reclamationId,
     required this.userId,
   });
 
   @override
-  State<ReclamationDetailScreen> createState() =>
-      _ReclamationDetailScreenState();
+  State<ReclamationDetailScreen> createState() => _ReclamationDetailScreenState();
 }
 
 class _ReclamationDetailScreenState extends State<ReclamationDetailScreen> {
@@ -33,90 +32,220 @@ class _ReclamationDetailScreenState extends State<ReclamationDetailScreen> {
     _reclamationFuture = ApiService().getReclamationById(widget.reclamationId);
   }
 
-  String formatDate(DateTime date) {
-    return DateFormat('dd/MM/yyyy HH:mm').format(date);
+  String _formatDate(DateTime date) {
+    return DateFormat('dd MMM yyyy • HH:mm').format(date);
   }
 
-  Future<void> _submitMessage() async {
-    if (_responseController.text.trim().isEmpty) return;
-    setState(() => _sending = true);
-    await ApiService().sendFollowUpMessage(
-      widget.reclamationId,
-      _responseController.text.trim(),
-      widget.userId,
-    );
-    _responseController.clear();
-    _loadReclamation(); // Reload the data
-    setState(() => _sending = false);
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'résolue':
+        return Colors.green.shade800;
+      case 'en cours':
+        return Colors.orange.shade800;
+      case 'nouvelle':
+        return Colors.red.shade800;
+      default:
+        return Colors.grey.shade600;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Détails Réclamation")),
+      appBar: AppBar(
+        title: const Text("Détails Réclamation"),
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.red.shade800, Colors.red.shade400],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+      ),
       body: FutureBuilder<Reclamation>(
         future: _reclamationFuture,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting)
-            return const Center(child: CircularProgressIndicator());
-          if (snapshot.hasError)
-            return Center(child: Text("Erreur: ${snapshot.error}"));
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator(color: Colors.red.shade800));
+          }
+          
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 48, color: Colors.red.shade800),
+                  const SizedBox(height: 16),
+                  Text("Erreur de chargement", 
+                      style: TextStyle(color: Colors.red.shade800)),
+                  TextButton(
+                    child: Text("Réessayer", 
+                        style: TextStyle(color: Colors.red.shade800)),
+                    onPressed: _loadReclamation,
+                  ),
+                ],
+              ),
+            );
+          }
 
           final reclamation = snapshot.data!;
-          return Padding(
-            padding: const EdgeInsets.all(16),
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  reclamation.sujet,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text("Statut: ${reclamation.statut}"),
-                Text("Créée le: ${formatDate(reclamation.dateCreation)}"),
-                const SizedBox(height: 16),
-                const Text(
-                  "Description:",
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                Text(reclamation.description),
-                const SizedBox(height: 16),
-                if (reclamation.reponse != null)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "Réponse Admin:",
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                // Header Section
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
-                      Text(reclamation.reponse!),
-                      const SizedBox(height: 16),
                     ],
                   ),
-                const Text(
-                  "Ajouter une question:",
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                TextField(
-                  controller: _responseController,
-                  maxLines: 3,
-                  decoration: const InputDecoration(
-                    hintText: "Votre message...",
-                    border: OutlineInputBorder(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        reclamation.sujet,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Icon(Icons.calendar_today, 
+                              size: 18, color: Colors.grey.shade600),
+                          const SizedBox(width: 8),
+                          Text(
+                            _formatDate(reclamation.dateCreation),
+                            style: TextStyle(color: Colors.grey.shade600),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: _getStatusColor(reclamation.statut).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: _getStatusColor(reclamation.statut),
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          reclamation.statut.toUpperCase(),
+                          style: TextStyle(
+                            color: _getStatusColor(reclamation.statut),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 8),
-                ElevatedButton(
-                  onPressed: _sending ? null : _submitMessage,
-                  child:
-                      _sending
-                          ? const CircularProgressIndicator()
-                          : const Text("Envoyer"),
+                const SizedBox(height: 24),
+
+                // Description Section
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Description",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.red.shade800,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        reclamation.description,
+                        style: TextStyle(color: Colors.grey.shade800),
+                      ),
+                    ],
+                  ),
                 ),
+                const SizedBox(height: 24),
+
+                // Admin Response Section
+                if (reclamation.reponse != null)
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.verified_user, 
+                                color: Colors.green.shade800),
+                            const SizedBox(width: 8),
+                            Text(
+                              "Réponse de l'administration",
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: Colors.green.shade800,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          reclamation.reponse!,
+                          style: TextStyle(
+                            color: Colors.grey.shade800,
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.access_time, color: Colors.orange.shade800),
+                        const SizedBox(width: 12),
+                        Text(
+                          "En attente de réponse de l'administration",
+                          style: TextStyle(color: Colors.orange.shade800),
+                        ),
+                      ],
+                    ),
+                  ),
               ],
             ),
           );

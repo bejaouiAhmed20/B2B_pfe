@@ -30,7 +30,6 @@ class _ReservationBottomSheetState extends State<ReservationBottomSheet> {
     'business': [
       {'id': 'comfort', 'name': 'Comfort', 'priceMultiplier': 2.0},
       {'id': 'premium', 'name': 'Premium', 'priceMultiplier': 2.5},
-      {'id': 'elite', 'name': 'Elite', 'priceMultiplier': 3.0},
     ],
   };
 
