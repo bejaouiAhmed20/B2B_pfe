@@ -29,3 +29,4 @@ router.put('/:id', updateContract as express.RequestHandler);
 router.delete('/:id', deleteContract as express.RequestHandler);
 
 export default router;
+

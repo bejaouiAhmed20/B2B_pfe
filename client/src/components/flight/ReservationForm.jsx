@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -13,13 +13,18 @@ import {
   Checkbox,
   FormControlLabel,
   Divider,
-  Alert
+  Alert,
+  RadioGroup,
+  Radio
 } from '@mui/material';
 import {
   AttachMoney,
   AirplaneTicket,
-  LocalOffer
+  LocalOffer,
+  BusinessCenter,
+  AccessTime
 } from '@mui/icons-material';
+import axios from 'axios';
 
 const ReservationForm = ({ 
   flight, 
@@ -36,6 +41,128 @@ const ReservationForm = ({
   userBalance,
   showBalanceWarning
 }) => {
+  const [userContract, setUserContract] = useState(null);
+  const [contractCoupon, setContractCoupon] = useState(null);
+  const [priceType, setPriceType] = useState('base');
+  const [loading, setLoading] = useState(false);
+  const [timeBeforeFlightError, setTimeBeforeFlightError] = useState(false);
+  const [hoursBeforeFlight, setHoursBeforeFlight] = useState(0);
+
+  // Fetch user's contract on component mount
+  useEffect(() => {
+    const fetchUserContract = async () => {
+      try {
+        setLoading(true);
+        const userData = JSON.parse(localStorage.getItem('user'));
+        if (!userData) return;
+
+        // Get user's active contract
+        const response = await axios.get(`http://localhost:5000/api/contracts/client/${userData.id}`);
+        if (response.data && response.data.length > 0) {
+          // Get the active contract
+          const activeContract = response.data.find(contract => contract.isActive) || response.data[0];
+          setUserContract(activeContract);
+          
+          // If contract has a coupon, fetch its details
+          if (activeContract.coupon) {
+            setContractCoupon(activeContract.coupon);
+          }
+          
+          // Check time before flight
+          if (flight && activeContract.minTimeBeforeBalanceFlight) {
+            checkTimeBeforeFlight(flight.date_depart, activeContract.minTimeBeforeBalanceFlight);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user contract:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserContract();
+  }, [flight]);
+
+  // Check if the current time is at least minTimeBeforeBalanceFlight hours before the flight
+  const checkTimeBeforeFlight = (departureDate, minHours) => {
+    const now = new Date();
+    const departure = new Date(departureDate);
+    const diffInMs = departure.getTime() - now.getTime();
+    const diffInHours = diffInMs / (1000 * 60 * 60);
+    
+    setHoursBeforeFlight(Math.floor(diffInHours));
+    setTimeBeforeFlightError(diffInHours < minHours);
+  };
+
+  // Handle price type change
+  const handlePriceTypeChange = (event) => {
+    setPriceType(event.target.value);
+    
+    // Calculate the new price based on the selected price type
+    let newPrice;
+    if (event.target.value === 'fixed' && userContract?.fixedTicketPrice) {
+      // Use fixed price from contract
+      newPrice = userContract.fixedTicketPrice * reservation.nombre_passagers;
+    } else {
+      // Use base price with fare multiplier
+      const basePrice = flight.prix * getCurrentFareMultiplier() * reservation.nombre_passagers;
+      newPrice = basePrice - (reservation.discountAmount || 0);
+    }
+    
+    // Update the reservation with the new price
+    handlePriceChange(newPrice);
+  };
+  
+  // Helper function to update the reservation price
+  const handlePriceChange = (newPrice) => {
+    const updatedReservation = {
+      ...reservation,
+      prix_total: newPrice > 0 ? newPrice : 0
+    };
+    // This assumes setReservation is passed down as a prop or available in context
+    // If not, you'll need to modify this to use the appropriate update method
+    if (typeof handlePassengerChange === 'function') {
+      // Use handlePassengerChange as a proxy to update the reservation
+      handlePassengerChange(
+        { target: { value: reservation.nombre_passagers } },
+        reservation.classType,
+        reservation.fareType,
+        newPrice
+      );
+    }
+  };
+
+  // Apply contract coupon automatically
+  const applyContractCoupon = () => {
+    if (!contractCoupon) return;
+    
+    // Set the coupon code in the reservation
+    handleCouponChange({ target: { value: contractCoupon.code } });
+    
+    // Apply the coupon
+    applyCoupon();
+  };
+
+  // Format time remaining as a readable string
+  const formatTimeRemaining = (hours) => {
+    if (hours < 1) {
+      return `${Math.floor(hours * 60)} minutes`;
+    }
+    const days = Math.floor(hours / 24);
+    const remainingHours = Math.floor(hours % 24);
+    
+    if (days > 0) {
+      return `${days} jour${days > 1 ? 's' : ''} et ${remainingHours} heure${remainingHours > 1 ? 's' : ''}`;
+    }
+    return `${remainingHours} heure${remainingHours > 1 ? 's' : ''}`;
+  };
+
+  // Modified handleSubmit to include priceType
+  const handleSubmitReservation = () => {
+    // Pass the priceType along with the reservation data
+    handleReservation(priceType);
+  };
+
   return (
     <Card>
       <CardContent>
@@ -43,11 +170,24 @@ const ReservationForm = ({
           Réservation
         </Typography>
         
-      <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
           <Typography variant="h4" color="primary">
             {flight.prix} DT <Typography component="span" variant="body2">/ personne</Typography>
           </Typography>
         </Box>
+        
+        {/* Time before flight warning */}
+        {timeBeforeFlightError && userContract?.minTimeBeforeBalanceFlight && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <AccessTime sx={{ mr: 1 }} />
+              <Typography variant="body2">
+                Selon votre contrat, vous devez réserver au moins {userContract.minTimeBeforeBalanceFlight} heures avant le départ.
+                Il reste seulement {formatTimeRemaining(hoursBeforeFlight)} avant ce vol.
+              </Typography>
+            </Box>
+          </Alert>
+        )}
         
         {/* Seat availability information */}
         <Box sx={{ mb: 3, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
@@ -88,7 +228,6 @@ const ReservationForm = ({
           <Select
             value={reservation.classType}
             onChange={(e) => {
-              console.log("Class changed to:", e.target.value);
               // When class changes, reset fare type to the first available option for that class
               const defaultFareType = fareTypes[e.target.value][0].id;
               handlePassengerChange(
@@ -114,7 +253,6 @@ const ReservationForm = ({
           <Select
             value={reservation.fareType}
             onChange={(e) => {
-              console.log("Fare type changed to:", e.target.value);
               handlePassengerChange(
                 { target: { value: reservation.nombre_passagers } }, 
                 reservation.classType, 
@@ -131,44 +269,78 @@ const ReservationForm = ({
           </Select>
         </FormControl>
         
-        {/* Coupon section */}
-        <Box sx={{ mb: 3 }}>
-          <FormControlLabel
-            control={
-              <Checkbox 
-                checked={reservation.hasCoupon}
-                onChange={handleCouponCheckboxChange}
-                color="primary"
-              />
-            }
-            label="J'ai un code promo"
-          />
-          
-          {reservation.hasCoupon && (
-            <Box sx={{ display: 'flex', mt: 1 }}>
-              <TextField
-                fullWidth
-                size="small"
-                label="Code promo"
-                value={reservation.coupon}
-                onChange={handleCouponChange}
-                placeholder="Entrez votre code"
-                InputProps={{
-                  startAdornment: (
-                    <LocalOffer sx={{ color: 'action.active', mr: 1, fontSize: '1.2rem' }} />
-                  ),
-                }}
-              />
-              <Button 
-                variant="outlined" 
-                onClick={applyCoupon}
-                sx={{ ml: 1 }}
-              >
-                Appliquer
-              </Button>
+        {/* Contract price selection */}
+        {userContract && userContract.fixedTicketPrice && (
+          <Box sx={{ mb: 3, p: 2, bgcolor: '#f0f7ff', borderRadius: 1, border: '1px dashed #1976d2' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+              <BusinessCenter sx={{ mr: 1, color: '#1976d2' }} />
+              <Typography variant="subtitle1" fontWeight="bold">
+                Prix du contrat
+              </Typography>
             </Box>
-          )}
-        </Box>
+            
+            <Typography variant="body2" sx={{ mb: 2 }}>
+              Votre contrat ({userContract.label}) vous permet de choisir entre le prix de base et un prix fixe.
+            </Typography>
+            
+            <FormControl component="fieldset">
+              <RadioGroup
+                name="price-type"
+                value={priceType}
+                onChange={handlePriceTypeChange}
+              >
+                <FormControlLabel 
+                  value="base" 
+                  control={<Radio />} 
+                  label={`Prix de base (${flight.prix} DT × multiplicateur de tarif)`} 
+                />
+                <FormControlLabel 
+                  value="fixed" 
+                  control={<Radio />} 
+                  label={`Prix fixe du contrat (${userContract.fixedTicketPrice} DT par billet)`} 
+                />
+              </RadioGroup>
+            </FormControl>
+          </Box>
+        )}
+        
+        {/* Contract coupon section */}
+        {contractCoupon ? (
+          <Box sx={{ mb: 3, p: 2, bgcolor: '#fff8e1', borderRadius: 1, border: '1px dashed #ffc107' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+              <LocalOffer sx={{ mr: 1, color: '#f57c00' }} />
+              <Typography variant="subtitle1" fontWeight="bold">
+                Coupon de contrat
+              </Typography>
+            </Box>
+            
+            <Typography variant="body2" sx={{ mb: 2 }}>
+              Votre contrat inclut un code promo: <strong>{contractCoupon.code}</strong>
+              {contractCoupon.reduction_type === 'percentage' 
+                ? ` (${contractCoupon.reduction}% de réduction)`
+                : ` (${contractCoupon.reduction} DT de réduction)`}
+            </Typography>
+            
+            <Button 
+              variant="outlined" 
+              color="warning"
+              onClick={applyContractCoupon}
+              startIcon={<LocalOffer />}
+              disabled={validCoupon && validCoupon.code === contractCoupon.code}
+            >
+              {validCoupon && validCoupon.code === contractCoupon.code 
+                ? 'Coupon appliqué' 
+                : 'Appliquer le coupon'}
+            </Button>
+          </Box>
+        ) : (
+          // If no contract coupon, don't show the coupon section at all
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="body2" color="text.secondary">
+              Aucun code promo n'est disponible dans votre contrat.
+            </Typography>
+          </Box>
+        )}
         
         {/* Enhanced price summary box */}
         <Box sx={{ 
@@ -184,130 +356,99 @@ const ReservationForm = ({
           </Typography>
           
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-            <Typography variant="body2" color="text.secondary">Prix unitaire (base)</Typography>
-            <Typography variant="body2">{flight.prix} DT</Typography>
-          </Box>
-          
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
             <Typography variant="body2" color="text.secondary">
-              Classe & Tarif
+              {priceType === 'fixed' && userContract?.fixedTicketPrice 
+                ? 'Prix fixe du contrat' 
+                : 'Prix unitaire (base)'}
             </Typography>
             <Typography variant="body2">
-              {reservation.classType === 'economy' ? 'Économique' : 'Affaires'} - 
-              <span style={{ fontWeight: 'bold', color: '#CC0A2B' }}>
-                {fareTypes[reservation.classType].find(fare => fare.id === reservation.fareType)?.name}
-              </span>
+              {priceType === 'fixed' && userContract?.fixedTicketPrice 
+                ? `${userContract.fixedTicketPrice} DT` 
+                : `${flight.prix} DT`}
             </Typography>
           </Box>
           
-          {/* Display seat information if available */}
-          {reservation.seats && reservation.seats.length > 0 && (
+          {priceType !== 'fixed' && (
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-              <Typography variant="body2" color="text.secondary">Sièges</Typography>
-              <Typography variant="body2">{reservation.seats.map(seat => seat.seatNumber).join(', ')}</Typography>
+              <Typography variant="body2" color="text.secondary">
+                Classe & Tarif
+              </Typography>
+              <Typography variant="body2">
+                {reservation.classType === 'economy' ? 'Économique' : 'Affaires'} - 
+                <span style={{ fontWeight: 'bold', color: '#CC0A2B' }}>
+                  {fareTypes[reservation.classType].find(fare => fare.id === reservation.fareType)?.name}
+                </span>
+              </Typography>
             </Box>
           )}
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-            <Typography variant="body2" color="text.secondary">Prix unitaire (ajusté)</Typography>
-            <Typography variant="body2" fontWeight="medium">{(flight.prix * getCurrentFareMultiplier()).toFixed(2)} DT</Typography>
-          </Box>
           
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
             <Typography variant="body2" color="text.secondary">Nombre de passagers</Typography>
             <Typography variant="body2">{reservation.nombre_passagers}</Typography>
           </Box>
           
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, pt: 1, borderTop: '1px dashed #e0e0e0' }}>
-            <Typography variant="body2" color="text.secondary">Sous-total</Typography>
-            <Typography variant="body2" fontWeight="medium">{(flight.prix * getCurrentFareMultiplier() * reservation.nombre_passagers).toFixed(2)} DT</Typography>
-          </Box>
-          
-          {reservation.discountAmount > 0 && (
+          {validCoupon && (
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-              <Typography variant="body2" color="success.main" sx={{ display: 'flex', alignItems: 'center' }}>
-                <LocalOffer sx={{ fontSize: '0.9rem', mr: 0.5 }} />
-                Réduction
-              </Typography>
-              <Typography variant="body2" color="success.main" fontWeight="medium">-{reservation.discountAmount.toFixed(2)} DT</Typography>
+              <Typography variant="body2" color="text.secondary">Réduction (Coupon {validCoupon.code})</Typography>
+              <Typography variant="body2" color="error">-{reservation.discountAmount} DT</Typography>
             </Box>
           )}
           
-          <Box sx={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            mt: 2,
-            pt: 1.5,
-            borderTop: '2px solid #e0e0e0',
-            alignItems: 'center'
-          }}>
-            <Typography variant="subtitle1" fontWeight="bold">Total</Typography>
-            <Typography variant="h5" color="primary" fontWeight="bold">{reservation.prix_total.toFixed(2)} DT</Typography>
-          </Box>
-          
-          {/* User balance information */}
-          <Divider sx={{ my: 2 }} />
+          <Divider sx={{ my: 1 }} />
           
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-            <Typography variant="body2" fontWeight="medium">Votre solde actuel</Typography>
-            <Typography 
-              variant="body2" 
-              fontWeight="medium" 
-              color={Number(userBalance) < reservation.prix_total ? 'error.main' : 'success.main'}
-            >
-              {(Number(userBalance)).toFixed(2)} DT
+            <Typography variant="subtitle1" fontWeight="bold">Total</Typography>
+            <Typography variant="subtitle1" fontWeight="bold" color="primary">
+              {reservation.prix_total} DT
             </Typography>
           </Box>
           
-          {isFlightAvailable(flight.date_depart) && Number(userBalance) < reservation.prix_total && (
-            <Typography variant="body2" color="error" align="center" sx={{ mt: 2 }}>
-              Solde insuffisant: {(Number(userBalance)).toFixed(2)}€ / {reservation.prix_total.toFixed(2)}€ requis
+          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+            <Typography variant="body2" color="text.secondary">Solde disponible</Typography>
+            <Typography 
+              variant="body2" 
+              color={userBalance < reservation.prix_total ? 'error' : 'success.main'}
+              fontWeight="bold"
+            >
+              {userBalance} DT
             </Typography>
-          )}
-          
-          {showBalanceWarning && (
-            <Alert severity="warning" sx={{ mt: 1, mb: 2 }}>
-              Votre solde est insuffisant pour cette réservation. Veuillez recharger votre compte.
-            </Alert>
-          )}
+          </Box>
         </Box>
         
+        {showBalanceWarning && (
+          <Alert severity="warning" sx={{ mb: 3 }}>
+            Votre solde est insuffisant pour effectuer cette réservation. Veuillez recharger votre compte.
+          </Alert>
+        )}
         
         <Button
           variant="contained"
+          color="primary"
           fullWidth
           size="large"
-          startIcon={<AirplaneTicket />}
-          onClick={handleReservation}
-          disabled={!isFlightAvailable(flight.date_depart) || userBalance < reservation.prix_total}
-          sx={{ 
-            backgroundColor: '#CC0A2B',
-            '&:hover': {
-              backgroundColor: '#A00823',
-            },
-            py: 1.5,
-            fontSize: '1.1rem',
-            boxShadow: '0 4px 12px rgba(204, 10, 43, 0.3)',
-            mb: 2
-          }}
+          onClick={handleSubmitReservation}
+          disabled={!isFlightAvailable(flight.date_depart) || timeBeforeFlightError}
+          sx={{ mt: 3 }}
         >
-          Réserver maintenant
+          RÉSERVER MAINTENANT
         </Button>
-        
-        {/* Add explicit messages about why the button might be disabled */}
-        {!isFlightAvailable(flight.date_depart) && (
-          <Typography variant="body2" color="error" align="center" sx={{ mt: 2 }}>
-            Ce vol n'est plus disponible à la réservation
-          </Typography>
-        )}
-        
-        {isFlightAvailable(flight.date_depart) && userBalance < reservation.prix_total && (
-          <Typography variant="body2" color="error" align="center" sx={{ mt: 2 }}>
-            Solde insuffisant: {userBalance.toFixed(2)}€ / {reservation.prix_total.toFixed(2)}€ requis
-          </Typography>
-        )}
       </CardContent>
     </Card>
   );
 };
 
 export default ReservationForm;
+
+// When handling the reservation submission
+const handleSubmit = () => {
+  // Make sure priceType is accessible here
+  console.log("Using price type:", priceType);
+  
+  const reservationData = {
+    // ... other reservation data ...
+    use_contract_price: priceType === 'fixed',
+    prix_total: reservation.prix_total
+  };
+  
+  handleReservation(reservationData);
+};

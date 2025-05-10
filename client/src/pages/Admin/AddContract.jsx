@@ -17,6 +17,7 @@ import { useNavigate } from 'react-router-dom';
 const AddContract = () => {
   const navigate = useNavigate();
   const [clients, setClients] = useState([]);
+  const [coupons, setCoupons] = useState([]);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [formData, setFormData] = useState({
     clientType: '',
@@ -28,21 +29,19 @@ const AddContract = () => {
     travelStartDate: '',
     travelEndDate: '',
     isActive: true,
-    enableInternetFees: false,
     modifiedFeeAmount: '',
-    toxlFee: '',
-    twoHourConstraint: '',
     payLater: false,
     payLaterTimeLimit: '',
-    minTimeBeforeCCFlight: '',
     minTimeBeforeBalanceFlight: '',
     invoiceStamp: '',
     finalClientAdditionalFees: '',
-    discount: ''
+    fixedTicketPrice: '',
+    coupons: []
   });
 
   useEffect(() => {
     fetchClients();
+    fetchCoupons();
   }, []);
 
   const fetchClients = async () => {
@@ -51,6 +50,15 @@ const AddContract = () => {
       setClients(response.data);
     } catch (error) {
       showSnackbar('Erreur lors du chargement des clients', 'error');
+    }
+  };
+
+  const fetchCoupons = async () => {
+    try {
+      const response = await axios.get('http://localhost:5000/api/coupons');
+      setCoupons(response.data);
+    } catch (error) {
+      showSnackbar('Erreur lors du chargement des coupons', 'error');
     }
   };
 
@@ -257,20 +265,6 @@ const AddContract = () => {
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={formData.enableInternetFees}
-                  onChange={handleChange}
-                  name="enableInternetFees"
-                  color="primary"
-                />
-              }
-              label="Activer les Frais Internet"
-            />
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
             <Typography variant="subtitle2" gutterBottom>
               Montant des Frais Modifié (€)
             </Typography>
@@ -287,30 +281,17 @@ const AddContract = () => {
           
           <Grid item xs={12} md={6}>
             <Typography variant="subtitle2" gutterBottom>
-              TOXL (€)
+              Prix Fixe des Billets (€)
             </Typography>
             <TextField
-              name="toxlFee"
+              name="fixedTicketPrice"
               type="number"
-              value={formData.toxlFee}
+              value={formData.fixedTicketPrice}
               onChange={handleChange}
               fullWidth
               margin="normal"
               inputProps={{ step: "0.01" }}
-            />
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <Typography variant="subtitle2" gutterBottom>
-              Contrainte 2H
-            </Typography>
-            <TextField
-              name="twoHourConstraint"
-              type="number"
-              value={formData.twoHourConstraint}
-              onChange={handleChange}
-              fullWidth
-              margin="normal"
+              helperText="Laisser vide si pas de prix fixe"
             />
           </Grid>
           
@@ -339,21 +320,29 @@ const AddContract = () => {
               onChange={handleChange}
               fullWidth
               margin="normal"
+              disabled={!formData.payLater}
             />
           </Grid>
           
           <Grid item xs={12} md={6}>
             <Typography variant="subtitle2" gutterBottom>
-              Temps Minimum Avant Vol CC (heures)
+              Coupons Associés
             </Typography>
             <TextField
-              name="minTimeBeforeCCFlight"
-              type="number"
-              value={formData.minTimeBeforeCCFlight}
+              name="coupon"
+              select
+              value={formData.coupon || ''}
               onChange={handleChange}
               fullWidth
               margin="normal"
-            />
+            >
+              <MenuItem value="">Aucun coupon</MenuItem>
+              {coupons.map((coupon) => (
+                <MenuItem key={coupon.id} value={coupon.id}>
+                  {coupon.code} - {coupon.reduction}{coupon.reduction_type === 'percentage' ? '%' : '€'}
+                </MenuItem>
+              ))}
+            </TextField>
           </Grid>
           
           <Grid item xs={12} md={6}>
@@ -400,42 +389,54 @@ const AddContract = () => {
             />
           </Grid>
           
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12}>
             <Typography variant="subtitle2" gutterBottom>
-              Remise (€)
+              Coupons Associés
             </Typography>
             <TextField
-              name="discount"
-              type="number"
-              value={formData.discount}
+              name="coupon"
+              select
+              value={formData.coupon || ''}
               onChange={handleChange}
               fullWidth
               margin="normal"
-              inputProps={{ step: "0.01" }}
-            />
+            >
+              <MenuItem value="">Aucun coupon</MenuItem>
+              {coupons.map((coupon) => (
+                <MenuItem key={coupon.id} value={coupon.id}>
+                  {coupon.code} - {coupon.reduction}{coupon.reduction_type === 'percentage' ? '%' : '€'}
+                </MenuItem>
+              ))}
+            </TextField>
           </Grid>
           
-          <Grid item xs={12} sx={{ mt: 3, display: 'flex', justifyContent: 'space-between' }}>
-            <Button 
-              variant="outlined" 
-              color="secondary" 
-              onClick={() => navigate('/admin/contracts')}
-            >
-              Annuler
-            </Button>
-            <Button 
-              type="submit" 
-              variant="contained" 
-              color="primary"
-            >
-              Créer le Contrat
-            </Button>
+          <Grid item xs={12} sx={{ mt: 3 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Button 
+                variant="outlined" 
+                color="secondary" 
+                onClick={() => navigate('/admin/contracts')}
+              >
+                Annuler
+              </Button>
+              <Button 
+                type="submit" 
+                variant="contained" 
+                color="primary"
+              >
+                Créer le Contrat
+              </Button>
+            </div>
           </Grid>
         </Grid>
       </form>
-      
-      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleCloseSnackbar}>
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity}>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+      >
+        <Alert severity={snackbar.severity} onClose={handleCloseSnackbar}>
           {snackbar.message}
         </Alert>
       </Snackbar>

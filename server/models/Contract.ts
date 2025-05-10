@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, BaseEntity, ManyToOne, JoinColumn } from 'typeorm';
 import { User } from './User';
+import { Coupon } from './Coupon';
 
 @Entity()
 export class Contract extends BaseEntity {
@@ -34,26 +35,14 @@ export class Contract extends BaseEntity {
   @Column('boolean', { default: false })
   isActive!: boolean; // Actif
 
-  @Column('boolean', { default: false })
-  enableInternetFees!: boolean; // Activer les Frais Internet
-
   @Column('decimal', { precision: 10, scale: 2, nullable: true })
   modifiedFeeAmount!: number | null; // Modifier le Montant des Frais (Optionnel)
-
-  @Column('decimal', { precision: 10, scale: 2, nullable: true })
-  toxlFee!: number | null; // TOXL
-
-  @Column('integer', { nullable: true })
-  twoHourConstraint!: number | null; // 2H
 
   @Column('boolean', { default: false })
   payLater!: boolean; // Payer Plus Tard
 
   @Column('integer', { nullable: true })
   payLaterTimeLimit!: number | null; // Limite de Temps pour Payer Plus Tard (in hours)
-
-  @Column('integer', { nullable: true })
-  minTimeBeforeCCFlight!: number | null; // Temps Minimum Avant Vol CC (in hours)
 
   @Column('integer', { nullable: true })
   minTimeBeforeBalanceFlight!: number | null; // Temps Minimum Avant Vol Balance (in hours)
@@ -64,8 +53,14 @@ export class Contract extends BaseEntity {
   @Column('decimal', { precision: 10, scale: 2, nullable: true })
   finalClientAdditionalFees!: number | null; // Frais Supplémentaires Client Final
 
+  // New field for fixed ticket price
   @Column('decimal', { precision: 10, scale: 2, nullable: true })
-  discount!: number | null; // Discount
+  fixedTicketPrice!: number | null; // Prix fixe pour tous les billets
+
+  // Changed from ManyToMany to ManyToOne relation with Coupon
+  @ManyToOne(() => Coupon, { nullable: true })
+  @JoinColumn({ name: 'coupon_id' })
+  coupon!: Coupon | null;
 
   @Column('timestamp', { default: () => 'CURRENT_TIMESTAMP' })
   createdAt!: Date;

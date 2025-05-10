@@ -6,6 +6,8 @@ import { Coupon } from '../../models/Coupon';
 import { FlightSeatReservation } from '../../models/FlightSeatReservation';
 import { Seat } from '../../models/Seat';
 import nodemailer from 'nodemailer';
+import { Contract } from '../../models/Contract';
+import { Not, IsNull } from 'typeorm'; // Add this import line
 
 // Helper functions for email formatting
 const formatDateFr = (date: Date): string => {
@@ -91,6 +93,7 @@ export const getReservationById = async (req: Request, res: Response) => {
     }
 
     // Get seat reservations for this reservation
+    // Add null checks before accessing properties
     if (reservation.flight) {
       const seatReservations = await FlightSeatReservation.find({
         where: { 
@@ -392,219 +395,76 @@ export const cancelReservation = async (req: Request, res: Response) => {
   }
 };
 
-// Updated createReservation function
+// Create a new reservation
 export const createReservation = async (req: Request, res: Response) => {
   try {
-    const { 
-      date_reservation, 
-      statut, 
-      prix_total, 
-      nombre_passagers, 
-      user_id, 
+    console.log("Creating new reservation");
+    const {
+      nombre_passagers,
+      prix_total,
+      user_id,
       flight_id,
-      coupon,
+      coupon_code,
       discount_amount,
-      class_type, 
-      fare_type
+      class_type,
+      fare_type,
+      use_contract_price
     } = req.body;
 
-    // Vérifie si l'utilisateur existe
+    // Find the user
     const user = await User.findOneBy({ id: user_id });
     if (!user) {
-      return res.status(404).json({ message: "Utilisateur non trouvé" });
+      return res.status(404).json({ message: "User not found" });
     }
 
-    // Vérifie si le vol existe
-    const flight = await Flight.findOne({
-      where: { id: flight_id },
-      relations: ['plane', 'plane.seats']
-    });
-    
+    // Find the flight
+    const flight = await Flight.findOneBy({ id: flight_id });
     if (!flight) {
-      return res.status(404).json({ message: "Vol non trouvé" });
+      return res.status(404).json({ message: "Flight not found" });
     }
 
-    // Check if there are enough seats available
-    if (!flight.plane || !flight.plane.seats) {
-      return res.status(400).json({ message: "Ce vol n'a pas d'avion ou de sièges assignés" });
-    }
-
-    // Get already reserved seats for this flight
-    const reservedSeats = await FlightSeatReservation.find({
-      where: { 
-        flight: { id: flight_id },
-        isReserved: true 
-      },
-      relations: ['seat']
-    });
-    
-    const reservedSeatIds = reservedSeats.map(rs => rs.seat.idSeat);
-    console.log(`Found ${reservedSeatIds.length} already reserved seats for flight ${flight_id}`);
-
-    // Filter available seats by class
-    const availableSeats = flight.plane.seats
-      .filter(seat => !reservedSeatIds.includes(seat.idSeat) && seat.classType === (class_type || 'economy'));
-    
-    console.log(`Found ${availableSeats.length} available ${class_type || 'economy'} seats`);
-
-    if (availableSeats.length < nombre_passagers) {
-      return res.status(400).json({ 
-        message: `Pas assez de sièges disponibles. Seulement ${availableSeats.length} sièges disponibles.` 
+    // Check if user has an active contract with fixed price
+    let finalPrice = prix_total;
+    if (use_contract_price) {
+      const activeContract = await Contract.findOne({
+        where: { 
+          client: { id: user_id },
+          isActive: true,
+          fixedTicketPrice: Not(IsNull())
+        }
       });
-    }
-
-    // Create reservation object with basic fields
-    const reservationData: any = {
-      date_reservation,
-      statut,
-      prix_total,
-      nombre_passagers,
-      user,
-      flight,
-      coupon_code: coupon || null,
-      discount_amount: discount_amount || 0,
-      class_type: class_type || 'economy',
-      fare_type: fare_type || 'light'
-    };
-
-    // If coupon code is provided, find the coupon and link it
-    if (coupon) {
-      const couponEntity = await Coupon.findOne({ where: { code: coupon } });
-      if (couponEntity) {
-        reservationData.coupon = couponEntity;
+      
+      if (activeContract && activeContract.fixedTicketPrice) {
+        console.log(`Using contract fixed price: ${activeContract.fixedTicketPrice}`);
+        finalPrice = activeContract.fixedTicketPrice * nombre_passagers;
       }
     }
 
     // Create the reservation
-    const reservation = Reservation.create(reservationData);
-    await reservation.save();
-    console.log(`Created reservation with ID: ${reservation.id}`);
-
-    // Randomly select seats
-    const shuffledSeats = availableSeats.sort(() => 0.5 - Math.random());
-    const allocatedSeats = shuffledSeats.slice(0, nombre_passagers);
+    const reservation = new Reservation();
+    reservation.date_reservation = new Date();
+    reservation.statut = "Confirmée";
+    reservation.prix_total = finalPrice;
+    reservation.nombre_passagers = nombre_passagers;
+    reservation.user = user;
+    reservation.flight = flight;
+    reservation.class_type = class_type || 'economy';
+    reservation.fare_type = fare_type || 'standard';
     
-    // Create flight seat reservations
-    const seatReservations = [];
-    for (const seat of allocatedSeats) {
-      const flightSeatReservation = new FlightSeatReservation();
-      flightSeatReservation.flight = flight;
-      flightSeatReservation.reservation = reservation;
-      flightSeatReservation.seat = seat;
-      flightSeatReservation.isReserved = true;
-      
-      await flightSeatReservation.save();
-      seatReservations.push(flightSeatReservation);
-    }
-    
-    console.log(`Created ${seatReservations.length} seat reservations for reservation ${reservation.id}`);
-
-    // Send confirmation email to the client
-    try {
-      if (user.email) {
-        console.log(`Sending reservation confirmation email to ${user.email}`);
-        
-        // Format dates for email
-        const dateReservation = formatDateFr(new Date(date_reservation));
-        const dateDepart = flight.date_depart ? formatDateFr(new Date(flight.date_depart)) : 'Non spécifiée';
-        const dateArrivee = flight.date_retour ? formatDateFr(new Date(flight.date_retour)) : 'Non spécifiée';
-        
-        // Format price
-        const prixFormatted = formatEuro(parseFloat(prix_total.toString()));
-        
-        // Create HTML email content
-        const htmlContent = `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <meta charset="UTF-8">
-            <style>
-              body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
-              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-              .header { background-color: #CC0A2B; color: white; padding: 20px; text-align: center; }
-              .content { padding: 20px; }
-              .details { background-color: #f5f5f5; padding: 15px; margin: 15px 0; border-radius: 5px; }
-              .success { color: #4CAF50; font-weight: bold; }
-              .footer { font-size: 12px; text-align: center; margin-top: 30px; color: #666; }
-              .seats { margin-top: 10px; }
-              .seat { display: inline-block; margin-right: 10px; background-color: #e0e0e0; padding: 5px 10px; border-radius: 3px; }
-            </style>
-          </head>
-          <body>
-            <div class="container">
-              <div class="header">
-                <h1>Tunisair B2B</h1>
-              </div>
-              <div class="content">
-                <h2>Confirmation de Réservation</h2>
-                <p>Bonjour ${user.nom || 'Client'},</p>
-                <p>Nous vous confirmons que votre réservation a été <span class="success">effectuée avec succès</span>.</p>
-                
-                <div class="details">
-                  <h3>Détails de la réservation:</h3>
-                  <p><strong>Numéro de réservation:</strong> ${reservation.id}</p>
-                  <p><strong>Date de réservation:</strong> ${dateReservation}</p>
-                  <p><strong>Statut:</strong> <span class="success">${statut}</span></p>
-                  <p><strong>Prix total:</strong> ${prixFormatted}</p>
-                  <p><strong>Nombre de passagers:</strong> ${nombre_passagers}</p>
-                  <p><strong>Classe:</strong> ${class_type || 'Économique'}</p>
-                  <p><strong>Type de tarif:</strong> ${fare_type || 'Light'}</p>
-                </div>
-                
-                <div class="details">
-                  <h3>Détails du vol:</h3>
-                  <p><strong>Vol:</strong> ${flight.titre || 'N/A'}</p>
-                  <p><strong>Date de départ:</strong> ${dateDepart}</p>
-                  <p><strong>Date d'arrivée:</strong> ${dateArrivee}</p>
-                </div>
-                
-                <div class="details">
-                  <h3>Sièges attribués:</h3>
-                  <div class="seats">
-                    ${allocatedSeats.map(seat => `<span class="seat">${seat.seatNumber}</span>`).join(' ')}
-                  </div>
-                </div>
-                
-                <p>Nous vous remercions pour votre confiance et vous souhaitons un excellent voyage.</p>
-                <p>Cordialement,<br>L'équipe Tunisair B2B</p>
-              </div>
-              <div class="footer">
-                <p>Ceci est un email automatique, merci de ne pas y répondre.</p>
-              </div>
-            </div>
-          </body>
-          </html>
-        `;
-        
-        // Send the email
-        const mailResult = await emailTransporter.sendMail({
-          from: process.env.EMAIL_USER || 'noreply@tunisairb2b.com',
-          to: user.email,
-          subject: 'Tunisair B2B - Confirmation de votre réservation',
-          html: htmlContent
-        });
-        
-        console.log('Reservation confirmation email sent successfully:', mailResult.messageId);
-      } else {
-        console.log('User email not found, skipping confirmation email');
+    // Handle coupon if provided
+    if (coupon_code) {
+      const coupon = await Coupon.findOneBy({ code: coupon_code });
+      if (coupon) {
+        reservation.coupon = coupon;
+        reservation.discount_amount = discount_amount || 0;
       }
-    } catch (emailError) {
-      console.error('Failed to send reservation confirmation email:', emailError);
-      // Continue with the process even if email fails
     }
 
-    // Return the reservation with seat information
-    res.status(201).json({
-      ...reservation,
-      allocatedSeats: allocatedSeats.map(seat => ({
-        id: seat.idSeat,
-        seatNumber: seat.seatNumber,
-        classType: seat.classType
-      }))
-    });
+    await reservation.save();
+    res.status(201).json(reservation);
   } catch (error) {
     console.error('Error creating reservation:', error);
-    res.status(500).json({ message: "Une erreur s'est produite lors de la création de la réservation" });
+    res.status(500).json({ message: 'Error creating reservation' });
   }
 };
 

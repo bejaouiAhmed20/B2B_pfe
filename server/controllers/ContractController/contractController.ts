@@ -1,12 +1,13 @@
 import { Request, Response } from 'express';
 import { Contract } from '../../models/Contract';
 import { User } from '../../models/User';
+import { Coupon } from '../../models/Coupon';
 
 // Get all contracts
 export const getContracts = async (req: Request, res: Response) => {
   try {
     const contracts = await Contract.find({
-      relations: ['client']
+      relations: ['client', 'coupon']
     });
     res.json(contracts);
   } catch (error) {
@@ -20,7 +21,7 @@ export const getContractById = async (req: Request, res: Response) => {
   try {
     const contract = await Contract.findOne({
       where: { id: req.params.id },
-      relations: ['client']
+      relations: ['client', 'coupon']
     });
     
     if (!contract) {
@@ -39,7 +40,7 @@ export const getContractsByClientId = async (req: Request, res: Response) => {
   try {
     const contracts = await Contract.find({
       where: { client: { id: req.params.clientId } },
-      relations: ['client']
+      relations: ['client', 'coupon']
     });
     
     res.json(contracts);
@@ -62,17 +63,14 @@ export const createContract = async (req: Request, res: Response) => {
       travelStartDate,
       travelEndDate,
       isActive,
-      enableInternetFees,
       modifiedFeeAmount,
-      toxlFee,
-      twoHourConstraint,
       payLater,
       payLaterTimeLimit,
-      minTimeBeforeCCFlight,
       minTimeBeforeBalanceFlight,
       invoiceStamp,
       finalClientAdditionalFees,
-      discount
+      fixedTicketPrice,
+      coupon
     } = req.body;
     
     // Check if client exists
@@ -91,17 +89,21 @@ export const createContract = async (req: Request, res: Response) => {
     contract.travelStartDate = new Date(travelStartDate);
     contract.travelEndDate = new Date(travelEndDate);
     contract.isActive = isActive !== undefined ? isActive : true;
-    contract.enableInternetFees = enableInternetFees || false;
     contract.modifiedFeeAmount = modifiedFeeAmount || null;
-    contract.toxlFee = toxlFee || null;
-    contract.twoHourConstraint = twoHourConstraint || null;
     contract.payLater = payLater || false;
-    contract.payLaterTimeLimit = payLaterTimeLimit || null;
-    contract.minTimeBeforeCCFlight = minTimeBeforeCCFlight || null;
+    contract.payLaterTimeLimit = payLater ? payLaterTimeLimit : null;
     contract.minTimeBeforeBalanceFlight = minTimeBeforeBalanceFlight || null;
     contract.invoiceStamp = invoiceStamp || null;
     contract.finalClientAdditionalFees = finalClientAdditionalFees || null;
-    contract.discount = discount || null;
+    contract.fixedTicketPrice = fixedTicketPrice || null;
+    
+    // Handle coupon if provided
+    if (coupon) {
+      const couponEntity = await Coupon.findOneBy({ id: coupon });
+      if (couponEntity) {
+        contract.coupon = couponEntity;
+      }
+    }
     
     await contract.save();
     res.status(201).json(contract);
@@ -133,17 +135,14 @@ export const updateContract = async (req: Request, res: Response) => {
       travelStartDate,
       travelEndDate,
       isActive,
-      enableInternetFees,
       modifiedFeeAmount,
-      toxlFee,
-      twoHourConstraint,
       payLater,
       payLaterTimeLimit,
-      minTimeBeforeCCFlight,
       minTimeBeforeBalanceFlight,
       invoiceStamp,
       finalClientAdditionalFees,
-      discount
+      fixedTicketPrice,
+      coupon
     } = req.body;
     
     // Update client if provided
@@ -164,17 +163,30 @@ export const updateContract = async (req: Request, res: Response) => {
     if (travelStartDate !== undefined) contract.travelStartDate = new Date(travelStartDate);
     if (travelEndDate !== undefined) contract.travelEndDate = new Date(travelEndDate);
     if (isActive !== undefined) contract.isActive = isActive;
-    if (enableInternetFees !== undefined) contract.enableInternetFees = enableInternetFees;
     if (modifiedFeeAmount !== undefined) contract.modifiedFeeAmount = modifiedFeeAmount;
-    if (toxlFee !== undefined) contract.toxlFee = toxlFee;
-    if (twoHourConstraint !== undefined) contract.twoHourConstraint = twoHourConstraint;
     if (payLater !== undefined) contract.payLater = payLater;
-    if (payLaterTimeLimit !== undefined) contract.payLaterTimeLimit = payLaterTimeLimit;
-    if (minTimeBeforeCCFlight !== undefined) contract.minTimeBeforeCCFlight = minTimeBeforeCCFlight;
+    
+    // Only set payLaterTimeLimit if payLater is true
+    if (payLater) {
+      if (payLaterTimeLimit !== undefined) contract.payLaterTimeLimit = payLaterTimeLimit;
+    } else {
+      contract.payLaterTimeLimit = null;
+    }
+    
     if (minTimeBeforeBalanceFlight !== undefined) contract.minTimeBeforeBalanceFlight = minTimeBeforeBalanceFlight;
     if (invoiceStamp !== undefined) contract.invoiceStamp = invoiceStamp;
     if (finalClientAdditionalFees !== undefined) contract.finalClientAdditionalFees = finalClientAdditionalFees;
-    if (discount !== undefined) contract.discount = discount;
+    if (fixedTicketPrice !== undefined) contract.fixedTicketPrice = fixedTicketPrice;
+    
+    // Handle coupon if provided
+    if (coupon !== undefined) {
+      if (coupon) {
+        const couponEntity = await Coupon.findOneBy({ id: coupon });
+        contract.coupon = couponEntity || null;
+      } else {
+        contract.coupon = null;
+      }
+    }
     
     await contract.save();
     res.json(contract);
