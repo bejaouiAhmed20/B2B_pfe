@@ -39,10 +39,10 @@ import ResetPassword from './pages/Auth/ResetPassword';
 import FlightDescription from './pages/client/FlightDescription';
 // Import the ReservationsTable component
 import ReservationsTable from './pages/Client/ReservationsTable';
-import ClientLayout from './pages/Client/clientlayout';
 // Import the News components for client side
 import ClientNews from './pages/Client/News';
 import NewsDetail from './pages/Client/NewsDetail';
+import ClientLayout from './pages/Client/ClientLayout';
 
 function App() {
   return (
