@@ -1,249 +1,136 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  Box, 
-  Paper, 
-  TextField, 
-  IconButton, 
-  Typography, 
-  Avatar, 
-  List, 
-  ListItem, 
-  Fab, 
-  Collapse,
-  CircularProgress
-} from '@mui/material';
-import { Send, Close, Chat as ChatIcon, FlightTakeoff } from '@mui/icons-material';
-import { styled } from '@mui/material/styles';
+import './ChatBot.css';
 
-// Styled components
-const ChatContainer = styled(Paper)(({ theme }) => ({
-  position: 'fixed',
-  bottom: 20,
-  right: 20,
-  width: 350,
-  maxHeight: 500,
-  display: 'flex',
-  flexDirection: 'column',
-  zIndex: 1000,
-  boxShadow: theme.shadows[10],
-  borderRadius: '10px',
-  overflow: 'hidden'
-}));
-
-const ChatHeader = styled(Box)(({ theme }) => ({
-  backgroundColor: '#CC0A2B', // Tunisair red
-  color: 'white',
-  padding: theme.spacing(1.5),
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between'
-}));
-
-const MessagesContainer = styled(Box)(({ theme }) => ({
-  flexGrow: 1,
-  overflowY: 'auto',
-  padding: theme.spacing(2),
-  display: 'flex',
-  flexDirection: 'column',
-  gap: theme.spacing(1.5),
-  maxHeight: 350,
-  backgroundColor: '#f5f5f5'
-}));
-
-const MessageBubble = styled(Box)(({ theme, isUser }) => ({
-  maxWidth: '80%',
-  padding: theme.spacing(1.5),
-  borderRadius: isUser ? '18px 18px 0 18px' : '18px 18px 18px 0',
-  backgroundColor: isUser ? '#CC0A2B' : 'white',
-  color: isUser ? 'white' : 'black',
-  alignSelf: isUser ? 'flex-end' : 'flex-start',
-  boxShadow: theme.shadows[1],
-  wordBreak: 'break-word'
-}));
-
-const InputContainer = styled(Box)(({ theme }) => ({
-  display: 'flex',
-  padding: theme.spacing(1.5),
-  backgroundColor: 'white',
-  borderTop: '1px solid #e0e0e0'
-}));
-
-const ChatFab = styled(Fab)(({ theme }) => ({
-  position: 'fixed',
-  bottom: 20,
-  right: 20,
-  backgroundColor: '#CC0A2B',
-  color: 'white',
-  '&:hover': {
-    backgroundColor: '#a00823',
-  }
-}));
-
-// API key and configuration
-const API_KEY = 'AIzaSyDik7bpo_rfdYVTzDR8ym0QCOzBIJDTsQ8';
-const MODEL_VERSION = 'gemini-1.5-flash'; // Updated to a valid model version
-
-const ChatBot = () => {
-  const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState([
-    { 
-      text: "Bonjour ! Je suis l'assistant virtuel de Tunisair B2B. Comment puis-je vous aider avec vos réservations de vols ou informations sur nos destinations ?", 
-      isUser: false 
-    }
-  ]);
-  const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const messagesEndRef = useRef(null);
-
-  // Scroll to bottom when messages change
-  useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [messages]);
-
-  const toggleChat = () => {
-    setOpen(!open);
-  };
-
-  const handleInputChange = (e) => {
-    setInput(e.target.value);
-  };
-
-  const sendMessage = async () => {
-    if (!input.trim()) return;
+function ChatBotComponent() {
+    const [messages, setMessages] = useState([]);
+    const [inputText, setInputText] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [isOpen, setIsOpen] = useState(false);
+    const [language] = useState('fr'); // Default to French
     
-    const userMessage = { text: input, isUser: true };
-    setMessages(prev => [...prev, userMessage]);
-    setInput('');
-    setLoading(true);
+    const chatContainerRef = useRef(null);
 
-    try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/${MODEL_VERSION}:generateContent?key=${API_KEY}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: "user",
-              parts: [
-                {
-                  text: `You are an intelligent and helpful assistant for Tunisair B2B, a professional flight booking platform designed for businesses. This platform is available as both a web and mobile application and enables corporate partners and travel agencies to search, book, manage, and modify flights through a user-friendly B2B interface.
-Your role is to assist users strictly with topics related to flights and Tunisair services, including flight bookings, reservations, ticketing, schedules, availability, baggage information, airport and in-flight services, business travel policies, destinations served by Tunisair, and features of the B2B platform.
-You must not answer questions unrelated to Tunisair or its services. If the user asks about unrelated topics, politely redirect the conversation to matters involving Tunisair.
-You must always respond in the same language the user uses. If the user writes in Arabic, you respond in Arabic. If they use French or English, you respond in that language. If the user switches languages during the conversation, adapt accordingly.
-Keep your responses concise, clear, and professional, and provide accurate and helpful information based on the user's input.
+    // Scroll to bottom whenever messages update
+    useEffect(() => {
+        if (chatContainerRef.current && isOpen) {
+            chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+        }
+    }, [messages, isOpen]);
 
-The user asked: ${input}`
+    // Toggle chat open/closed
+    const toggleChat = () => {
+        setIsOpen(!isOpen);
+    };
+
+    // Initial welcome message in French
+    useEffect(() => {
+        if (messages.length === 0) {
+            setMessages([
+                { 
+                    sender: 'assistant', 
+                    text: 'Bonjour ! Comment puis-je vous aider avec vos arrangements de voyage d\'affaires aujourd\'hui ?' 
                 }
-              ]
+            ]);
+        }
+    }, []);
+
+    // Send message to backend
+    const sendMessage = async () => {
+        const text = inputText.trim();
+        if (!text) return;
+        
+        // Add user message to chat immediately
+        setMessages(prev => [...prev, { sender: 'user', text }]);
+        setInputText('');
+        setLoading(true);
+        
+        try {
+            const res = await fetch('http://localhost:5000/api/chat', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    message: text,
+                    language: language
+                })
+            });
+            
+            if (!res.ok) {
+                throw new Error(`Le serveur a répondu avec le statut: ${res.status}`);
             }
-          ],
-          generationConfig: {
-            temperature: 0.2,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 1024,
-          }
-        })
-      });
+            
+            const data = await res.json();
+            
+            if (data.reply) {
+                // Add assistant response to chat
+                setMessages(prev => [...prev, { sender: 'assistant', text: data.reply }]);
+            } else {
+                // Handle server error
+                const errorMsg = data.error || 'Erreur: Pas de réponse du serveur.';
+                setMessages(prev => [...prev, { sender: 'assistant', text: errorMsg }]);
+            }
+        } catch (err) {
+            console.error('Échec de l\'envoi du message:', err);
+            setMessages(prev => [...prev, { 
+                sender: 'assistant', 
+                text: `Erreur: impossible d'obtenir une réponse. Détails: ${err.message}` 
+            }]);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-      const data = await response.json();
-      
-      // Improved error handling and response parsing
-      if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
-        const botResponse = { 
-          text: data.candidates[0].content.parts[0].text, 
-          isUser: false 
-        };
-        setMessages(prev => [...prev, botResponse]);
-      } else if (data.error) {
-        console.error('API error:', data.error);
-        throw new Error(data.error.message || 'API error occurred');
-      } else {
-        throw new Error('Invalid response format');
-      }
-    } catch (error) {
-      console.error('Error calling Gemini API:', error);
-      setMessages(prev => [...prev, { 
-        text: "Désolé, je n'ai pas pu traiter votre demande. Veuillez réessayer plus tard.", 
-        isUser: false 
-      }]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  };
-
-  return (
-    <>
-      <Collapse in={open} timeout={300}>
-        <ChatContainer>
-          <ChatHeader>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Avatar sx={{ bgcolor: 'white', mr: 1 }}>
-                <FlightTakeoff sx={{ color: '#CC0A2B' }} />
-              </Avatar>
-              <Typography variant="subtitle1">Assistant Tunisair</Typography>
-            </Box>
-            <IconButton size="small" onClick={toggleChat} sx={{ color: 'white' }}>
-              <Close />
-            </IconButton>
-          </ChatHeader>
-          
-          <MessagesContainer>
-            {messages.map((message, index) => (
-              <MessageBubble key={index} isUser={message.isUser}>
-                <Typography variant="body2">{message.text}</Typography>
-              </MessageBubble>
-            ))}
-            {loading && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
-                <CircularProgress size={24} sx={{ color: '#CC0A2B' }} />
-              </Box>
+    return (
+        <div className="chatbot-wrapper">
+            {isOpen ? (
+                <div className="chatbot-container">
+                    <div className="chatbot-header">
+                        <h3>Assistant B2B</h3>
+                        <button className="close-button" onClick={toggleChat}>×</button>
+                    </div>
+                    <div className="chat-messages" ref={chatContainerRef}>
+                        {messages.map((msg, idx) => (
+                            <div key={idx} className={`message ${msg.sender}-message`}>
+                                <div className="message-bubble">
+                                    {msg.text}
+                                </div>
+                            </div>
+                        ))}
+                        {loading && (
+                            <div className="message assistant-message">
+                                <div className="message-bubble typing">
+                                    <span className="dot"></span>
+                                    <span className="dot"></span>
+                                    <span className="dot"></span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                    <div className="chat-input">
+                        <input 
+                            type="text"
+                            value={inputText}
+                            onChange={e => setInputText(e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Enter') sendMessage(); }}
+                            placeholder="Tapez votre message..."
+                            disabled={loading}
+                        />
+                        <button onClick={sendMessage} disabled={loading || !inputText.trim()}>
+                            <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                <line x1="22" y1="2" x2="11" y2="13"></line>
+                                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            ) : (
+                <button className="chatbot-button" onClick={toggleChat}>
+                    Assistant B2B
+                </button>
             )}
-            <div ref={messagesEndRef} />
-          </MessagesContainer>
-          
-          <InputContainer>
-            <TextField
-              fullWidth
-              variant="outlined"
-              placeholder="Posez votre question..."
-              size="small"
-              value={input}
-              onChange={handleInputChange}
-              onKeyPress={handleKeyPress}
-              disabled={loading}
-              sx={{ mr: 1 }}
-            />
-            <IconButton 
-              color="primary" 
-              onClick={sendMessage} 
-              disabled={!input.trim() || loading}
-              sx={{ color: '#CC0A2B' }}
-            >
-              <Send />
-            </IconButton>
-          </InputContainer>
-        </ChatContainer>
-      </Collapse>
-      
-      {!open && (
-        <ChatFab onClick={toggleChat} aria-label="chat">
-          <ChatIcon />
-        </ChatFab>
-      )}
-    </>
-  );
-};
+        </div>
+    );
+}
 
-export default ChatBot;
+export default ChatBotComponent;

@@ -23,6 +23,8 @@ import reclamationRoutes from './routes/ReclamationRoutes/reclamationRoutes';
 import seatReservationRoutes from './routes/SeatReservationRoutes/seatReservationRoutes';
 import planeRoutes from './routes/PlaneRoutes/planeRoutes';
 import seatRoutes from './routes/SeatRoutes/seatRoutes';
+// Import the chat routes
+import chatRoutes from './routes/ChatRoutes/chatRoutes';
 import { SeatReservation } from './models/SeatReservation';
 import { FlightSeatReservation } from './models/FlightSeatReservation';
 
@@ -43,7 +45,12 @@ import { Seat } from './models/Seat';
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:3000', 'http://localhost:5173'], // Add your client URLs
+  credentials: true
+}));
+
+// Parse JSON request bodies
 app.use(express.json());
 
 // Serve static files from uploads directory
@@ -63,7 +70,8 @@ app.use('/api/request-solde', requestSoldeRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/contracts', contractRoutes);
 app.use('/api/reclamations', reclamationRoutes);
-
+// Register the chat routes
+app.use('/api/chat', chatRoutes);
 
 // Make sure you have this line to serve static files
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));

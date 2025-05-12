@@ -142,6 +142,9 @@ class _ReservationListScreenState extends State<ReservationListScreen> {
                 final r = reservations[index];
                 final flight = r['flight'] ?? {};
                 final seats = r['allocatedSeats'] as List<dynamic>?;
+                final coupon = r['coupon'] as Map<String, dynamic>?;
+                final contract = r['contract'] as Map<String, dynamic>?;
+                final hasDiscount = coupon != null || contract != null;
 
                 return InkWell(
                   onTap:
@@ -213,53 +216,71 @@ class _ReservationListScreenState extends State<ReservationListScreen> {
                           ),
                           const SizedBox(height: 16),
                           _buildDetailRow(
-                            Icons.flight_takeoff,
-                            formatDate(flight['date_depart'] ?? ''),
+                            Icons.calendar_today,
+                            formatDate(flight['date_depart'] ?? DateTime.now().toIso8601String()),
                           ),
                           _buildDetailRow(
                             Icons.people,
-                            '${r['nombre_passagers']} passager(s)',
+                            '${r['nombre_passagers']} passager${r['nombre_passagers'] > 1 ? 's' : ''}',
                           ),
                           _buildDetailRow(
-                            Icons.airline_seat_recline_extra,
-                            '${r['class_type']} • ${r['fare_type']}',
+                            Icons.airline_seat_recline_normal,
+                            r['class_type'] ?? 'Classe inconnue',
                           ),
-                          if (seats != null && seats.isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children:
-                                    seats
-                                        .map(
-                                          (seat) => Chip(
-                                            label: Text(
-                                              'Siège ${seat['seatNumber']}',
-                                              style: const TextStyle(
-                                                fontSize: 12,
-                                              ),
-                                            ),
-                                            backgroundColor: Colors.red.shade50,
-                                            labelStyle: TextStyle(
-                                              color: Colors.red.shade800,
-                                            ),
-                                          ),
-                                        )
-                                        .toList(),
-                              ),
+                          
+                          // Display discount badge if applicable
+                          if (hasDiscount) ...[
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green.shade100,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.discount,
+                                        size: 16,
+                                        color: Colors.green.shade800,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'Réduction appliquée',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.green.shade800,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
-                          const Divider(height: 24),
+                          ],
+                          
+                          const SizedBox(height: 16),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                'Total',
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
+                              if (r['original_price'] != null && hasDiscount)
+                                Text(
+                                  '${r['original_price']} €',
+                                  style: TextStyle(
+                                    decoration: TextDecoration.lineThrough,
+                                    color: Colors.grey.shade600,
+                                    fontSize: 14,
+                                  ),
+                                )
+                              else
+                                const SizedBox(),
                               Text(
                                 '${r['prix_total']} €',
                                 style: TextStyle(
@@ -285,12 +306,17 @@ class _ReservationListScreenState extends State<ReservationListScreen> {
 
   Widget _buildDetailRow(IconData icon, String text) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: Colors.grey.shade600),
-          const SizedBox(width: 12),
-          Text(text, style: TextStyle(color: Colors.grey.shade600)),
+          Icon(icon, size: 16, color: Colors.grey.shade600),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(color: Colors.grey.shade700),
+            ),
+          ),
         ],
       ),
     );
