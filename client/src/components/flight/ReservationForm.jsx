@@ -136,11 +136,11 @@ const ReservationForm = ({
   const applyContractCoupon = () => {
     if (!contractCoupon) return;
     
-    // Set the coupon code in the reservation
+    // Use the contractCoupon.code directly instead of relying on state updates
     handleCouponChange({ target: { value: contractCoupon.code } });
     
-    // Apply the coupon
-    applyCoupon();
+    // Pass the code directly to applyCoupon instead of relying on reservation.coupon
+    applyCoupon(contractCoupon.code);
   };
 
   // Format time remaining as a readable string
@@ -332,6 +332,15 @@ const ReservationForm = ({
                 ? 'Coupon appliqué' 
                 : 'Appliquer le coupon'}
             </Button>
+            
+            {/* Add success message when coupon is applied */}
+            {validCoupon && validCoupon.code === contractCoupon.code && (
+              <Alert severity="success" sx={{ mt: 2 }}>
+                Coupon appliqué avec succès! {validCoupon.reduction_type === 'percentage' 
+                  ? `${validCoupon.reduction}% de réduction`
+                  : `${validCoupon.reduction} DT de réduction`}
+              </Alert>
+            )}
           </Box>
         ) : (
           // If no contract coupon, don't show the coupon section at all

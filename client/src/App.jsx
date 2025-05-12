@@ -36,13 +36,14 @@ import Contracts from './pages/Admin/Contracts';
 import AddContract from './pages/Admin/AddContract';
 import ForgotPassword from './pages/Auth/ForgotPassword';
 import ResetPassword from './pages/Auth/ResetPassword';
-import FlightDescription from './pages/client/FlightDescription';
 // Import the ReservationsTable component
 import ReservationsTable from './pages/Client/ReservationsTable';
 // Import the News components for client side
 import ClientNews from './pages/Client/News';
 import NewsDetail from './pages/Client/NewsDetail';
 import ClientLayout from './pages/Client/ClientLayout';
+import FlightDescription from './pages/Client/FlightDescription';
+import Contact from './pages/Auth/Contact';
 
 function App() {
   return (
@@ -98,6 +99,8 @@ function App() {
         
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
+        <Route path="/contact" element={<Contact />} />
+
       </Routes>
     </BrowserRouter>
   );

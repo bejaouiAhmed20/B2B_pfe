@@ -7,17 +7,25 @@ import { Seat } from '../../models/Seat';
 import { SeatReservation } from '../../models/SeatReservation';
 import { FlightSeatReservation } from '../../models/FlightSeatReservation';
 
+import { MoreThan } from 'typeorm';
 export const getFlights = async (req: Request, res: Response) => {
   try {
+    const now = new Date();
+
     const flights = await Flight.find({
+      where: {
+        date_depart: MoreThan(now)
+      },
       relations: ['airport_depart', 'arrival_airport', 'plane']
     });
+
     res.json(flights);
   } catch (error) {
-    console.error(error);
+    console.error('Error fetching flights:', error);
     res.status(500).json({ message: "There is an issue" });
   }
 };
+
 
 export const getFlightById = async (req: Request, res: Response) => {
   try {

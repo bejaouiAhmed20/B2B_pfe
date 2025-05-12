@@ -13,7 +13,7 @@ import axios from 'axios';
 // Import our component modules
 import FlightHeader from '../../components/flight/FlightHeader';
 import FlightDetails from '../../components/flight/FlightDetails';
-import FareOptions from '../../components/flight/fareoptions';
+import FareOptions from '../../components/flight/FareOptions';
 import ReservationForm from '../../components/flight/ReservationForm';
 
 // Import the API service instead of axios
@@ -116,7 +116,9 @@ const FlightDescription = () => {
     hasCoupon: false,
     discountAmount: 0,
     classType: 'economy', // Default to economy class
-    fareType: 'light' // Default to light fare
+    fareType: 'light', // Default to light fare
+    priceType: 'base', // Default to base price
+    fixedPrice: null // For contract fixed price
   });
   
   const [snackbar, setSnackbar] = useState({
@@ -147,7 +149,6 @@ const FlightDescription = () => {
   };
 
   // Fetch user balance
-  // Update the fetchUserBalance function to use the api service instead of axios
   const fetchUserBalance = async () => {
     try {
       const userData = JSON.parse(localStorage.getItem('user'));
@@ -176,8 +177,16 @@ const FlightDescription = () => {
 
   useEffect(() => {
     if (flight) {
-      // Calculate the base price with fare multiplier
-      const basePrice = flight.prix * getCurrentFareMultiplier() * reservation.nombre_passagers;
+      // Calculate the base price based on price type
+      let basePrice;
+      
+      if (reservation.priceType === 'fixed' && reservation.fixedPrice) {
+        // Use fixed contract price
+        basePrice = reservation.fixedPrice * reservation.nombre_passagers;
+      } else {
+        // Use regular base price with fare multiplier
+        basePrice = flight.prix * getCurrentFareMultiplier() * reservation.nombre_passagers;
+      }
       
       // Apply discount if there's a valid coupon
       let finalPrice = basePrice;
@@ -190,7 +199,7 @@ const FlightDescription = () => {
         prix_total: finalPrice > 0 ? finalPrice : 0
       }));
     }
-  }, [flight, reservation.nombre_passagers, reservation.discountAmount, reservation.classType, reservation.fareType, validCoupon]);
+  }, [flight, reservation.nombre_passagers, reservation.discountAmount, reservation.classType, reservation.fareType, reservation.priceType, reservation.fixedPrice, validCoupon]);
 
   const fetchFlightDetails = async () => {
     try {
@@ -273,10 +282,50 @@ const FlightDescription = () => {
     }
   };
 
-  // Update the applyCoupon function to use the api service
-  const applyCoupon = async () => {
+  // Add this function to handle price type changes
+  const handlePriceTypeChange = (e) => {
+    const newPriceType = e.target.value;
+    
+    // Calculate the appropriate price based on the selected price type
+    let basePrice;
+    let fixedPrice = null;
+    
+    if (newPriceType === 'fixed' && userContract?.fixedTicketPrice) {
+      // Use the fixed price from the contract
+      basePrice = userContract.fixedTicketPrice * reservation.nombre_passagers;
+      fixedPrice = userContract.fixedTicketPrice;
+    } else {
+      // Use the regular base price with fare multiplier
+      basePrice = flight.prix * getCurrentFareMultiplier() * reservation.nombre_passagers;
+    }
+    
+    // Recalculate discount if there's a valid coupon
+    let discountAmount = 0;
+    if (validCoupon) {
+      if (validCoupon.reduction_type === 'percentage') {
+        discountAmount = (basePrice * validCoupon.reduction) / 100;
+      } else {
+        discountAmount = validCoupon.reduction;
+      }
+    }
+    
+    // Update the reservation with the new price type and recalculated price
+    setReservation(prev => ({
+      ...prev,
+      priceType: newPriceType,
+      fixedPrice: fixedPrice,
+      discountAmount: discountAmount,
+      prix_total: Math.max(0, basePrice - discountAmount)
+    }));
+  };
+
+  // Update the applyCoupon function to accept a direct code parameter and handle fixed price
+  const applyCoupon = async (codeParam) => {
     try {
-      if (!reservation.coupon.trim()) {
+      // Use the parameter if provided, otherwise use the state
+      const couponCode = codeParam || reservation.coupon;
+      
+      if (!couponCode.trim()) {
         setSnackbar({
           open: true,
           message: 'Veuillez entrer un code coupon',
@@ -287,7 +336,7 @@ const FlightDescription = () => {
       
       // Use the api service instead of axios
       const response = await api.post('/coupons/validate', {
-        code: reservation.coupon
+        code: couponCode
       });
       
       if (response.data.valid) {
@@ -295,18 +344,30 @@ const FlightDescription = () => {
         const coupon = response.data.coupon;
         setValidCoupon(coupon);
         
-        // Calculate discount amount based on coupon type
+        // Calculate discount amount based on coupon type and current price type
         let discountAmount = 0;
-        const basePrice = flight.prix * getCurrentFareMultiplier() * reservation.nombre_passagers;
+        
+        // Get the current price based on price type (base or fixed)
+        const priceType = reservation.priceType || 'base';
+        let baseAmount;
+        
+        if (priceType === 'fixed' && reservation.fixedPrice) {
+          // Use fixed contract price if that's what's selected
+          baseAmount = reservation.fixedPrice * reservation.nombre_passagers;
+        } else {
+          // Otherwise use the regular base price with fare multiplier
+          baseAmount = flight.prix * getCurrentFareMultiplier() * reservation.nombre_passagers;
+        }
         
         if (coupon.reduction_type === 'percentage') {
-          discountAmount = (basePrice * coupon.reduction) / 100;
+          discountAmount = (baseAmount * coupon.reduction) / 100;
         } else {
           discountAmount = coupon.reduction;
         }
         
         setReservation(prev => ({
           ...prev,
+          coupon: couponCode, // Make sure the coupon code is updated in the state
           discountAmount
         }));
         
@@ -364,6 +425,58 @@ const FlightDescription = () => {
         message: 'Erreur lors de la réservation: ' + (error.response?.data?.message || error.message),
         severity: 'error'
       });
+    }
+  };
+
+  // Add this function to validate coupon against contract
+  const validateCouponAgainstContract = async (couponCode) => {
+    try {
+      const userData = JSON.parse(localStorage.getItem('user'));
+      if (!userData) return false;
+      
+      // Get user's active contract
+      const contractResponse = await api.get(`/contracts/client/${userData.id}`);
+      if (!contractResponse.data || contractResponse.data.length === 0) {
+        setSnackbar({
+          open: true,
+          message: "Vous n'avez pas de contrat actif",
+          severity: "error"
+        });
+        return false;
+      }
+      
+      // Get the active contract
+      const activeContract = contractResponse.data.find(contract => contract.isActive) || contractResponse.data[0];
+      
+      // Check if contract has a coupon
+      if (!activeContract.coupon) {
+        setSnackbar({
+          open: true,
+          message: "Votre contrat ne contient pas de code promo",
+          severity: "error"
+        });
+        return false;
+      }
+      
+      // Check if the coupon code matches the contract coupon
+      if (activeContract.coupon.code !== couponCode) {
+        setSnackbar({
+          open: true,
+          message: "Ce code promo n'est pas associé à votre contrat",
+          severity: "error"
+        });
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error("Error validating coupon against contract:", error);
+      setSnackbar({
+        open: true,
+        message: "Erreur lors de la validation du code promo",
+        severity: "error"
+      });
+      return false;
     }
   };
 
@@ -427,6 +540,7 @@ const FlightDescription = () => {
             validCoupon={validCoupon}
             userBalance={userBalance}
             showBalanceWarning={showBalanceWarning}
+            handlePriceTypeChange={handlePriceTypeChange}
           />
         </Grid>
       </Grid>
@@ -451,182 +565,3 @@ const FlightDescription = () => {
 };
 
 export default FlightDescription;
-
-
-// Add this function to validate coupon against contract
-const validateCouponAgainstContract = async (couponCode) => {
-  try {
-    const userData = JSON.parse(localStorage.getItem('user'));
-    if (!userData) return false;
-    
-    // Get user's active contract
-    const contractResponse = await axios.get(`http://localhost:5000/api/contracts/client/${userData.id}`);
-    if (!contractResponse.data || contractResponse.data.length === 0) {
-      setSnackbar({
-        open: true,
-        message: "Vous n'avez pas de contrat actif",
-        severity: "error"
-      });
-      return false;
-    }
-    
-    // Get the active contract
-    const activeContract = contractResponse.data.find(contract => contract.isActive) || contractResponse.data[0];
-    
-    // Check if contract has a coupon
-    if (!activeContract.coupon) {
-      setSnackbar({
-        open: true,
-        message: "Votre contrat ne contient pas de code promo",
-        severity: "error"
-      });
-      return false;
-    }
-    
-    // Check if the coupon code matches the contract coupon
-    if (activeContract.coupon.code !== couponCode) {
-      setSnackbar({
-        open: true,
-        message: "Ce code promo n'est pas associé à votre contrat",
-        severity: "error"
-      });
-      return false;
-    }
-    
-    return true;
-  } catch (error) {
-    console.error("Error validating coupon against contract:", error);
-    setSnackbar({
-      open: true,
-      message: "Erreur lors de la validation du code promo",
-      severity: "error"
-    });
-    return false;
-  }
-};
-
-// Modify the applyCoupon function to check against contract
-const applyCoupon = async () => {
-  if (!reservation.coupon) {
-    setSnackbar({
-      open: true,
-      message: "Veuillez entrer un code promo",
-      severity: "warning"
-    });
-    return;
-  }
-  
-  // First validate that the coupon is from the user's contract
-  const isValidContractCoupon = await validateCouponAgainstContract(reservation.coupon);
-  if (!isValidContractCoupon) {
-    return;
-  }
-  
-  try {
-    const response = await axios.get(`http://localhost:5000/api/coupons/validate/${reservation.coupon}`);
-    const coupon = response.data;
-    
-    if (coupon) {
-      setValidCoupon(coupon);
-      
-      // Calculate discount amount
-      let discountAmount = 0;
-      const basePrice = flight.prix * getCurrentFareMultiplier() * reservation.nombre_passagers;
-      
-      if (coupon.reduction_type === 'percentage') {
-        discountAmount = (basePrice * coupon.reduction) / 100;
-      } else {
-        discountAmount = coupon.reduction;
-      }
-      
-      // Update reservation with discount
-      const updatedReservation = {
-        ...reservation,
-        discountAmount: discountAmount,
-        prix_total: basePrice - discountAmount
-      };
-      
-      setReservation(updatedReservation);
-      
-      setSnackbar({
-        open: true,
-        message: `Code promo appliqué: ${coupon.reduction_type === 'percentage' ? 
-          `${coupon.reduction}% de réduction` : 
-          `${coupon.reduction} DT de réduction`}`,
-        severity: "success"
-      });
-    }
-  } catch (error) {
-    console.error("Error applying coupon:", error);
-    setSnackbar({
-      open: true,
-      message: "Code promo invalide ou expiré",
-      severity: "error"
-    });
-  }
-};
-
-// Modify the handleReservation function to check minTimeBeforeBalanceFlight
-const handleReservation = async () => {
-  try {
-    // Check if user has a contract with minTimeBeforeBalanceFlight restriction
-    const userData = JSON.parse(localStorage.getItem('user'));
-    if (userData) {
-      const contractResponse = await axios.get(`http://localhost:5000/api/contracts/client/${userData.id}`);
-      if (contractResponse.data && contractResponse.data.length > 0) {
-        const activeContract = contractResponse.data.find(contract => contract.isActive) || contractResponse.data[0];
-        
-        if (activeContract.minTimeBeforeBalanceFlight) {
-          // Check if current time is at least minTimeBeforeBalanceFlight hours before the flight
-          const now = new Date();
-          const departure = new Date(flight.date_depart);
-          const diffInMs = departure.getTime() - now.getTime();
-          const diffInHours = diffInMs / (1000 * 60 * 60);
-          
-          if (diffInHours < activeContract.minTimeBeforeBalanceFlight) {
-            setSnackbar({
-              open: true,
-              message: `Selon votre contrat, vous devez réserver au moins ${activeContract.minTimeBeforeBalanceFlight} heures avant le départ.`,
-              severity: "error"
-            });
-            return;
-          }
-        }
-      }
-    }
-    
-    // Continue with the reservation process
-    // Request random seats from the server
-    const seatsResponse = await axios.post(`http://localhost:5000/api/flights/${id}/allocate-seats`, {
-      numberOfSeats: reservation.nombre_passagers,
-      classType: reservation.classType
-    });
-    
-    // Create the reservation with the selected class and fare type
-    const reservationData = {
-      flight_id: id,
-      user_id: JSON.parse(localStorage.getItem('user')).id,
-      date_reservation: new Date().toISOString(),
-      nombre_passagers: reservation.nombre_passagers,
-      prix_total: reservation.prix_total,
-      class_type: reservation.classType,
-      fare_type: reservation.fareType,
-      statut: 'confirmée',
-      // Include coupon information if a valid coupon was applied
-      coupon_code: validCoupon ? validCoupon.code : null,
-      discount_amount: reservation.discountAmount || 0
-    };
-    
-    console.log("Sending reservation data:", reservationData);
-    
-    const response = await axios.post('http://localhost:5000/api/reservations', 
-      reservationData,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    
-    // ... existing success handling ...
-    
-  } catch (error) {
-    // ... existing error handling ...
-  }
-};

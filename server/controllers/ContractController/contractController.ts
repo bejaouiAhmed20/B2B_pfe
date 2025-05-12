@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { Contract } from '../../models/Contract';
 import { User } from '../../models/User';
 import { Coupon } from '../../models/Coupon';
+import { LessThan, MoreThanOrEqual, Not } from 'typeorm';
 
 // Get all contracts
 export const getContracts = async (req: Request, res: Response) => {
@@ -79,6 +80,23 @@ export const createContract = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Client not found' });
     }
     
+    // Check if client already has an active contract that hasn't ended
+    const currentDate = new Date();
+    const existingActiveContract = await Contract.findOne({
+      where: {
+        client: { id: client_id },
+        isActive: true,
+        contractEndDate: MoreThanOrEqual(currentDate)
+      }
+    });
+    
+    if (existingActiveContract) {
+      return res.status(400).json({ 
+        message: 'Client already has an active contract. Please end the current contract before creating a new one.',
+        existingContract: existingActiveContract
+      });
+    }
+    
     const contract = new Contract();
     contract.client = client;
     contract.clientType = clientType;
@@ -145,13 +163,51 @@ export const updateContract = async (req: Request, res: Response) => {
       coupon
     } = req.body;
     
-    // Update client if provided
-    if (client_id) {
+    // If client is being changed, check for existing active contracts
+    if (client_id && client_id !== contract.client.id) {
+      const currentDate = new Date();
+      const existingActiveContract = await Contract.findOne({
+        where: {
+          client: { id: client_id },
+          isActive: true,
+          contractEndDate: MoreThanOrEqual(currentDate),
+          id: Not(contract.id) // Fixed: Use Not() instead of $ne
+        }
+      });
+      
+      if (existingActiveContract) {
+        return res.status(400).json({ 
+          message: 'Client already has an active contract. Please end the current contract before assigning a new one.',
+          existingContract: existingActiveContract
+        });
+      }
+      
+      // Update client if provided
       const client = await User.findOneBy({ id: client_id });
       if (!client) {
         return res.status(404).json({ message: 'Client not found' });
       }
       contract.client = client;
+    }
+    
+    // If activating a contract, check if client already has an active contract
+    if (isActive && !contract.isActive) {
+      const currentDate = new Date();
+      const existingActiveContract = await Contract.findOne({
+        where: {
+          client: { id: contract.client.id },
+          isActive: true,
+          contractEndDate: MoreThanOrEqual(currentDate),
+          id: Not(contract.id) // Fixed: Use Not() instead of $ne
+        }
+      });
+      
+      if (existingActiveContract) {
+        return res.status(400).json({ 
+          message: 'Client already has an active contract. Please end the current contract before activating this one.',
+          existingContract: existingActiveContract
+        });
+      }
     }
     
     // Update other fields if provided
@@ -210,11 +266,8 @@ export const deleteContract = async (req: Request, res: Response) => {
     
     await contract.remove();
     res.status(200).json({ message: 'Contract deleted successfully' });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Failed to delete contract:', error);
-    res.status(500).json({ 
-      message: 'Failed to delete contract',
-      error: error.message
-    });
+    res.status(500).json({ message: 'Failed to delete contract' });
   }
 };

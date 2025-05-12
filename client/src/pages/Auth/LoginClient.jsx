@@ -1,16 +1,22 @@
 import React, { useState } from 'react';
-import {
+import { 
+  Button, 
+  TextField, 
+  Typography, 
+  Paper, 
+  Alert, 
+  Box, 
   Container,
-  Paper,
-  Typography,
-  TextField,
-  Button,
-  Box,
-  Alert,
+  InputAdornment,
+  IconButton,
+  Divider,
+  Link as MuiLink,
   CircularProgress
 } from '@mui/material';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { Visibility, VisibilityOff, Email, Lock } from '@mui/icons-material';
+import AirplaneTicketIcon from '@mui/icons-material/AirplaneTicket';
 
 const LoginClient = () => {
   const navigate = useNavigate();
@@ -20,6 +26,7 @@ const LoginClient = () => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
@@ -28,7 +35,6 @@ const LoginClient = () => {
     });
   };
 
-  // Update the handleSubmit function
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -69,78 +75,148 @@ const LoginClient = () => {
   };
 
   return (
-    <Container maxWidth="sm" sx={{ mt: 8 }}>
-      <Paper elevation={3} sx={{ p: 4 }}>
-        <Typography variant="h4" align="center" gutterBottom>
-          Connexion Client
-        </Typography>
-        
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
-        
-        <form onSubmit={handleSubmit}>
-          <TextField
-            label="Email"
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            fullWidth
-            required
-            margin="normal"
-          />
-          
-          <TextField
-            label="Mot de passe"
-            type="password"
-            name="mot_de_passe"
-            value={formData.mot_de_passe}
-            onChange={handleChange}
-            fullWidth
-            required
-            margin="normal"
-          />
-          
-          <Button
-            type="submit"
-            variant="contained"
-            fullWidth
-            sx={{ 
-              mt: 3, 
-              mb: 2, 
-              py: 1.5, 
-              backgroundColor: '#CC0A2B',
-              '&:hover': {
-                backgroundColor: '#A00823',
-              }
-            }}
-            disabled={loading}
-          >
-            {loading ? <CircularProgress size={24} /> : 'Se connecter'}
-          </Button>
-          
-          <Box sx={{ mt: 2, textAlign: 'center' }}>
-            <Typography variant="body2">
-              Vous n'avez pas de compte ?{' '}
-              <Link to="/register" style={{ color: '#CC0A2B', textDecoration: 'none' }}>
-                S'inscrire
-              </Link>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundImage: `url('https://images.unsplash.com/photo-1569154941061-e231b4725ef1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        padding: 2,
+        position: 'relative'
+      }}
+    >
+      <Box
+        sx={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        }}
+      />
+      
+      <Container maxWidth="sm" sx={{ position: 'relative', zIndex: 2 }}>
+        <Paper 
+          elevation={6} 
+          sx={{
+            p: 4,
+            borderRadius: 2,
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
+            background: 'rgba(255, 255, 255, 0.95)'
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 3 }}>
+            <AirplaneTicketIcon sx={{ color: '#CC0A2B', fontSize: 40, mr: 1 }} />
+            <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', color: '#CC0A2B' }}>
+              Tunisair B2B
             </Typography>
           </Box>
           
-          <Box sx={{ mt: 1, textAlign: 'center' }}>
-            <Typography variant="body2">
-              <Link to="/forgot-password" style={{ color: '#666', textDecoration: 'none' }}>
-                Mot de passe oublié ?
+          <Typography variant="h5" component="h2" gutterBottom align="center" sx={{ mb: 1, fontWeight: 500 }}>
+            Espace Client Professionnel
+          </Typography>
+          
+          <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 3 }}>
+            Connectez-vous pour accéder à votre espace client
+          </Typography>
+          
+          {error && (
+            <Alert severity="error" sx={{ mb: 3 }}>
+              {error}
+            </Alert>
+          )}
+          
+          <form onSubmit={handleSubmit}>
+            <TextField 
+              label="Email" 
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              variant="outlined" 
+              fullWidth 
+              required
+              margin="normal"
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Email sx={{ color: '#CC0A2B' }} />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{ mb: 2 }}
+            />
+            <TextField 
+              label="Mot de passe" 
+              name="mot_de_passe"
+              value={formData.mot_de_passe}
+              onChange={handleChange}
+              type={showPassword ? "text" : "password"}
+              variant="outlined" 
+              fullWidth 
+              required
+              margin="normal"
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Lock sx={{ color: '#CC0A2B' }} />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowPassword(!showPassword)}
+                      edge="end"
+                    >
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+              sx={{ mb: 3 }}
+            />
+            <Button 
+              type="submit" 
+              variant="contained" 
+              fullWidth
+              disabled={loading}
+              sx={{ 
+                py: 1.2, 
+                backgroundColor: '#CC0A2B',
+                '&:hover': { backgroundColor: '#a00823' },
+                fontWeight: 'bold',
+                mb: 2
+              }}
+            >
+              {loading ? <CircularProgress size={24} color="inherit" /> : 'Se connecter'}
+            </Button>
+            
+            <Divider sx={{ my: 2 }}>
+              <Typography variant="body2" color="text.secondary">
+                Options
+              </Typography>
+            </Divider>
+            
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
+              <Link to="/forgot-password" style={{ textDecoration: 'none' }}>
+                <MuiLink component="span" underline="hover" sx={{ color: '#CC0A2B' }}>
+                  Mot de passe oublié ?
+                </MuiLink>
               </Link>
-            </Typography>
-          </Box>
-        </form>
-      </Paper>
-    </Container>
+              <Link to="/contact" style={{ textDecoration: 'none' }}>
+    <MuiLink component="span" underline="hover" sx={{ color: '#CC0A2B' }}>
+      Besoin d'aide ?
+    </MuiLink>
+  </Link>
+            </Box>
+          </form>
+        </Paper>
+      </Container>
+    </Box>
   );
 };
 

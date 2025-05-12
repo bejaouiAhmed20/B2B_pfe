@@ -17,6 +17,7 @@ import { useNavigate } from 'react-router-dom';
 const AddContract = () => {
   const navigate = useNavigate();
   const [clients, setClients] = useState([]);
+  const [availableClients, setAvailableClients] = useState([]);
   const [coupons, setCoupons] = useState([]);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [formData, setFormData] = useState({
@@ -48,6 +49,26 @@ const AddContract = () => {
     try {
       const response = await axios.get('http://localhost:5000/api/users');
       setClients(response.data);
+      
+      // Fetch all contracts to check which clients already have active contracts
+      const contractsResponse = await axios.get('http://localhost:5000/api/contracts');
+      const contracts = contractsResponse.data;
+      
+      // Get current date
+      const currentDate = new Date();
+      
+      // Filter out clients with active contracts that haven't ended yet
+      const clientsWithActiveContracts = contracts
+        .filter(contract => contract.isActive && new Date(contract.contractEndDate) >= currentDate)
+        .map(contract => contract.client.id);
+      
+      // Filter the clients list to only include those without active contracts
+      // and exclude admin users
+      const filteredClients = response.data.filter(
+        client => !clientsWithActiveContracts.includes(client.id) && client.role !== 'admin'
+      );
+      
+      setAvailableClients(filteredClients);
     } catch (error) {
       showSnackbar('Erreur lors du chargement des clients', 'error');
     }
@@ -64,21 +85,42 @@ const AddContract = () => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData({
+    
+    // Create updated form data
+    const updatedFormData = {
       ...formData,
       [name]: type === 'checkbox' ? checked : value
-    });
+    };
+    
+    // If turning off payLater, clear the time limit
+    if (name === 'payLater' && !checked) {
+      updatedFormData.payLaterTimeLimit = '';
+    }
+    
+    setFormData(updatedFormData);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:5000/api/contracts', formData);
+      const response = await axios.post('http://localhost:5000/api/contracts', formData);
       showSnackbar('Contrat créé avec succès');
       setTimeout(() => navigate('/admin/contracts'), 2000);
     } catch (error) {
       console.error('Error creating contract:', error);
-      showSnackbar(error.response?.data?.message || 'Erreur lors de la création du contrat', 'error');
+      if (error.response?.data?.existingContract) {
+        // Show more detailed error message with existing contract info
+        const existingContract = error.response.data.existingContract;
+        const clientName = clients.find(c => c.id === existingContract.client.id)?.nom || 'Client';
+        const endDate = new Date(existingContract.contractEndDate).toLocaleDateString('fr-FR');
+        
+        showSnackbar(
+          `Ce client a déjà un contrat actif (${existingContract.label}) qui se termine le ${endDate}. Veuillez désactiver ce contrat avant d'en créer un nouveau.`,
+          'error'
+        );
+      } else {
+        showSnackbar(error.response?.data?.message || 'Erreur lors de la création du contrat', 'error');
+      }
     }
   };
 
@@ -141,12 +183,17 @@ const AddContract = () => {
               required
               margin="normal"
             >
-              {clients.map((client) => (
+              {availableClients.map((client) => (
                 <MenuItem key={client.id} value={client.id}>
                   {client.nom}
                 </MenuItem>
               ))}
             </TextField>
+            {availableClients.length === 0 && (
+              <Typography variant="caption" color="error">
+                Tous les clients ont déjà un contrat actif. Veuillez désactiver un contrat existant avant d'en créer un nouveau.
+              </Typography>
+            )}
           </Grid>
           
           <Grid item xs={12}>
@@ -389,26 +436,7 @@ const AddContract = () => {
             />
           </Grid>
           
-          <Grid item xs={12}>
-            <Typography variant="subtitle2" gutterBottom>
-              Coupons Associés
-            </Typography>
-            <TextField
-              name="coupon"
-              select
-              value={formData.coupon || ''}
-              onChange={handleChange}
-              fullWidth
-              margin="normal"
-            >
-              <MenuItem value="">Aucun coupon</MenuItem>
-              {coupons.map((coupon) => (
-                <MenuItem key={coupon.id} value={coupon.id}>
-                  {coupon.code} - {coupon.reduction}{coupon.reduction_type === 'percentage' ? '%' : '€'}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Grid>
+          {/* Remove the duplicate coupon selection field that was here */}
           
           <Grid item xs={12} sx={{ mt: 3 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>

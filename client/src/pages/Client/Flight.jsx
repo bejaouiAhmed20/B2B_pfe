@@ -448,14 +448,14 @@ const Flight = () => {
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                     <FlightTakeoff sx={{ mr: 1, color: '#CC0A2B', fontSize: '1rem' }} />
                     <Typography variant="body2" noWrap>
-                      <strong>De:</strong> {flight.airport_depart?.ville || 'N/A'}
+                      <strong>De:</strong> {flight.departureAirport || flight.airport_depart?.nom || 'N/A'}
                     </Typography>
                   </Box>
                   
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                     <FlightLand sx={{ mr: 1, color: '#1976d2', fontSize: '1rem' }} />
                     <Typography variant="body2" noWrap>
-                      <strong>À:</strong> {flight.airport_arrivee?.ville || 'N/A'}
+                      <strong>À:</strong> {flight.arrivalAirport || flight.arrival_airport?.nom || 'N/A'}
                     </Typography>
                   </Box>
                   

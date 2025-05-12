@@ -158,7 +158,20 @@ const Contracts = () => {
       handleEditClose();
       fetchContracts();
     } catch (error) {
-      showSnackbar('Erreur lors de la mise à jour du contrat', 'error');
+      console.error('Error updating contract:', error);
+      if (error.response?.data?.existingContract) {
+        // Show more detailed error message with existing contract info
+        const existingContract = error.response.data.existingContract;
+        const clientName = clients.find(c => c.id === existingContract.client.id)?.nom || 'Client';
+        const endDate = new Date(existingContract.contractEndDate).toLocaleDateString('fr-FR');
+        
+        showSnackbar(
+          `Ce client a déjà un contrat actif (${existingContract.label}) qui se termine le ${endDate}. Veuillez désactiver ce contrat avant d'en activer un autre.`,
+          'error'
+        );
+      } else {
+        showSnackbar(error.response?.data?.message || 'Erreur lors de la mise à jour du contrat', 'error');
+      }
     }
   };
 
@@ -212,7 +225,7 @@ const Contracts = () => {
       <Button 
         variant="contained" 
         color="primary" 
-        onClick={() => navigate('/admin/add-contract')}
+        onClick={() => navigate('add')}
         sx={{ mb: 3 }}
       >
         Ajouter un Contrat

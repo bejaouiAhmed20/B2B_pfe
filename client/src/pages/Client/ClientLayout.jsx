@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { Outlet, Link } from 'react-router-dom';
-import { 
-  AppBar, 
-  Toolbar, 
-  Typography, 
-  Button, 
-  Container, 
+import { Outlet, Link, useNavigate } from 'react-router-dom';
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Button,
+  Container,
   Box,
   CssBaseline,
   Divider,
@@ -19,10 +19,10 @@ import FeedbackIcon from '@mui/icons-material/Feedback';
 import NewspaperIcon from '@mui/icons-material/Newspaper';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ChatBot from '../../components/ChatBot';
-// Fix the logo import - note the hyphen in the filename
 import logo from '../../assets/Tunisair-Logo.png';
 
 const ClientLayout = () => {
+  const navigate = useNavigate();
   const isLoggedIn = localStorage.getItem('token') && localStorage.getItem('user');
   const user = isLoggedIn ? JSON.parse(localStorage.getItem('user')) : null;
   const [anchorEl, setAnchorEl] = useState(null);
@@ -45,14 +45,8 @@ const ClientLayout = () => {
   };
 
   const menuItems = {
-    flights: [
-      { label: 'Rechercher des vols', path: '/client/flights' },
-      { label: 'Détails des vols', path: '/client/flights/:id' }
-    ],
-    news: [
-      { label: 'Actualités', path: '/client/news' },
-      { label: 'Détails des actualités', path: '/client/news/:id' }
-    ],
+    flights: [{ label: 'Rechercher des vols', path: '/client/flights' }],
+    news: [{ label: 'Actualités', path: '/client/news' }],
     reservations: [
       { label: 'Mes Réservations', path: '/client/reservations' },
       { label: 'Tableau des Réservations', path: '/client/reservations-table' },
@@ -63,62 +57,69 @@ const ClientLayout = () => {
   const userMenuItems = [
     { label: 'Mon Profil', path: '/client/profile' },
     { label: 'Demande Solde', path: '/client/request-solde' },
-    { label: 'Déconnexion', action: () => {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login-client';
-    }}
+    {
+      label: 'Déconnexion',
+      action: () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login-client';
+      }
+    }
   ];
+
+  const renderMenuButton = (menuKey, label) => {
+    const items = menuItems[menuKey];
+    if (items.length === 1) {
+      return (
+        <Button
+          component={Link}
+          to={items[0].path}
+          sx={{ mx: 1, textTransform: 'uppercase', color: '#333' }}
+        >
+          {label}
+        </Button>
+      );
+    }
+
+    return (
+      <Button
+        color="inherit"
+        endIcon={<ExpandMoreIcon />}
+        onClick={(e) => handleMenuOpen(e, menuKey)}
+        sx={{ mx: 1, textTransform: 'uppercase', color: '#333' }}
+      >
+        {label}
+      </Button>
+    );
+  };
 
   return (
     <>
       <CssBaseline />
-      <AppBar position="static" sx={{ 
-        backgroundColor: 'white', 
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-        color: '#333'
-      }}>
+      <AppBar
+        position="static"
+        sx={{
+          backgroundColor: 'white',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+          color: '#333'
+        }}
+      >
         <Toolbar sx={{ minHeight: 80 }}>
           {/* Logo Section */}
           <Box sx={{ display: 'flex', alignItems: 'center', mr: 4 }}>
-            <img 
-              src={logo} 
-              alt="Tunisair Logo" 
-              style={{ height: 40, marginRight: 10 }}
+            <img
+              onClick={() => navigate('/client')}
+              src={logo}
+              alt="Tunisair Logo"
+              style={{ height: 40, marginRight: 10, cursor: 'pointer' }}
             />
           </Box>
 
           {/* Navigation Menus */}
           <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
-            <Button 
-              color="inherit" 
-              endIcon={<ExpandMoreIcon />}
-              onClick={(e) => handleMenuOpen(e, 'flights')}
-              sx={{ mx: 1, textTransform: 'uppercase', color: '#333' }}
-            >
-              Vols
-            </Button>
-            
-            <Button 
-              color="inherit" 
-              endIcon={<ExpandMoreIcon />}
-              onClick={(e) => handleMenuOpen(e, 'news')}
-              sx={{ mx: 1, textTransform: 'uppercase', color: '#333' }}
-            >
-              <NewspaperIcon sx={{ mr: 1 }} />
-              Actualités
-            </Button>
-
-            {isLoggedIn && (
-              <Button 
-                color="inherit" 
-                endIcon={<ExpandMoreIcon />}
-                onClick={(e) => handleMenuOpen(e, 'reservations')}
-                sx={{ mx: 1, textTransform: 'uppercase', color: '#333' }}
-              >
-                Réservations
-              </Button>
-            )}
+            {renderMenuButton('flights', 'Vols')}
+            {renderMenuButton('news', 'Actualités')}
+            {isLoggedIn && renderMenuButton('reservations', 'Réservations')}
           </Box>
 
           {/* User Section */}
@@ -133,7 +134,7 @@ const ClientLayout = () => {
                 >
                   {user?.nom || 'Mon Compte'}
                 </Button>
-                
+
                 <Menu
                   anchorEl={userAnchorEl}
                   open={Boolean(userAnchorEl)}
@@ -147,15 +148,15 @@ const ClientLayout = () => {
                   }}
                 >
                   {userMenuItems.map((item) => (
-                    <MenuItem 
+                    <MenuItem
                       key={item.label}
                       onClick={() => {
                         handleMenuClose();
-                        if(item.action) item.action();
+                        if (item.action) item.action();
                       }}
                       component={item.path ? Link : 'div'}
                       to={item.path}
-                      sx={{ 
+                      sx={{
                         '&:hover': { backgroundColor: '#f5f5f5' },
                         py: 1.5
                       }}
@@ -166,9 +167,9 @@ const ClientLayout = () => {
                 </Menu>
               </>
             ) : (
-              <Button 
-                color="inherit" 
-                component={Link} 
+              <Button
+                color="inherit"
+                component={Link}
                 to="/login-client"
                 sx={{ textTransform: 'uppercase', color: '#333' }}
               >
@@ -178,57 +179,68 @@ const ClientLayout = () => {
           </Box>
 
           {/* Dropdown Menus */}
-          {Object.keys(menuItems).map((menuName) => (
-            <Menu
-              key={menuName}
-              anchorEl={anchorEl}
-              open={activeMenu === menuName}
-              onClose={handleMenuClose}
-              MenuListProps={{ onMouseLeave: handleMenuClose }}
-              PaperProps={{
-                sx: {
-                  borderRadius: 2,
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
-                }
-              }}
-            >
-              {menuItems[menuName].map((item) => (
-                <MenuItem 
-                  key={item.path} 
-                  onClick={handleMenuClose}
-                  component={Link} 
-                  to={item.path}
-                  sx={{ 
-                    minWidth: 200,
-                    '&:hover': { backgroundColor: '#f5f5f5' }
-                  }}
-                >
-                  {item.label}
-                </MenuItem>
-              ))}
-            </Menu>
-          ))}
+          {Object.keys(menuItems).map((menuName) => {
+            const items = menuItems[menuName];
+            if (items.length <= 1) return null;
+
+            return (
+              <Menu
+                key={menuName}
+                anchorEl={anchorEl}
+                open={activeMenu === menuName}
+                onClose={handleMenuClose}
+                MenuListProps={{ onMouseLeave: handleMenuClose }}
+                PaperProps={{
+                  sx: {
+                    borderRadius: 2,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
+                  }
+                }}
+              >
+                {items.map((item) => (
+                  <MenuItem
+                    key={item.path}
+                    onClick={handleMenuClose}
+                    component={Link}
+                    to={item.path}
+                    sx={{
+                      minWidth: 200,
+                      '&:hover': { backgroundColor: '#f5f5f5' }
+                    }}
+                  >
+                    {item.label}
+                  </MenuItem>
+                ))}
+              </Menu>
+            );
+          })}
         </Toolbar>
       </AppBar>
 
       {/* Main Content */}
-      <Box component="main" sx={{ 
-        flexGrow: 1, 
-        py: 4,
-        backgroundColor: '#f8f9fa'
-      }}>
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          py: 4,
+          backgroundColor: '#f8f9fa'
+        }}
+      >
         <Container maxWidth="xl" sx={{ px: 4 }}>
           <Outlet />
         </Container>
       </Box>
 
       {/* Footer */}
-      <Box component="footer" sx={{ 
-        py: 4,
-        bgcolor: 'white',
-        color: '#333',
-        boxShadow: '0 -2px 4px rgba(0,0,0,0.1)'
-      }}>
+      <Box
+        component="footer"
+        sx={{
+          py: 4,
+          bgcolor: 'white',
+          color: '#333',
+          boxShadow: '0 -2px 4px rgba(0,0,0,0.1)'
+        }}
+      >
         <Container maxWidth="xl">
           <Grid container spacing={4}>
             <Grid item xs={12} md={4}>
@@ -240,7 +252,6 @@ const ClientLayout = () => {
                 Votre partenaire privilégié pour la gestion des réservations professionnelles.
               </Typography>
             </Grid>
-            {/* ... rest of footer content ... */}
           </Grid>
           <Divider sx={{ my: 4 }} />
           <Typography variant="body2" align="center">
@@ -250,12 +261,14 @@ const ClientLayout = () => {
       </Box>
 
       {/* ChatBot */}
-      <Box sx={{ 
-        position: 'fixed', 
-        bottom: 24, 
-        right: 24, 
-        zIndex: 1000 
-      }}>
+      <Box
+        sx={{
+          position: 'fixed',
+          bottom: 24,
+          right: 24,
+          zIndex: 1000
+        }}
+      >
         <ChatBot />
       </Box>
     </>

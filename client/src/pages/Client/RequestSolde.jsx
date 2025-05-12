@@ -252,7 +252,7 @@ const RequestSolde = () => {
             Solde Actuel
           </Typography>
           <Typography variant="h3" sx={{ color: '#CC0A2B', fontWeight: 'bold' }}>
-            {parseFloat(compte.solde).toFixed(2)} €
+            {parseFloat(compte.solde).toFixed(2)} TND
           </Typography>
         </Paper>
       )}
@@ -268,18 +268,12 @@ const RequestSolde = () => {
             <form onSubmit={handleSubmit}>
               <TextField
                 fullWidth
-                label="Montant (€)"
+                label="Montant TND"
                 name="montant"
                 type="number"
                 value={formData.montant}
                 onChange={handleChange}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <AttachMoney />
-                    </InputAdornment>
-                  ),
-                }}
+            
                 margin="normal"
                 required
               />
