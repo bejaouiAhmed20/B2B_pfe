@@ -9,7 +9,6 @@ import crypto from 'crypto';
 const resetTokens: { [key: string]: { email: string, expiry: Date } } = {};
 
 // Configure nodemailer transporter
-// Update the nodemailer transporter configuration
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -18,6 +17,11 @@ const transporter = nodemailer.createTransport({
   },
   debug: true // Add this to see more detailed logs
 });
+
+// Make sure to check if credentials exist
+if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+  console.error('Email credentials are missing in environment variables');
+}
 
 export const login = async (req: Request, res: Response) => {
   try {

@@ -9,7 +9,6 @@ import AddNews from './pages/Admin/AddNews';
 import Coupons from './pages/Admin/Coupons';
 import AddCoupon from './pages/Admin/AddCoupon';
 import Popups from './pages/Admin/Popups';
-import Login from './pages/Auth/login';
 import AddClient from './pages/Admin/AddClient';
 import Clients from './pages/Admin/clients';
 import AddLocation from './pages/Admin/AddLocation';
@@ -44,6 +43,7 @@ import NewsDetail from './pages/Client/NewsDetail';
 import ClientLayout from './pages/Client/ClientLayout';
 import FlightDescription from './pages/Client/FlightDescription';
 import Contact from './pages/Auth/Contact';
+import Login from './pages/Auth/Login';
 
 function App() {
   return (

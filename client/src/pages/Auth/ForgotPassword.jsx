@@ -34,13 +34,18 @@ const ForgetPassword = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
     
     try {
       const response = await axios.post('http://localhost:5000/api/auth/forgot-password', { email });
       setSuccess(response.data.message || 'Un email de réinitialisation a été envoyé à votre adresse email.');
       setEmail('');
     } catch (error) {
-      setError(error.response?.data?.message || 'Une erreur est survenue. Veuillez réessayer.');
+      console.error('Error sending reset email:', error);
+      setError(
+        error.response?.data?.message || 
+        'Une erreur est survenue lors de l\'envoi de l\'email. Veuillez réessayer.'
+      );
     } finally {
       setLoading(false);
     }
