@@ -42,6 +42,9 @@ export class Flight extends BaseEntity {
 
   @Column('varchar', { default: 'active' })
   status!: string;
+
+  @Column({ type: "varchar", length: 255, nullable: true })
+  image_url!: string;
   
   // Add relationship to FlightSeatReservation
   @OneToMany(() => FlightSeatReservation, flightSeatReservation => flightSeatReservation.flight)
