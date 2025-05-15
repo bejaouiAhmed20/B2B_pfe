@@ -11,6 +11,8 @@ import {
 } from '@mui/material';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import axios from 'axios';
+import logo from '../../assets/Tunisair-Logo.png';
+
 
 const ResetPassword = () => {
   const navigate = useNavigate();

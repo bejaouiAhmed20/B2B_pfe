@@ -16,7 +16,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Email } from '@mui/icons-material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import LockResetIcon from '@mui/icons-material/LockReset';
+import logo from '../../assets/Tunisair-Logo.png';
 
 const ForgetPassword = () => {
   const navigate = useNavigate();
@@ -88,10 +88,12 @@ const ForgetPassword = () => {
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 3 }}>
-            <LockResetIcon sx={{ color: '#CC0A2B', fontSize: 40, mr: 1 }} />
-            <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', color: '#CC0A2B' }}>
-              Tunisair
-            </Typography>
+          <img
+              onClick={() => navigate('/client')}
+              src={logo}
+              alt="Tunisair Logo"
+              style={{ height: 50, marginRight: 10, cursor: 'pointer' }}
+            /> 
           </Box>
           
           <Typography variant="h5" component="h2" gutterBottom align="center" sx={{ mb: 1, fontWeight: 500 }}>

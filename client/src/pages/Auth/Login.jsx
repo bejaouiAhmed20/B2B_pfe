@@ -14,7 +14,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Visibility, VisibilityOff, Email, Lock } from '@mui/icons-material';
-import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
+import logo from '../../assets/Tunisair-Logo.png';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -83,10 +83,12 @@ const Login = () => {
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 3 }}>
-            <FlightTakeoffIcon sx={{ color: '#CC0A2B', fontSize: 40, mr: 1 }} />
-            <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', color: '#CC0A2B' }}>
-              Tunisair Admin
-            </Typography>
+          <img
+              onClick={() => navigate('/client')}
+              src={logo}
+              alt="Tunisair Logo"
+              style={{ height: 50, marginRight: 10, cursor: 'pointer' }}
+            /> 
           </Box>
           
           <Typography variant="h5" component="h2" gutterBottom align="center" sx={{ mb: 3, fontWeight: 500 }}>
