@@ -329,12 +329,14 @@ const FlightDescription = () => {
       if (response.data) {
         const coupon = response.data;
         
-        // Calculate discount amount
+        // Calculate discount amount - only apply to base price, not fixed price
         let discountAmount = 0;
-        if (coupon.reduction_type === 'percentage') {
-          discountAmount = (flight.prix * reservation.nombre_passagers * getCurrentFareMultiplier()) * (coupon.reduction / 100);
-        } else {
-          discountAmount = Math.min(coupon.reduction, flight.prix * reservation.nombre_passagers * getCurrentFareMultiplier());
+        if (reservation.priceType !== 'fixed') {
+          if (coupon.reduction_type === 'percentage') {
+            discountAmount = (flight.prix * reservation.nombre_passagers * getCurrentFareMultiplier()) * (coupon.reduction / 100);
+          } else {
+            discountAmount = Math.min(coupon.reduction, flight.prix * reservation.nombre_passagers * getCurrentFareMultiplier());
+          }
         }
         
         setValidCoupon(coupon);
@@ -361,6 +363,12 @@ const FlightDescription = () => {
 
   // Handle reservation
   const handleReservation = async (priceType = 'base') => {
+    // Update the reservation's price type
+    setReservation(prev => ({
+      ...prev,
+      priceType: priceType
+    }));
+    
     // Check if seats are available for the selected class type
     const hasAvailableSeats = 
       (reservation.classType === 'economy' && flight.availableSeats?.economy > 0) ||

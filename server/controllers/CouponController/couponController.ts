@@ -120,11 +120,17 @@ export const validateCoupon = async (req: Request, res: Response) => {
       });
     }
     
-    // Check if coupon is expired
+    // Check if coupon is expired - Fix the date comparison
     const today = new Date();
-    const expiryDate = new Date(coupon.date_fin);
+    today.setHours(0, 0, 0, 0); // Reset time to start of day
     
-    if (today > expiryDate) {
+    const expiryDate = new Date(coupon.date_fin);
+    expiryDate.setHours(0, 0, 0, 0); // Reset time to start of day
+    
+    // Add one day to expiry date to make it valid until end of the expiry date
+    expiryDate.setDate(expiryDate.getDate() + 1);
+    
+    if (today >= expiryDate) {
       return res.status(400).json({ 
         valid: false, 
         message: "Ce coupon a expiré" 
@@ -150,5 +156,46 @@ export const validateCoupon = async (req: Request, res: Response) => {
       valid: false,
       message: "Une erreur s'est produite lors de la validation du coupon" 
     });
+  }
+};
+
+// Add this new function to get coupon by code
+export const getCouponByCode = async (req: Request, res: Response) => {
+  try {
+    const code = req.params.code;
+    
+    // Find the coupon by code
+    const coupon = await Coupon.findOneBy({ code });
+    
+    if (!coupon) {
+      return res.status(404).json({ message: "Code coupon invalide" });
+    }
+    
+    // Check if coupon is expired
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to start of day
+    
+    const expiryDate = new Date(coupon.date_fin);
+    expiryDate.setHours(0, 0, 0, 0); // Reset time to start of day
+    
+    // Add one day to expiry date to make it valid until end of the expiry date
+    expiryDate.setDate(expiryDate.getDate() + 1);
+    
+    if (today >= expiryDate) {
+      return res.status(400).json({ message: "Ce coupon a expiré" });
+    }
+    
+    // Return the coupon
+    res.json({
+      id: coupon.id,
+      code: coupon.code,
+      reduction: coupon.reduction,
+      reduction_type: coupon.reduction_type,
+      date_fin: coupon.date_fin
+    });
+    
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Une erreur s'est produite lors de la récupération du coupon" });
   }
 };

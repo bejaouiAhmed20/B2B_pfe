@@ -103,6 +103,14 @@ const ReservationForm = ({
     if (event.target.value === 'fixed' && userContract?.fixedTicketPrice) {
       // Use fixed price from contract
       newPrice = userContract.fixedTicketPrice * reservation.nombre_passagers;
+      
+      // Reset coupon when switching to fixed price
+      if (validCoupon) {
+        handleCouponChange({ target: { value: '' } });
+        if (typeof handleCouponCheckboxChange === 'function') {
+          handleCouponCheckboxChange({ target: { checked: false } });
+        }
+      }
     } else {
       // Use base price with fare multiplier
       const basePrice = flight.prix * getCurrentFareMultiplier() * reservation.nombre_passagers;
@@ -304,8 +312,8 @@ const ReservationForm = ({
           </Box>
         )}
         
-        {/* Contract coupon section */}
-        {contractCoupon ? (
+        {/* Contract coupon section - only show when priceType is 'base' */}
+        {contractCoupon && priceType === 'base' ? (
           <Box sx={{ mb: 3, p: 2, bgcolor: '#fff8e1', borderRadius: 1, border: '1px dashed #ffc107' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
               <LocalOffer sx={{ mr: 1, color: '#f57c00' }} />
@@ -343,12 +351,14 @@ const ReservationForm = ({
             )}
           </Box>
         ) : (
-          // If no contract coupon, don't show the coupon section at all
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="body2" color="text.secondary">
-              Aucun code promo n'est disponible dans votre contrat.
-            </Typography>
-          </Box>
+          // If no contract coupon or price type is fixed, don't show the coupon section at all
+          priceType === 'base' && (
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="body2" color="text.secondary">
+                Aucun code promo n'est disponible dans votre contrat.
+              </Typography>
+            </Box>
+          )
         )}
         
         {/* Enhanced price summary box */}
