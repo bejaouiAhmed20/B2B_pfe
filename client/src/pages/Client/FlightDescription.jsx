@@ -260,32 +260,48 @@ const FlightDescription = () => {
 
   // Handle passenger count change
   const handlePassengerChange = (e, classType = reservation.classType, fareType = reservation.fareType, customPrice = null) => {
-    console.log("handlePassengerChange called with:", {
-      passengers: e.target.value,
-      classType,
-      fareType,
-      customPrice
-    });
-    
-    const passengers = parseInt(e.target.value);
-    const fareMultiplier = getCurrentFareMultiplier();
-    
-    // Calculate price based on provided custom price or standard calculation
-    const calculatedPrice = customPrice !== null ? 
-      customPrice : 
-      flight.prix * passengers * fareMultiplier - (reservation.discountAmount || 0);
-    
-    // Create a new reservation object with updated values
-    const updatedReservation = {
-      ...reservation,
-      nombre_passagers: passengers,
-      classType: classType,
-      fareType: fareType,
-      prix_total: calculatedPrice > 0 ? calculatedPrice : 0
-    };
-    
-    console.log("Updated reservation:", updatedReservation);
-    setReservation(updatedReservation);
+    try {
+      console.log("handlePassengerChange called with:", {
+        passengers: e.target.value,
+        classType,
+        fareType,
+        customPrice
+      });
+      
+      // Safely parse the passenger count with fallback to 1
+      const passengers = parseInt(e.target.value) || 1;
+      
+      // Validate against available seats
+      const maxAvailable = classType === 'economy' 
+        ? (flight?.availableSeats?.economy || 0) 
+        : (flight?.availableSeats?.business || 0);
+      
+      // Limit passengers to available seats
+      const validPassengers = Math.min(passengers, maxAvailable);
+      
+      // Get the correct fare multiplier
+      const fareMultiplier = getCurrentFareMultiplier();
+      
+      // Calculate price based on provided custom price or standard calculation
+      const calculatedPrice = customPrice !== null ? 
+        customPrice : 
+        (flight?.prix || 0) * validPassengers * fareMultiplier - (reservation.discountAmount || 0);
+      
+      // Create a new reservation object with updated values
+      const updatedReservation = {
+        ...reservation,
+        nombre_passagers: validPassengers,
+        classType: classType,
+        fareType: fareType,
+        prix_total: calculatedPrice > 0 ? calculatedPrice : 0
+      };
+      
+      console.log("Updated reservation:", updatedReservation);
+      setReservation(updatedReservation);
+    } catch (error) {
+      console.error("Error in handlePassengerChange:", error);
+      // Keep the previous state in case of error
+    }
   };
 
   // Handle coupon checkbox change

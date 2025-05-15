@@ -171,6 +171,42 @@ const ReservationForm = ({
     handleReservation(priceType);
   };
 
+  // Add state for passenger input error
+  const [passengerError, setPassengerError] = useState('');
+
+  // Add validation function for passenger count
+  const validatePassengerCount = (count) => {
+    const maxAvailable = reservation.classType === 'economy' 
+      ? (flight.availableSeats?.economy || 0) 
+      : (flight.availableSeats?.business || 0);
+    
+    if (isNaN(count) || count < 1) {
+      return "Le nombre de passagers doit être au moins 1";
+    } else if (count > maxAvailable) {
+      return `Seulement ${maxAvailable} siège(s) disponible(s) en classe ${reservation.classType === 'economy' ? 'Économique' : 'Affaires'}`;
+    }
+    return '';
+  };
+
+  // Handle passenger input change
+  const handlePassengerInputChange = (e) => {
+    const value = e.target.value;
+    const count = parseInt(value, 10);
+    
+    // Validate the input
+    const error = validatePassengerCount(count);
+    setPassengerError(error);
+    
+    // Only update if valid or empty (to allow user to clear the field)
+    if (!error || value === '') {
+      handlePassengerChange(
+        { target: { value: isNaN(count) ? 1 : count } },
+        reservation.classType,
+        reservation.fareType
+      );
+    }
+  };
+  
   return (
     <Card>
       <CardContent>
@@ -212,23 +248,28 @@ const ReservationForm = ({
           </Box>
         </Box>
         
-        <FormControl fullWidth sx={{ mb: 3 }}>
-          <InputLabel>Nombre de passagers</InputLabel>
-          <Select
-            value={reservation.nombre_passagers}
-            onChange={handlePassengerChange}
-            label="Nombre de passagers"
-          >
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
-              <MenuItem key={num} value={num} disabled={
-                (reservation.classType === 'economy' && num > (flight.availableSeats?.economy || 0)) ||
-                (reservation.classType === 'business' && num > (flight.availableSeats?.business || 0))
-              }>
-                {num}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        {/* Replace this FormControl with TextField for passenger count */}
+        <TextField
+          label="Nombre de passagers"
+          type="number"
+          value={reservation.nombre_passagers}
+          onChange={handlePassengerInputChange}
+          fullWidth
+          margin="normal"
+          inputProps={{ 
+            min: 1, 
+            max: reservation.classType === 'economy' 
+              ? (flight.availableSeats?.economy || 0) 
+              : (flight.availableSeats?.business || 0) 
+          }}
+          error={!!passengerError}
+          helperText={passengerError || `Maximum disponible: ${
+            reservation.classType === 'economy' 
+              ? (flight.availableSeats?.economy || 0) 
+              : (flight.availableSeats?.business || 0)
+          } sièges`}
+          sx={{ mb: 3 }}
+        />
         
         {/* Class selection */}
         <FormControl fullWidth sx={{ mb: 3 }}>
