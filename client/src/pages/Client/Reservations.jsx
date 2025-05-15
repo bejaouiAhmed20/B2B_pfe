@@ -20,7 +20,7 @@ import {
   DialogContentText,
   DialogActions,
   Snackbar,
-  Pagination // Add pagination component
+  Pagination
 } from '@mui/material';
 import {
   FlightTakeoff,
@@ -29,9 +29,12 @@ import {
   People,
   AttachMoney,
   Cancel,
-  Info
+  Info,
+  PictureAsPdf
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { jsPDF } from "jspdf";
+import "jspdf-autotable";
 
 const Reservations = () => {
   const navigate = useNavigate();
@@ -174,44 +177,172 @@ const Reservations = () => {
     setPage(value);
   };
 
+  // Add function to generate PDF
+  const generatePDF = (reservation) => {
+    try {
+      console.log('Starting PDF generation for reservation:', reservation.id);
+      
+      // Create a new jsPDF instance with portrait orientation
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+      
+      // Add Tunisair logo/header with improved styling
+      doc.setFillColor(204, 10, 43); // Tunisair red color
+      doc.rect(0, 0, 210, 25, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(18);
+      doc.setFont(undefined, 'bold');
+      doc.text('TUNISAIR B2B - FACTURE', 105, 16, { align: 'center' });
+      doc.setFont(undefined, 'normal');
+      
+      // Reset text color
+      doc.setTextColor(0, 0, 0);
+      
+      // Add a subtle background for the main content area
+      doc.setFillColor(250, 250, 250);
+      doc.rect(0, 25, 210, 252, 'F');
+      
+      // Reservation details with improved styling
+      doc.setFontSize(16);
+      doc.setFont(undefined, 'bold');
+      doc.text('Détails de la Réservation', 14, 35);
+      doc.setFont(undefined, 'normal');
+      
+      // Add a subtle divider line
+      doc.setDrawColor(204, 10, 43);
+      doc.setLineWidth(0.5);
+      doc.line(14, 38, 196, 38);
+      
+      doc.setFontSize(11);
+      doc.text(`Numéro de Réservation: ${reservation.id}`, 14, 45);
+      doc.text(`Date de Réservation: ${formatDate(reservation.date_reservation)}`, 14, 53);
+      doc.text(`Statut: ${reservation.statut || 'Confirmée'}`, 14, 61);
+      doc.text(`Nombre de Passagers: ${reservation.nombre_passagers || 1}`, 14, 69);
+      
+      // Make the price more prominent with a box around it
+      doc.setFillColor(240, 240, 240);
+      doc.rect(120, 65, 76, 20, 'F');
+      doc.setDrawColor(204, 10, 43);
+      doc.setLineWidth(1);
+      doc.rect(120, 65, 76, 20, 'S'); // Add a red border
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'bold');
+      doc.text('MONTANT TOTAL:', 125, 73);
+      doc.setFontSize(16);
+      doc.setTextColor(204, 10, 43);
+      doc.text(`${reservation.prix_total || 0} DT`, 185, 78, { align: 'right' });
+      doc.setTextColor(0, 0, 0);
+      doc.setFont(undefined, 'normal');
+      doc.setLineWidth(0.5);
+      
+      // Flight details with improved styling
+      doc.setFontSize(16);
+      doc.setFont(undefined, 'bold');
+      doc.text('Détails du Vol', 14, 95);
+      doc.setFont(undefined, 'normal');
+      
+      // Add a subtle divider line
+      doc.line(14, 98, 196, 98);
+      
+      if (reservation.flight) {
+        doc.setFontSize(11);
+        doc.text(`Vol: ${reservation.flight.titre || 'Tunis - Paris'}`, 14, 105);
+        doc.text(`Départ: ${reservation.flight.ville_depart || 'Tunis'}`, 14, 113);
+        doc.text(`Arrivée: ${reservation.flight.ville_arrivee || 'Paris'}`, 14, 121);
+        
+        // Handle potential date formatting issues
+        let departDate = 'N/A';
+        let arriveDate = 'N/A';
+        
+        try {
+          departDate = formatDate(reservation.flight.date_depart);
+        } catch (e) {
+          console.error('Error formatting departure date:', e);
+        }
+        
+        try {
+          arriveDate = formatDate(reservation.flight.date_arrivee);
+        } catch (e) {
+          console.error('Error formatting arrival date:', e);
+        }
+        
+        doc.text(`Date de Départ: ${departDate}`, 14, 129);
+        doc.text(`Date d'Arrivée: ${arriveDate}`, 14, 137);
+        doc.text(`Compagnie: Tunisair`, 14, 145);
+      } else {
+        doc.setFontSize(11);
+        doc.text('Vol: Tunis - Paris', 14, 105);
+        doc.text('Départ: Tunis', 14, 113);
+        doc.text('Arrivée: Paris', 14, 121);
+        doc.text(`Date de Départ: ${formatDate(new Date())}`, 14, 129);
+        doc.text(`Date d'Arrivée: ${formatDate(new Date())}`, 14, 137);
+        doc.text('Compagnie: Tunisair', 14, 145);
+      }
+      
+      // Add passenger information with improved styling
+      doc.setFontSize(16);
+      doc.setFont(undefined, 'bold');
+      doc.text('Information Passager', 14, 163);
+      doc.setFont(undefined, 'normal');
+      
+      // Add a subtle divider line
+      doc.line(14, 166, 196, 166);
+      
+      const userData = JSON.parse(localStorage.getItem('user'));
+      doc.setFontSize(11);
+      doc.text(`Nom: ${userData?.nom || 'N/A'}`, 14, 173);
+      doc.text(`Email: ${userData?.email || 'N/A'}`, 14, 181);
+      doc.text(`Téléphone: ${userData?.telephone || userData?.numero_telephone || 'N/A'}`, 14, 189);
+      
+      // Add footer with terms and conditions
+      doc.setFontSize(9);
+      doc.setTextColor(100, 100, 100);
+      doc.text('Ce document est une facture électronique émise par Tunisair B2B. Pour toute question, veuillez contacter notre service client.', 105, 270, { align: 'center', maxWidth: 180 });
+      
+      // Save the PDF
+      doc.save(`Reservation_${reservation.id}.pdf`);
+      
+      setSnackbar({
+        open: true,
+        message: 'Facture téléchargée avec succès',
+        severity: 'success'
+      });
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      setSnackbar({
+        open: true,
+        message: 'Erreur lors de la génération de la facture',
+        severity: 'error'
+      });
+    }
+  };
+
+  // If loading, show loading indicator
   if (loading) {
     return (
-      <Container maxWidth="lg" sx={{ py: 4, display: 'flex', justifyContent: 'center' }}>
+      <Container sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
         <CircularProgress />
       </Container>
     );
   }
 
+  // If error, show error message
   if (error) {
     return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Alert severity="error">{error}</Alert>
-      </Container>
-    );
-  }
-
-  if (reservations.length === 0) {
-    return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Paper sx={{ p: 4, textAlign: 'center' }}>
-          <Typography variant="h5" gutterBottom>
-            Vous n'avez aucune réservation
-          </Typography>
-          <Typography variant="body1" color="text.secondary" paragraph>
-            Explorez nos vols disponibles et réservez votre prochain voyage dès maintenant.
+      <Container>
+        <Paper sx={{ p: 3, textAlign: 'center' }}>
+          <Typography variant="h5" color="error" gutterBottom>
+            {error}
           </Typography>
           <Button 
             variant="contained" 
-            onClick={() => navigate('/client/flights')}
-            sx={{ 
-              mt: 2,
-              backgroundColor: '#CC0A2B',
-              '&:hover': {
-                backgroundColor: '#A00823',
-              }
-            }}
+            onClick={() => navigate('/login')}
+            sx={{ mt: 2 }}
           >
-            Voir les vols
+            Se connecter
           </Button>
         </Paper>
       </Container>
@@ -220,162 +351,224 @@ const Reservations = () => {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Mes Réservations
-      </Typography>
-      
       {successMessage && (
-        <Alert 
-          severity="success" 
-          sx={{ mb: 3 }}
-          onClose={() => setSuccessMessage('')}
-        >
+        <Alert severity="success" sx={{ mb: 3 }}>
           {successMessage}
         </Alert>
       )}
-      
+
+      <Typography variant="h4" gutterBottom>
+        Mes Réservations
+      </Typography>
+
       <Grid container spacing={3}>
         {reservations.map((reservation) => (
-          <Grid item xs={12} key={reservation.id}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                  <Typography variant="h6">
+        <Grid item xs={12} key={reservation.id}>
+        <Card 
+          sx={{ 
+            borderRadius: 3,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+            overflow: 'visible',
+            position: 'relative',
+            transition: 'transform 0.2s, box-shadow 0.2s',
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              boxShadow: '0 6px 24px rgba(0,0,0,0.12)'
+            }
+          }}
+        >
+          {/* Vertical status indicator */}
+          <Box 
+            sx={{ 
+              position: 'absolute', 
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: '6px',
+              bgcolor: 
+                reservation.statut === 'Confirmée' ? 'success.main' : 
+                reservation.statut === 'En attente' ? 'warning.main' : 
+                'error.main',
+              borderTopLeftRadius: 8
+            }}
+          />
+          
+          <CardContent sx={{ p: 3 }}>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={8}>
+                <Box sx={{ 
+                  display: 'flex', 
+                  alignItems: 'baseline',
+                  justifyContent: 'space-between',
+                  mb: 3 
+                }}>
+                  <Typography variant="h5" component="div" sx={{ 
+                    fontWeight: 700,
+                    color: 'text.primary',
+                    letterSpacing: -0.2
+                  }}>
                     {reservation.flight?.titre || 'Vol'}
                   </Typography>
                   <Chip 
-                    label={reservation.statut} 
-                    color={getStatusColor(reservation.statut)}
+                    label={reservation.statut || 'Confirmée'} 
+                    color={getStatusColor(reservation.statut || 'Confirmée')} 
+                    size="small" 
+                    sx={{ 
+                      ml: 2,
+                      fontWeight: 600,
+                      textTransform: 'uppercase',
+                      fontSize: '0.75rem'
+                    }}
                   />
                 </Box>
                 
-                <Grid container spacing={2}>
-                  <Grid item xs={12} md={6}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                      <FlightTakeoff sx={{ mr: 2, color: '#CC0A2B' }} />
-                      <Box>
-                        <Typography variant="body2" color="text.secondary">
-                          Départ
-                        </Typography>
-                        <Typography variant="body1">
-                          {reservation.flight?.date_depart ? formatDate(reservation.flight.date_depart) : 'N/A'}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </Grid>
-                  
-                  <Grid item xs={12} md={6}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                      <FlightLand sx={{ mr: 2, color: '#1976d2' }} />
-                      <Box>
-                        <Typography variant="body2" color="text.secondary">
-                          Arrivée
-                        </Typography>
-                        <Typography variant="body1">
-                          {reservation.flight?.date_retour ? formatDate(reservation.flight.date_retour) : 'N/A'}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </Grid>
-                </Grid>
-                
-                <Divider sx={{ my: 2 }} />
-                
-                <Grid container spacing={2}>
-                  <Grid item xs={6} sm={3}>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <Event sx={{ mr: 1, color: 'text.secondary' }} />
-                      <Box>
-                        <Typography variant="body2" color="text.secondary">
-                          Date de réservation
-                        </Typography>
-                        <Typography variant="body1">
-                          {formatDate(reservation.date_reservation)}
+                <Grid container spacing={3}>
+                  <Grid item xs={12} sm={6}>
+                    {[
+                      { icon: <FlightTakeoff />, text: reservation.flight?.date_depart || 'Départ' },
+                      { icon: <FlightLand />, text: reservation.flight?.date_retour.toLocaleString("en-US") || 'Arrivée' }
+                    ].map((item, index) => (
+                      <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2.5 }}>
+                        <Box sx={{
+                          bgcolor: 'primary.light',
+                          p: 1,
+                          borderRadius: '50%',
+                          mr: 2,
+                          lineHeight: 0
+                        }}>
+                          {React.cloneElement(item.icon, { 
+                            sx: { 
+                              fontSize: 20,
+                              color: 'primary.main' 
+                            } 
+                          })}
+                        </Box>
+                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                          {item.text}
                         </Typography>
                       </Box>
-                    </Box>
-                  </Grid>
-                  
-                  <Grid item xs={6} sm={3}>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <People sx={{ mr: 1, color: 'text.secondary' }} />
-                      <Box>
-                        <Typography variant="body2" color="text.secondary">
-                          Passagers
-                        </Typography>
-                        <Typography variant="body1">
-                          {reservation.nombre_passagers}
-                        </Typography>
-                      </Box>
-                    </Box>
+                    ))}
                   </Grid>
                   
                   <Grid item xs={12} sm={6}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-                      <AttachMoney sx={{ mr: 1, color: 'text.secondary' }} />
-                      <Box>
-                        <Typography variant="body2" color="text.secondary">
-                          Prix total
-                        </Typography>
-                        <Typography variant="h6" color="primary">
-                          {reservation.prix_total} DT
+                    {[
+                      { icon: <Event />, text: reservation.flight?.date_depart.toLocaleString() ? formatDate(reservation.flight.date_depart) : 'Date de départ' },
+                      { icon: <People />, text: `${reservation.nombre_passagers || 1} passager(s)` }
+                    ].map((item, index) => (
+                      <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2.5 }}>
+                        <Box sx={{
+                          bgcolor: 'primary.light',
+                          p: 1,
+                          borderRadius: '50%',
+                          mr: 2,
+                          lineHeight: 0
+                        }}>
+                          {React.cloneElement(item.icon, { 
+                            sx: { 
+                              fontSize: 20,
+                              color: 'primary.main' 
+                            } 
+                          })}
+                        </Box>
+                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                          {item.text}
                         </Typography>
                       </Box>
-                    </Box>
+                    ))}
                   </Grid>
                 </Grid>
-                
-                {/* Add allocated seats section */}
-                {reservation.allocatedSeats && reservation.allocatedSeats.length > 0 && (
-                  <>
-                    <Divider sx={{ my: 2 }} />
-                    <Typography variant="subtitle1" gutterBottom>
-                      Sièges réservés
-                    </Typography>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                      {reservation.allocatedSeats.map((seat) => (
-                        <Chip 
-                          key={seat.id}
-                          label={`${seat.seatNumber} (${seat.classType === 'economy' ? 'Économique' : 'Affaires'})`}
-                          color="primary"
-                          variant="outlined"
-                          size="small"
-                        />
-                      ))}
-                    </Box>
-                  </>
-                )}
-              </CardContent>
+              </Grid>
               
-              <CardActions sx={{ justifyContent: 'space-between', px: 2, pb: 2 }}>
-                <Button 
-                  startIcon={<Info />}
-                  onClick={() => handleViewFlightDetails(reservation.flight)}
-                  disabled={!reservation.flight}
-                >
-                  Détails du vol
-                </Button>
-                
-                {reservation.statut !== 'Annulée' && (
-                  <Button 
-                    startIcon={<Cancel />}
-                    variant="contained"
-                    color="error"
-                    onClick={() => {
-                      setCancelDialog({ open: true, reservationId: reservation.id });
-                    }}
-                    disabled={reservation.statut === 'Annulée'}
-                  >
-                    Annuler
-                  </Button>
-                )}
-              </CardActions>
-            </Card>
-          </Grid>
+              <Grid item xs={12} sm={4}>
+                <Box sx={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  height: '100%',
+                  justifyContent: 'space-between',
+                  borderLeft: { sm: '1px solid', xs: 'none' },
+                  borderColor: { sm: 'divider' },
+                  pl: { sm: 3 },
+                  mt: { xs: 2, sm: 0 }
+                }}>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      Réservation #{reservation.id}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ 
+                      display: 'block',
+                      mt: 0.5 
+                    }}>
+                      {formatDate(reservation.date_reservation)}
+                    </Typography>
+                  </Box>
+                  
+                  <Box sx={{ mt: 3 }}>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Total
+                    </Typography>
+                    <Typography variant="h5" color="primary" sx={{ 
+                      fontWeight: 700,
+                      lineHeight: 1.2
+                    }}>
+                      {reservation.prix_total} DT
+                    </Typography>
+                  </Box>
+                </Box>
+              </Grid>
+            </Grid>
+          </CardContent>
+          
+          <Divider sx={{ my: 0 }} />
+          
+          <CardActions sx={{ 
+            justifyContent: 'flex-end', 
+            p: 2,
+            gap: 1,
+            flexWrap: 'wrap' 
+          }}>
+            <Button 
+              startIcon={<Info />}
+              onClick={() => handleViewFlightDetails(reservation.flight)}
+              sx={{ 
+                mr: 1,
+                '&:hover': { bgcolor: 'action.hover' }
+              }}
+            >
+              Détails
+            </Button>
+            
+            <Button
+              startIcon={<PictureAsPdf />}
+              onClick={() => generatePDF(reservation)}
+              sx={{ 
+                '&:hover': { bgcolor: 'error.light' },
+                color: 'error.main'
+              }}
+            >
+              PDF
+            </Button>
+            
+            {reservation.statut !== 'Annulée' && (
+              <Button 
+                variant="outlined" 
+                color="error"
+                startIcon={<Cancel />}
+                onClick={() => setCancelDialog({ open: true, reservationId: reservation.id })}
+                sx={{ 
+                  borderWidth: 2,
+                  '&:hover': { borderWidth: 2 }
+                }}
+              >
+                Annuler
+              </Button>
+            )}
+          </CardActions>
+        </Card>
+      </Grid>
         ))}
       </Grid>
       
-      {/* Add pagination controls */}
+      {/* Add pagination at the bottom */}
       {totalPages > 1 && (
         <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
           <Pagination 
@@ -386,7 +579,7 @@ const Reservations = () => {
           />
         </Box>
       )}
-      
+
       {/* Cancel Dialog */}
       <Dialog
         open={cancelDialog.open}
@@ -558,22 +751,20 @@ const Reservations = () => {
           </Button>
         </DialogActions>
       </Dialog>
-      {/* Add Snackbar here, inside the return statement */}
-<Snackbar
-  open={snackbar.open}
-  autoHideDuration={6000}
-  onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
-  anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
->
-  <Alert 
-    onClose={() => setSnackbar(prev => ({ ...prev, open: false }))} 
-    severity={snackbar.severity}
-    variant="filled"
-    sx={{ width: '100%' }}
-  >
-    {snackbar.message}
-  </Alert>
-</Snackbar>
+      
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+      >
+        <Alert 
+          onClose={() => setSnackbar({ ...snackbar, open: false })} 
+          severity={snackbar.severity}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };
