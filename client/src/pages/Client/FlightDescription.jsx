@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
+  Typography ,
   Container,
   Grid,
   Paper,
@@ -128,6 +129,8 @@ const FlightDescription = () => {
   });
   
   const [validCoupon, setValidCoupon] = useState(null);
+  const [reservationSuccess, setReservationSuccess] = useState(false);
+  const [reservationError, setReservationError] = useState(false);
 
   // Get current fare multiplier based on selected class and fare type
   const getCurrentFareMultiplier = () => {
@@ -170,6 +173,60 @@ const FlightDescription = () => {
     }
   };
 
+  // Fetch available seats for the flight
+  const fetchAvailableSeats = async () => {
+    try {
+      if (!id) return;
+      
+      const response = await axios.get(`http://localhost:5000/api/flights/${id}/seats`);
+      
+      if (response.data) {
+        setFlight(prevFlight => ({
+          ...prevFlight,
+          availableSeats: response.data
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching available seats:', error);
+    }
+  };
+
+  // Fetch flight details
+  const fetchFlightDetails = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      
+      console.log('Fetching flight details for ID:', id);
+      
+      // Use direct axios call to ensure we're getting the right endpoint
+      const response = await axios.get(`http://localhost:5000/api/flights/${id}`);
+      
+      console.log('Flight data received:', response.data);
+      
+      if (response.data) {
+        // Set the flight data including availableSeats that comes directly from the API
+        setFlight(response.data);
+        
+        // Update the reservation price based on the flight price
+        setReservation(prev => ({
+          ...prev,
+          prix_total: response.data.prix * prev.nombre_passagers * getCurrentFareMultiplier()
+        }));
+        
+        // No need to call fetchAvailableSeats() since the data is already included
+        console.log('Available seats from API:', response.data.availableSeats);
+      } else {
+        setError('Aucune information de vol trouvée');
+      }
+    } catch (error) {
+      console.error('Error fetching flight details:', error);
+      setError('Erreur lors du chargement des détails du vol');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchFlightDetails();
     fetchUserBalance();
@@ -199,26 +256,9 @@ const FlightDescription = () => {
         prix_total: finalPrice > 0 ? finalPrice : 0
       }));
     }
-  }, [flight, reservation.nombre_passagers, reservation.discountAmount, reservation.classType, reservation.fareType, reservation.priceType, reservation.fixedPrice, validCoupon]);
+  }, [flight, reservation.nombre_passagers, reservation.classType, reservation.fareType, reservation.priceType, reservation.fixedPrice, validCoupon, reservation.discountAmount]);
 
-  const fetchFlightDetails = async () => {
-    try {
-      const response = await api.get(`/flights/${id}`);
-      setFlight(response.data);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching flight details:', error);
-      setError('Impossible de charger les détails du vol');
-      setLoading(false);
-    }
-  };
-
-  const formatDate = (dateString) => {
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString('fr-FR', options);
-  };
-
-  // Update the handlePassengerChange function to accept a custom price parameter
+  // Handle passenger count change
   const handlePassengerChange = (e, classType = reservation.classType, fareType = reservation.fareType, customPrice = null) => {
     console.log("handlePassengerChange called with:", {
       passengers: e.target.value,
@@ -230,102 +270,52 @@ const FlightDescription = () => {
     const passengers = parseInt(e.target.value);
     const fareMultiplier = getCurrentFareMultiplier();
     
-    // Calculate the base price with fare multiplier
-    let basePrice = flight.prix * fareMultiplier * passengers;
-    
-    // Apply discount if there's a valid coupon
-    let finalPrice = basePrice;
-    if (validCoupon && reservation.discountAmount > 0) {
-      finalPrice = basePrice - reservation.discountAmount;
-    }
-    
-    // If a custom price is provided (e.g., from contract fixed price), use it instead
-    if (customPrice !== null) {
-      finalPrice = customPrice;
-    }
+    // Calculate price based on provided custom price or standard calculation
+    const calculatedPrice = customPrice !== null ? 
+      customPrice : 
+      flight.prix * passengers * fareMultiplier - (reservation.discountAmount || 0);
     
     // Create a new reservation object with updated values
     const updatedReservation = {
       ...reservation,
       nombre_passagers: passengers,
       classType: classType,
-      class_type: classType,
       fareType: fareType,
-      fare_type: fareType,
-      prix_total: finalPrice > 0 ? finalPrice : 0
+      prix_total: calculatedPrice > 0 ? calculatedPrice : 0
     };
     
     console.log("Updated reservation:", updatedReservation);
     setReservation(updatedReservation);
   };
 
+  // Handle coupon checkbox change
+  const handleCouponCheckboxChange = (e) => {
+    const checked = e.target.checked;
+    
+    setReservation(prev => ({
+      ...prev,
+      hasCoupon: checked,
+      // Reset coupon and discount if unchecked
+      ...(checked ? {} : { coupon: '', discountAmount: 0 })
+    }));
+    
+    if (!checked) {
+      setValidCoupon(null);
+    }
+  };
+
+  // Handle coupon input change
   const handleCouponChange = (e) => {
     setReservation(prev => ({
       ...prev,
       coupon: e.target.value
     }));
-    // Reset valid coupon when the code changes
-    setValidCoupon(null);
   };
 
-  const handleCouponCheckboxChange = (e) => {
-    setReservation(prev => ({
-      ...prev,
-      hasCoupon: e.target.checked,
-      // Reset coupon and discount if checkbox is unchecked
-      coupon: e.target.checked ? prev.coupon : '',
-      discountAmount: e.target.checked ? prev.discountAmount : 0
-    }));
-    
-    if (!e.target.checked) {
-      setValidCoupon(null);
-    }
-  };
-
-  // Add this function to handle price type changes
-  const handlePriceTypeChange = (e) => {
-    const newPriceType = e.target.value;
-    
-    // Calculate the appropriate price based on the selected price type
-    let basePrice;
-    let fixedPrice = null;
-    
-    if (newPriceType === 'fixed' && userContract?.fixedTicketPrice) {
-      // Use the fixed price from the contract
-      basePrice = userContract.fixedTicketPrice * reservation.nombre_passagers;
-      fixedPrice = userContract.fixedTicketPrice;
-    } else {
-      // Use the regular base price with fare multiplier
-      basePrice = flight.prix * getCurrentFareMultiplier() * reservation.nombre_passagers;
-    }
-    
-    // Recalculate discount if there's a valid coupon
-    let discountAmount = 0;
-    if (validCoupon) {
-      if (validCoupon.reduction_type === 'percentage') {
-        discountAmount = (basePrice * validCoupon.reduction) / 100;
-      } else {
-        discountAmount = validCoupon.reduction;
-      }
-    }
-    
-    // Update the reservation with the new price type and recalculated price
-    setReservation(prev => ({
-      ...prev,
-      priceType: newPriceType,
-      fixedPrice: fixedPrice,
-      discountAmount: discountAmount,
-      prix_total: Math.max(0, basePrice - discountAmount)
-    }));
-  };
-
-  // Update the applyCoupon function to accept a direct code parameter and handle fixed price
-  const applyCoupon = async (codeParam) => {
+  // Apply coupon
+  const applyCoupon = async (couponCode = reservation.coupon) => {
     try {
-      // Use the parameter if provided, otherwise use the state
-      const couponCode = codeParam || reservation.coupon;
-      
-      if (!couponCode.trim()) {
+      if (!couponCode) {
         setSnackbar({
           open: true,
           message: 'Veuillez entrer un code coupon',
@@ -334,48 +324,28 @@ const FlightDescription = () => {
         return;
       }
       
-      // Use the api service instead of axios
-      const response = await api.post('/coupons/validate', {
-        code: couponCode
-      });
+      const response = await api.get(`/coupons/${couponCode}`);
       
-      if (response.data.valid) {
-        // Rest of the function remains the same
-        const coupon = response.data.coupon;
-        setValidCoupon(coupon);
+      if (response.data) {
+        const coupon = response.data;
         
-        // Calculate discount amount based on coupon type and current price type
+        // Calculate discount amount
         let discountAmount = 0;
-        
-        // Get the current price based on price type (base or fixed)
-        const priceType = reservation.priceType || 'base';
-        let baseAmount;
-        
-        if (priceType === 'fixed' && reservation.fixedPrice) {
-          // Use fixed contract price if that's what's selected
-          baseAmount = reservation.fixedPrice * reservation.nombre_passagers;
-        } else {
-          // Otherwise use the regular base price with fare multiplier
-          baseAmount = flight.prix * getCurrentFareMultiplier() * reservation.nombre_passagers;
-        }
-        
         if (coupon.reduction_type === 'percentage') {
-          discountAmount = (baseAmount * coupon.reduction) / 100;
+          discountAmount = (flight.prix * reservation.nombre_passagers * getCurrentFareMultiplier()) * (coupon.reduction / 100);
         } else {
-          discountAmount = coupon.reduction;
+          discountAmount = Math.min(coupon.reduction, flight.prix * reservation.nombre_passagers * getCurrentFareMultiplier());
         }
         
+        setValidCoupon(coupon);
         setReservation(prev => ({
           ...prev,
-          coupon: couponCode, // Make sure the coupon code is updated in the state
           discountAmount
         }));
         
         setSnackbar({
           open: true,
-          message: `Coupon appliqué avec succès! ${coupon.reduction_type === 'percentage' ? 
-            `${coupon.reduction}% de réduction` : 
-            `${coupon.reduction}€ de réduction`}`,
+          message: 'Coupon appliqué avec succès',
           severity: 'success'
         });
       }
@@ -383,135 +353,177 @@ const FlightDescription = () => {
       console.error('Error applying coupon:', error);
       setSnackbar({
         open: true,
-        message: error.response?.data?.message || 'Erreur lors de l\'application du coupon',
+        message: 'Coupon invalide ou expiré',
         severity: 'error'
       });
     }
   };
 
-  // Update the handleReservation function
-  const handleReservation = async (priceType) => {
-    if (!isFlightAvailable(flight.date_depart) || userBalance < reservation.prix_total) {
-      setShowBalanceWarning(userBalance < reservation.prix_total);
+  // Handle reservation
+  const handleReservation = async (priceType = 'base') => {
+    // Check if seats are available for the selected class type
+    const hasAvailableSeats = 
+      (reservation.classType === 'economy' && flight.availableSeats?.economy > 0) ||
+      (reservation.classType === 'business' && flight.availableSeats?.business > 0);
+      
+    if (!hasAvailableSeats || !isFlightAvailable(flight.date_depart) || userBalance < reservation.prix_total) {
+      if (!hasAvailableSeats) {
+        // Show specific error for no seats available
+        setReservationError(true);
+        setSnackbar({
+          open: true,
+          message: `Pas de sièges disponibles en classe ${reservation.classType === 'economy' ? 'Économique' : 'Affaires'}`,
+          severity: 'error'
+        });
+      } else {
+        setShowBalanceWarning(userBalance < reservation.prix_total);
+      }
       return;
     }
-  
+
     try {
-      // Include priceType in the reservation data
+      const token = localStorage.getItem('token');
+      const userData = JSON.parse(localStorage.getItem('user'));
+      
+      if (!token || !userData) {
+        setSnackbar({
+          open: true,
+          message: 'Vous devez être connecté pour effectuer une réservation',
+          severity: 'error'
+        });
+        return;
+      }
+      
+      // Create the reservation with the selected class and fare type
       const reservationData = {
-        ...reservation,
         flight_id: id,
-        user_id: JSON.parse(localStorage.getItem('user')).id,
-        priceType: priceType // Add the priceType here
+        user_id: userData.id,
+        date_reservation: new Date().toISOString(),
+        nombre_passagers: reservation.nombre_passagers,
+        prix_total: reservation.prix_total,
+        class_type: reservation.classType,
+        fare_type: reservation.fareType,
+        use_contract_price: priceType === 'fixed',
+        statut: 'confirmée'
       };
       
-      // Create the reservation
-      const response = await api.post('/reservations', reservationData);
+      console.log("Sending reservation data:", reservationData);
+      
+      // First create the reservation
+      const response = await axios.post('http://localhost:5000/api/reservations', 
+        reservationData,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      console.log("Reservation response:", response.data);
+      
+      // Now that we have the reservation ID, allocate seats
+      if (response.data && response.data.id) {
+        // Request random seats from the server with the reservation ID
+        const seatsResponse = await axios.post(`http://localhost:5000/api/flights/${id}/allocate-seats`, {
+          numberOfSeats: reservation.nombre_passagers,
+          classType: reservation.classType,
+          reservationId: response.data.id
+        });
+        
+        console.log("Seats allocation response:", seatsResponse.data);
+      }
+      
+      // Update available seats
+      fetchAvailableSeats();
       
       // Show success message and redirect
+      setReservationSuccess(true);
       setSnackbar({
         open: true,
-        message: 'Réservation effectuée avec succès!',
+        message: 'Réservation effectuée avec succès',
         severity: 'success'
       });
       
       setTimeout(() => {
         navigate('/client/reservations');
-      }, 2000);
+      }, 3000);
     } catch (error) {
       console.error('Error creating reservation:', error);
+      console.error('Error details:', error.response?.data);
+      setReservationError(true);
       setSnackbar({
         open: true,
-        message: 'Erreur lors de la réservation: ' + (error.response?.data?.message || error.message),
+        message: 'Erreur lors de la réservation',
         severity: 'error'
       });
     }
   };
 
-  // Add this function to validate coupon against contract
-  const validateCouponAgainstContract = async (couponCode) => {
-    try {
-      const userData = JSON.parse(localStorage.getItem('user'));
-      if (!userData) return false;
-      
-      // Get user's active contract
-      const contractResponse = await api.get(`/contracts/client/${userData.id}`);
-      if (!contractResponse.data || contractResponse.data.length === 0) {
-        setSnackbar({
-          open: true,
-          message: "Vous n'avez pas de contrat actif",
-          severity: "error"
-        });
-        return false;
-      }
-      
-      // Get the active contract
-      const activeContract = contractResponse.data.find(contract => contract.isActive) || contractResponse.data[0];
-      
-      // Check if contract has a coupon
-      if (!activeContract.coupon) {
-        setSnackbar({
-          open: true,
-          message: "Votre contrat ne contient pas de code promo",
-          severity: "error"
-        });
-        return false;
-      }
-      
-      // Check if the coupon code matches the contract coupon
-      if (activeContract.coupon.code !== couponCode) {
-        setSnackbar({
-          open: true,
-          message: "Ce code promo n'est pas associé à votre contrat",
-          severity: "error"
-        });
-        return false;
-      }
-      
-      return true;
-    } catch (error) {
-      console.error("Error validating coupon against contract:", error);
-      setSnackbar({
-        open: true,
-        message: "Erreur lors de la validation du code promo",
-        severity: "error"
-      });
-      return false;
-    }
+  // Format date for display
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    
+    const options = { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    };
+    
+    return new Date(dateString).toLocaleDateString('fr-FR', options);
+  };
+
+  // Handle snackbar close
+  const handleSnackbarClose = () => {
+    setSnackbar(prev => ({
+      ...prev,
+      open: false
+    }));
   };
 
   if (loading) {
     return (
-      <Container maxWidth="lg" sx={{ py: 4, display: 'flex', justifyContent: 'center' }}>
+      <Container sx={{ py: 4, textAlign: 'center' }}>
         <CircularProgress />
+        <Typography variant="h6" sx={{ mt: 2 }}>
+          Chargement des détails du vol...
+        </Typography>
       </Container>
     );
   }
 
   if (error) {
     return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Alert severity="error">{error}</Alert>
+      <Container sx={{ py: 4 }}>
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+        <Button variant="contained" onClick={() => navigate('/client/flights')}>
+          Retour aux vols
+        </Button>
       </Container>
     );
   }
 
   if (!flight) {
     return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Alert severity="warning">Vol non trouvé</Alert>
+      <Container sx={{ py: 4 }}>
+        <Alert severity="warning" sx={{ mb: 3 }}>
+          Aucune information de vol trouvée
+        </Alert>
+        <Button variant="contained" onClick={() => navigate('/client/flights')}>
+          Retour aux vols
+        </Button>
       </Container>
     );
   }
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
+    <Container sx={{ py: 4 }}>
       <FlightHeader 
         flight={flight} 
         isFlightAvailable={isFlightAvailable} 
       />
       
-      <Grid container spacing={4}>
+      <Grid container spacing={3}>
         <Grid item xs={12} md={8}>
           <FlightDetails 
             flight={flight} 
@@ -540,7 +552,6 @@ const FlightDescription = () => {
             validCoupon={validCoupon}
             userBalance={userBalance}
             showBalanceWarning={showBalanceWarning}
-            handlePriceTypeChange={handlePriceTypeChange}
           />
         </Grid>
       </Grid>
@@ -548,15 +559,9 @@ const FlightDescription = () => {
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
-        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        onClose={handleSnackbarClose}
       >
-        <Alert 
-          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))} 
-          severity={snackbar.severity}
-          variant="filled"
-          sx={{ width: '100%' }}
-        >
+        <Alert onClose={handleSnackbarClose} severity={snackbar.severity}>
           {snackbar.message}
         </Alert>
       </Snackbar>

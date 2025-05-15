@@ -22,4 +22,7 @@ export class FlightSeatReservation extends BaseEntity {
 
   @Column({ default: false })
   isReserved!: boolean;
+  
+  @Column('timestamp', { default: () => 'CURRENT_TIMESTAMP' })
+  date!: Date;
 }

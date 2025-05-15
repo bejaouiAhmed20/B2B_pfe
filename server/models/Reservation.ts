@@ -1,7 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, BaseEntity, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { User } from './User';
 import { Flight } from './Flight';
-import { Coupon } from './Coupon'; // Import the Coupon model
 import { SeatReservation } from './SeatReservation';
 
 @Entity()
@@ -21,9 +20,6 @@ export class Reservation extends BaseEntity {
   @Column('int', { nullable: false })
   nombre_passagers!: number;
 
-  @Column('varchar', { nullable: true })
-  coupon_code!: string | null;
-
   @Column('decimal', { precision: 10, scale: 2, nullable: true, default: 0 })
   discount_amount!: number;
 
@@ -42,11 +38,6 @@ export class Reservation extends BaseEntity {
   @ManyToOne(() => Flight, (flight) => flight.reservations, { eager: true })
   @JoinColumn({ name: 'flight_id' })
   flight!: Flight;
-
-  // Relation Many-to-One avec l'entité Coupon (optionnelle)
-  @ManyToOne(() => Coupon, { eager: true, nullable: true })
-  @JoinColumn({ name: 'coupon_id' })
-  coupon!: Coupon | null;
 
   // Relation One-to-Many with SeatReservation entity
   @OneToMany(() => SeatReservation, (seatReservation) => seatReservation.reservation)

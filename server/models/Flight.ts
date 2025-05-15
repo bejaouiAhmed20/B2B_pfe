@@ -2,6 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, BaseEntity, ManyToOne, JoinColu
 import { Airport } from './Airport';
 import { Plane } from './Plane';
 import { Reservation } from './Reservation';
+import { FlightSeatReservation } from './FlightSeatReservation';
 
 @Entity()
 export class Flight extends BaseEntity {
@@ -41,5 +42,9 @@ export class Flight extends BaseEntity {
 
   @Column('varchar', { default: 'active' })
   status!: string;
+  
+  // Add relationship to FlightSeatReservation
+  @OneToMany(() => FlightSeatReservation, flightSeatReservation => flightSeatReservation.flight)
+  seatReservations!: FlightSeatReservation[];
 }
 

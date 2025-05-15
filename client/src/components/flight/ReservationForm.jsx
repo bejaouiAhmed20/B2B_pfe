@@ -454,7 +454,6 @@ const handleSubmit = () => {
   console.log("Using price type:", priceType);
   
   const reservationData = {
-    // ... other reservation data ...
     use_contract_price: priceType === 'fixed',
     prix_total: reservation.prix_total
   };
