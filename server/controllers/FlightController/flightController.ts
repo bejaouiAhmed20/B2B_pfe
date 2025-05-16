@@ -6,6 +6,8 @@ import { Reservation } from '../../models/Reservation';
 import { Seat } from '../../models/Seat';
 import { SeatReservation } from '../../models/SeatReservation';
 import { FlightSeatReservation } from '../../models/FlightSeatReservation';
+import fs from 'fs';
+import path from 'path';
 
 import { MoreThan } from 'typeorm';
 export const getFlights = async (req: Request, res: Response) => {
@@ -120,6 +122,12 @@ export const addFlight = async (req: Request, res: Response) => {
     flight.airport_depart = departureAirport;
     flight.arrival_airport = arrivalAirport;
     flight.plane = plane;
+    
+    // Handle image upload
+    if (req.file) {
+      // Save the relative path to the image
+      flight.image_url = `/uploads/${req.file.filename}`;
+    }
 
     await flight.save();
     
@@ -203,6 +211,20 @@ export const updateFlight = async (req: Request, res: Response) => {
       }
       flight.plane = plane;
     }
+    
+    // Handle image upload
+    if (req.file) {
+      // Delete old image if exists
+      if (flight.image_url) {
+        const oldImagePath = path.join(__dirname, '../../../', flight.image_url);
+        if (fs.existsSync(oldImagePath)) {
+          fs.unlinkSync(oldImagePath);
+        }
+      }
+      
+      // Save the relative path to the new image
+      flight.image_url = `/uploads/${req.file.filename}`;
+    }
 
     await flight.save();
     res.json(flight);
@@ -218,6 +240,14 @@ export const deleteFlight = async (req: Request, res: Response) => {
     
     if (!flight) {
       return res.status(404).json({ message: "Flight not found" });
+    }
+    
+    // Delete associated image if exists
+    if (flight.image_url) {
+      const imagePath = path.join(__dirname, '../../../', flight.image_url);
+      if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath);
+      }
     }
     
     await flight.remove();

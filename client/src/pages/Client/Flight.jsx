@@ -438,157 +438,179 @@ const Flight = () => {
       ) : (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           {filteredFlights.map((flight) => (
-            <Card key={flight.id} sx={{ 
-              width: '100%',
-              borderRadius: 3,
-              boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-              transition: 'transform 0.2s, box-shadow 0.2s',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: '0 6px 16px rgba(0,0,0,0.12)'
-              }
-            }}>
-              <CardContent sx={{ p: 3 }}>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} md={8}>
-                    {/* Title with status badge */}
-                    <Box sx={{ 
-                      display: 'flex', 
-                      justifyContent: 'space-between', 
-                      alignItems: 'flex-start',
-                      mb: 2
-                    }}>
-                      <Typography variant="h6" component="div" sx={{ 
-                        fontWeight: 700,
-                        letterSpacing: -0.1
-                      }}>
-                        {flight.titre}
-                      </Typography>
-                      <Chip 
-                        label={isFlightAvailable(flight.date_depart) ? "Disponible" : "Complet"} 
-                        color={isFlightAvailable(flight.date_depart) ? "success" : "error"}
-                        size="small"
-                        sx={{ 
-                          fontWeight: 600,
-                          fontSize: '0.75rem',
-                          height: 24,
-                          textTransform: 'uppercase'
-                        }}
-                      />
-                    </Box>
-              
-                    {/* Flight details */}
-                    <Grid container spacing={2}>
-                      {[
-                        {
-                          icon: <FlightTakeoff />,
-                          label: 'De:',
-                          value: flight.departureAirport || flight.airport_depart?.nom || 'N/A',
-                          color: 'error.main'
-                        },
-                        {
-                          icon: <FlightLand />,
-                          label: 'À:',
-                          value: flight.arrivalAirport || flight.arrival_airport?.nom || 'N/A',
-                          color: 'primary.main'
-                        },
-                        {
-                          icon: <AccessTime />,
-                          label: 'Date:',
-                          value: formatDate(flight.date_depart),
-                          color: 'success.main'
-                        }
-                      ].map((item, index) => (
-                        <Grid item xs={12} sm={4} key={index}>
-                          <Box sx={{ 
-                            display: 'flex', 
-                            alignItems: 'center',
-                            bgcolor: 'action.hover',
-                            borderRadius: 1,
-                            p: 1.5,
-                            height: '100%'
-                          }}>
-                            <Box sx={{ 
-                              bgcolor: `${item.color}20`,
-                              p: 1,
-                              borderRadius: '50%',
-                              lineHeight: 0,
-                              mr: 2
-                            }}>
-                              {React.cloneElement(item.icon, { 
-                                sx: { 
-                                  fontSize: 20,
-                                  color: item.color 
-                                } 
-                              })}
-                            </Box>
-                            <Box>
-                              <Typography variant="caption" color="text.secondary">
-                                {item.label}
-                              </Typography>
-                              <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                {item.value}
-                              </Typography>
-                            </Box>
-                          </Box>
-                        </Grid>
-                      ))}
-                    </Grid>
-                  </Grid>
-                  
-                  <Grid item xs={12} md={4}>
-                    {/* Price section */}
-                    <Box sx={{ 
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      borderLeft: { xs: 0, md: 1 },
-                      borderTop: { xs: 1, md: 0 },
-                      borderColor: 'divider',
-                      pt: { xs: 2, md: 0 },
-                      mt: { xs: 2, md: 0 },
-                      pl: { xs: 0, md: 2 }
-                    }}>
-                      <Typography variant="subtitle2" color="text.secondary">
-                        À partir de
-                      </Typography>
-                      <Typography variant="h4" color="primary" sx={{ 
-                        fontWeight: 800,
-                        lineHeight: 1.2,
-                        my: 1
-                      }}>
-                        {flight.prix} DT
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary" sx={{ mb: 2 }}>
-                        Taxes et frais inclus
-                      </Typography>
-                      
-                      <Button 
-                        fullWidth
-                        variant="contained"
-                        onClick={() => navigate(`/client/flights/${flight.id}`)}
-                        sx={{ 
-                          py: 1.5,
-                          borderRadius: 2,
-                          textTransform: 'none',
-                          fontWeight: 600,
-                          fontSize: '1rem',
-                          bgcolor: 'error.main',
-                          '&:hover': {
-                            bgcolor: 'error.dark',
-                            boxShadow: '0 2px 8px rgba(204,10,43,0.3)'
-                          }
-                        }}
-                      >
-                        Réserver maintenant
-                      </Button>
-                    </Box>
-                  </Grid>
-                </Grid>
-              </CardContent>
-            </Card>
+            <Card
+  key={flight.id}
+  sx={{
+    width: '100%',
+    height: 220,
+    display: 'flex',
+    borderRadius: 3,
+    overflow: 'hidden',
+    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.06)',
+    transition: '0.3s ease',
+    '&:hover': {
+      transform: 'translateY(-2px)',
+      boxShadow: '0 12px 32px rgba(0, 0, 0, 0.12)'
+    }
+  }}
+>
+  {/* Left Image */}
+  <Box
+    sx={{
+      width: 280,
+      height: '100%',
+      flexShrink: 0,
+      overflow: 'hidden',
+      position: 'relative'
+    }}
+  >
+    <Box
+      component="img"
+      src={`http://localhost:5000${flight.image_url}`}
+      alt={flight.titre}
+      sx={{
+        width: '100%',
+        height: '100%',
+        objectFit: 'cover',
+        display: 'block',
+        filter: 'brightness(0.95)'
+      }}
+    />
+  </Box>
+
+  {/* Right Content */}
+  <Box sx={{ flexGrow: 1, px: 3, py: 2, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+    {/* Top row: Title + Status */}
+    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <Typography
+        variant="h6"
+        fontWeight={700}
+        sx={{
+          color: 'text.primary',
+          maxWidth: '75%',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis'
+        }}
+      >
+        {flight.titre}
+      </Typography>
+      <Chip
+        label={isFlightAvailable(flight.date_depart) ? 'Disponible' : 'Complet'}
+        color={isFlightAvailable(flight.date_depart) ? 'success' : 'error'}
+        size="small"
+        sx={{
+          fontWeight: 600,
+          fontSize: '0.75rem',
+          px: 1.5,
+          borderRadius: 1
+        }}
+      />
+    </Box>
+
+    {/* Middle: Info Tags */}
+    <Box sx={{ display: 'flex', gap: 2, mt: 1.5 }}>
+      {[
+        {
+          icon: <FlightTakeoff />,
+          value: flight.departureAirport || flight.airport_depart?.nom || 'N/A',
+          color: 'error.main'
+        },
+        {
+          icon: <FlightLand />,
+          value: flight.arrivalAirport || flight.arrival_airport?.nom || 'N/A',
+          color: 'primary.main'
+        },
+        {
+          icon: <AccessTime />,
+          value: formatDate(flight.date_depart),
+          color: 'success.main'
+        }
+      ].map((item, index) => (
+        <Box
+          key={index}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            backgroundColor: 'grey.100',
+            px: 2,
+            py: 1,
+            borderRadius: 2,
+            minWidth: 0,
+            flex: 1
+          }}
+        >
+          <Box
+            sx={{
+              backgroundColor: `${item.color}20`,
+              p: 1,
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              mr: 1.2
+            }}
+          >
+            {React.cloneElement(item.icon, { sx: { fontSize: 18, color: item.color } })}
+          </Box>
+          <Typography
+            variant="body2"
+            fontWeight={500}
+            sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+          >
+            {item.value}
+          </Typography>
+        </Box>
+      ))}
+    </Box>
+
+    {/* Bottom: Price + Button */}
+    <Box
+      sx={{
+        mt: 2,
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        flexWrap: 'wrap'
+      }}
+    >
+      <Box>
+        <Typography variant="caption" color="text.secondary">
+          À partir de
+        </Typography>
+        <Typography variant="h5" fontWeight={800} color="primary" sx={{ lineHeight: 1.1 }}>
+          {flight.prix} DT
+        </Typography>
+        <Typography variant="caption" color="text.secondary">
+          Taxes incluses
+        </Typography>
+      </Box>
+
+      <Button
+        variant="contained"
+        size="medium"
+        onClick={() => navigate(`/client/flights/${flight.id}`)}
+        sx={{
+          px: 3,
+          py: 1.2,
+          borderRadius: 2,
+          fontWeight: 600,
+          fontSize: '0.95rem',
+          textTransform: 'none',
+          bgcolor: 'error.main',
+          boxShadow: '0 2px 6px rgba(204,10,43,0.3)',
+          '&:hover': {
+            bgcolor: 'error.dark',
+            boxShadow: '0 4px 12px rgba(204,10,43,0.4)'
+          }
+        }}
+      >
+        Réserver
+      </Button>
+    </Box>
+  </Box>
+</Card>
+     
           ))}
         </Box>
       )}

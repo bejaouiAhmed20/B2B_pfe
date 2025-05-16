@@ -16,7 +16,7 @@ import axios from 'axios';
 const AddFlight = () => {
   const navigate = useNavigate();
   const [airports, setAirports] = useState([]);
-  const [planes, setPlanes] = useState([]); // Add state for planes
+  const [planes, setPlanes] = useState([]);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [formData, setFormData] = useState({
     titre: '',
@@ -26,12 +26,14 @@ const AddFlight = () => {
     duree: '',
     airport_depart_id: '',
     airport_arrivee_id: '',
-    plane_id: '' // Changed from compagnie_aerienne
+    plane_id: ''
   });
+  const [image, setImage] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState('');
 
   useEffect(() => {
     fetchAirports();
-    fetchPlanes(); // Add function to fetch planes
+    fetchPlanes();
   }, []);
 
   const fetchAirports = async () => {
@@ -43,7 +45,6 @@ const AddFlight = () => {
     }
   };
 
-  // Add function to fetch planes
   const fetchPlanes = async () => {
     try {
       const response = await axios.get('http://localhost:5000/api/planes');
@@ -62,6 +63,19 @@ const AddFlight = () => {
     });
   };
 
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImage(file);
+      // Create a preview URL for the image
+      const fileReader = new FileReader();
+      fileReader.onload = () => {
+        setPreviewUrl(fileReader.result);
+      };
+      fileReader.readAsDataURL(file);
+    }
+  };
+
   const showSnackbar = (message, severity = 'success') => {
     setSnackbar({ open: true, message, severity });
   };
@@ -69,7 +83,26 @@ const AddFlight = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:5000/api/flights', formData);
+      // Create FormData object to handle file upload
+      const formDataWithImage = new FormData();
+      
+      // Add all form fields to FormData
+      Object.keys(formData).forEach(key => {
+        formDataWithImage.append(key, formData[key]);
+      });
+      
+      // Add image if selected
+      if (image) {
+        formDataWithImage.append('image', image);
+      }
+      
+      // Use FormData with axios
+      await axios.post('http://localhost:5000/api/flights', formDataWithImage, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      
       showSnackbar('Vol ajouté avec succès');
       setTimeout(() => {
         navigate('/admin/flights');
@@ -212,6 +245,38 @@ const AddFlight = () => {
               placeholder="Ex: 2h 30m"
             />
           </Grid>
+          <Grid item xs={12}>
+            <Typography variant="subtitle1" gutterBottom>
+              Image du vol
+            </Typography>
+            <input
+              accept="image/*"
+              type="file"
+              id="flight-image"
+              onChange={handleImageChange}
+              style={{ display: 'none' }}
+            />
+            <label htmlFor="flight-image">
+              <Button 
+                variant="outlined" 
+                component="span"
+                fullWidth
+                style={{ marginBottom: 10 }}
+              >
+                Sélectionner une image
+              </Button>
+            </label>
+            {previewUrl && (
+              <div style={{ marginTop: 10, textAlign: 'center' }}>
+                <img 
+                  src={previewUrl} 
+                  alt="Aperçu" 
+                  style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'contain' }} 
+                />
+              </div>
+            )}
+          </Grid>
+          
           <Grid item xs={12}>
             <Button 
               type="submit" 
