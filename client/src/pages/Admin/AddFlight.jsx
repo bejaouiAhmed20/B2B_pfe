@@ -10,15 +10,14 @@ import {
   Alert,
   InputAdornment
 } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 
 const AddFlight = () => {
   const navigate = useNavigate();
-  const [airports, setAirports] = useState([]);
-  const [planes, setPlanes] = useState([]);
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-  const [formData, setFormData] = useState({
+  const location = useLocation();
+  const recreatingFlight = location.state?.recreatingFlight || false;
+  const initialFlightData = location.state?.flightData || {
     titre: '',
     prix: '',
     date_depart: '',
@@ -27,13 +26,26 @@ const AddFlight = () => {
     airport_depart_id: '',
     airport_arrivee_id: '',
     plane_id: ''
-  });
+  };
+
+  const [airports, setAirports] = useState([]);
+  const [planes, setPlanes] = useState([]);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [formData, setFormData] = useState(initialFlightData);
   const [image, setImage] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
+  
+  // Store the original image URL if we're recreating a flight
+  const [originalImageUrl, setOriginalImageUrl] = useState(initialFlightData.image_url || '');
 
   useEffect(() => {
     fetchAirports();
     fetchPlanes();
+    
+    // If recreating a flight and it has an image, set the preview
+    if (recreatingFlight && initialFlightData.image_url) {
+      setPreviewUrl(`http://localhost:5000${initialFlightData.image_url}`);
+    }
   }, []);
 
   const fetchAirports = async () => {
@@ -88,12 +100,17 @@ const AddFlight = () => {
       
       // Add all form fields to FormData
       Object.keys(formData).forEach(key => {
-        formDataWithImage.append(key, formData[key]);
+        if (key !== 'image_url') { // Don't include image_url in form data
+          formDataWithImage.append(key, formData[key]);
+        }
       });
       
       // Add image if selected
       if (image) {
         formDataWithImage.append('image', image);
+      } else if (recreatingFlight && originalImageUrl) {
+        // If recreating and no new image selected, use the original image URL
+        formDataWithImage.append('image_url', originalImageUrl);
       }
       
       // Use FormData with axios
@@ -103,7 +120,7 @@ const AddFlight = () => {
         }
       });
       
-      showSnackbar('Vol ajouté avec succès');
+      showSnackbar(recreatingFlight ? 'Vol recréé avec succès' : 'Vol ajouté avec succès');
       setTimeout(() => {
         navigate('/admin/flights');
       }, 2000);
@@ -115,7 +132,7 @@ const AddFlight = () => {
   return (
     <Paper sx={{ p: 3 }}>
       <Typography variant="h4" gutterBottom>
-        Ajouter un Vol
+        {recreatingFlight ? 'Recréer un Vol' : 'Ajouter un Vol'}
       </Typography>
       <form onSubmit={handleSubmit}>
         <Grid container spacing={2}>
@@ -263,7 +280,7 @@ const AddFlight = () => {
                 fullWidth
                 style={{ marginBottom: 10 }}
               >
-                Sélectionner une image
+                {recreatingFlight && previewUrl ? 'Changer l\'image' : 'Sélectionner une image'}
               </Button>
             </label>
             {previewUrl && (
@@ -273,6 +290,11 @@ const AddFlight = () => {
                   alt="Aperçu" 
                   style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'contain' }} 
                 />
+                {recreatingFlight && !image && (
+                  <Typography variant="caption" display="block" color="textSecondary">
+                    Image originale du vol (sera réutilisée si vous n'en sélectionnez pas une nouvelle)
+                  </Typography>
+                )}
               </div>
             )}
           </Grid>
@@ -284,7 +306,7 @@ const AddFlight = () => {
               style={{ backgroundColor: '#CC0A2B', marginTop: 20 }}
               fullWidth
             >
-              Ajouter
+              {recreatingFlight ? 'Recréer' : 'Ajouter'}
             </Button>
           </Grid>
         </Grid>

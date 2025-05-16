@@ -96,13 +96,14 @@ const ReservationForm = ({
 
   // Handle price type change
   const handlePriceTypeChange = (event) => {
-    setPriceType(event.target.value);
+    const newPriceType = event.target.value;
+    setPriceType(newPriceType);
     
     // Calculate the new price based on the selected price type
     let newPrice;
-    if (event.target.value === 'fixed' && userContract?.fixedTicketPrice) {
-      // Use fixed price from contract
-      newPrice = userContract.fixedTicketPrice * reservation.nombre_passagers;
+    if (newPriceType === 'fixed' && userContract?.fixedTicketPrice) {
+      // Use fixed price from contract but apply fare multiplier
+      newPrice = userContract.fixedTicketPrice * getCurrentFareMultiplier() * reservation.nombre_passagers;
       
       // Reset coupon when switching to fixed price
       if (validCoupon) {
@@ -117,25 +118,29 @@ const ReservationForm = ({
       newPrice = basePrice - (reservation.discountAmount || 0);
     }
     
-    // Update the reservation with the new price
-    handlePriceChange(newPrice);
+    console.log(`Price type changed to ${newPriceType}, new price: ${newPrice}`);
+    
+    // Update the reservation with the new price and price type
+    handlePriceChange(newPrice, newPriceType);
   };
   
   // Helper function to update the reservation price
-  const handlePriceChange = (newPrice) => {
+  const handlePriceChange = (newPrice, newPriceType) => {
     const updatedReservation = {
       ...reservation,
-      prix_total: newPrice > 0 ? newPrice : 0
+      prix_total: newPrice > 0 ? newPrice : 0,
+      priceType: newPriceType || priceType // Pass the price type along with the price
     };
+    
     // This assumes setReservation is passed down as a prop or available in context
-    // If not, you'll need to modify this to use the appropriate update method
     if (typeof handlePassengerChange === 'function') {
       // Use handlePassengerChange as a proxy to update the reservation
       handlePassengerChange(
         { target: { value: reservation.nombre_passagers } },
         reservation.classType,
         reservation.fareType,
-        newPrice
+        newPrice,
+        newPriceType || priceType // Pass the price type to the parent component
       );
     }
   };
@@ -167,6 +172,9 @@ const ReservationForm = ({
 
   // Modified handleSubmit to include priceType
   const handleSubmitReservation = () => {
+    // Make sure we're passing the current price type and the correct price
+    console.log("Submitting reservation with price type:", priceType, "and price:", reservation.prix_total);
+    
     // Pass the priceType along with the reservation data
     handleReservation(priceType);
   };
@@ -329,7 +337,8 @@ const ReservationForm = ({
             </Box>
             
             <Typography variant="body2" sx={{ mb: 2 }}>
-              Votre contrat ({userContract.label}) vous permet de choisir entre le prix de base et un prix fixe.
+              Votre contrat ({userContract.label}) vous permet de choisir entre le prix de base et un prix fixe. 
+              Dans les deux cas, le multiplicateur de tarif sera appliqué.
             </Typography>
             
             <FormControl component="fieldset">
@@ -346,7 +355,7 @@ const ReservationForm = ({
                 <FormControlLabel 
                   value="fixed" 
                   control={<Radio />} 
-                  label={`Prix fixe du contrat (${userContract.fixedTicketPrice} DT par billet)`} 
+                  label={`Prix fixe du contrat (${userContract.fixedTicketPrice} DT × multiplicateur de tarif)`} 
                 />
               </RadioGroup>
             </FormControl>
@@ -428,19 +437,22 @@ const ReservationForm = ({
             </Typography>
           </Box>
           
-          {priceType !== 'fixed' && (
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-              <Typography variant="body2" color="text.secondary">
-                Classe & Tarif
-              </Typography>
-              <Typography variant="body2">
-                {reservation.classType === 'economy' ? 'Économique' : 'Affaires'} - 
-                <span style={{ fontWeight: 'bold', color: '#CC0A2B' }}>
-                  {fareTypes[reservation.classType].find(fare => fare.id === reservation.fareType)?.name}
-                </span>
-              </Typography>
-            </Box>
-          )}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+            <Typography variant="body2" color="text.secondary">
+              Classe & Tarif
+            </Typography>
+            <Typography variant="body2">
+              {reservation.classType === 'economy' ? 'Économique' : 'Affaires'} - 
+              <span style={{ fontWeight: 'bold', color: '#CC0A2B' }}>
+                {fareTypes[reservation.classType].find(fare => fare.id === reservation.fareType)?.name}
+              </span>
+            </Typography>
+          </Box>
+          
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+            <Typography variant="body2" color="text.secondary">Multiplicateur de tarif</Typography>
+            <Typography variant="body2">{getCurrentFareMultiplier()}x</Typography>
+          </Box>
           
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
             <Typography variant="body2" color="text.secondary">Nombre de passagers</Typography>

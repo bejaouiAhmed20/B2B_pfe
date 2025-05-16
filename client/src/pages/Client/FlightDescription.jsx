@@ -238,8 +238,8 @@ const FlightDescription = () => {
       let basePrice;
       
       if (reservation.priceType === 'fixed' && reservation.fixedPrice) {
-        // Use fixed contract price
-        basePrice = reservation.fixedPrice * reservation.nombre_passagers;
+        // Use fixed contract price but apply fare multiplier
+        basePrice = reservation.fixedPrice * getCurrentFareMultiplier() * reservation.nombre_passagers;
       } else {
         // Use regular base price with fare multiplier
         basePrice = flight.prix * getCurrentFareMultiplier() * reservation.nombre_passagers;
@@ -259,13 +259,14 @@ const FlightDescription = () => {
   }, [flight, reservation.nombre_passagers, reservation.classType, reservation.fareType, reservation.priceType, reservation.fixedPrice, validCoupon, reservation.discountAmount]);
 
   // Handle passenger count change
-  const handlePassengerChange = (e, classType = reservation.classType, fareType = reservation.fareType, customPrice = null) => {
+  const handlePassengerChange = (e, classType = reservation.classType, fareType = reservation.fareType, customPrice = null, priceType = reservation.priceType) => {
     try {
       console.log("handlePassengerChange called with:", {
         passengers: e.target.value,
         classType,
         fareType,
-        customPrice
+        customPrice,
+        priceType
       });
       
       // Safely parse the passenger count with fallback to 1
@@ -279,13 +280,20 @@ const FlightDescription = () => {
       // Limit passengers to available seats
       const validPassengers = Math.min(passengers, maxAvailable);
       
-      // Get the correct fare multiplier
-      const fareMultiplier = getCurrentFareMultiplier();
+      // Calculate price based on price type
+      let calculatedPrice;
       
-      // Calculate price based on provided custom price or standard calculation
-      const calculatedPrice = customPrice !== null ? 
-        customPrice : 
-        (flight?.prix || 0) * validPassengers * fareMultiplier - (reservation.discountAmount || 0);
+      if (priceType === 'fixed' && reservation.fixedPrice) {
+        // If using fixed price, only multiply by passenger count
+        calculatedPrice = reservation.fixedPrice * validPassengers;
+      } else if (customPrice !== null) {
+        // Use custom price if provided
+        calculatedPrice = customPrice;
+      } else {
+        // Otherwise use standard calculation with fare multiplier
+        const fareMultiplier = getCurrentFareMultiplier();
+        calculatedPrice = (flight?.prix || 0) * validPassengers * fareMultiplier - (reservation.discountAmount || 0);
+      }
       
       // Create a new reservation object with updated values
       const updatedReservation = {
@@ -293,6 +301,7 @@ const FlightDescription = () => {
         nombre_passagers: validPassengers,
         classType: classType,
         fareType: fareType,
+        priceType: priceType,
         prix_total: calculatedPrice > 0 ? calculatedPrice : 0
       };
       
@@ -378,7 +387,7 @@ const FlightDescription = () => {
   };
 
   // Handle reservation
-  const handleReservation = async (priceType = 'base') => {
+  const handleReservation = async (priceType = reservation.priceType) => {
     // Update the reservation's price type
     setReservation(prev => ({
       ...prev,
@@ -424,7 +433,7 @@ const FlightDescription = () => {
         user_id: userData.id,
         date_reservation: new Date().toISOString(),
         nombre_passagers: reservation.nombre_passagers,
-        prix_total: reservation.prix_total,
+        prix_total: reservation.prix_total, // Make sure we're using the correct price
         class_type: reservation.classType,
         fare_type: reservation.fareType,
         use_contract_price: priceType === 'fixed',

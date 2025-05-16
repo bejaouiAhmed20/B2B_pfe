@@ -35,10 +35,8 @@ import {
 } from '@mui/icons-material';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-// Remove these imports
-// import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-// import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
-// import frLocale from 'date-fns/locale/fr';
+import NotFoundImage from '../../assets/notfound.jpg';
+
 
 const Flight = () => {
   const navigate = useNavigate();
@@ -465,17 +463,17 @@ const Flight = () => {
     }}
   >
     <Box
-      component="img"
-      src={`http://localhost:5000${flight.image_url}`}
-      alt={flight.titre}
-      sx={{
-        width: '100%',
-        height: '100%',
-        objectFit: 'cover',
-        display: 'block',
-        filter: 'brightness(0.95)'
-      }}
-    />
+  component="img"
+  src={flight.image_url ? `http://localhost:5000${flight.image_url}` : NotFoundImage}
+  alt={flight.titre}
+  sx={{
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    display: 'block',
+    filter: 'brightness(0.95)'
+  }}
+/>
   </Box>
 
   {/* Right Content */}
