@@ -21,7 +21,10 @@ import {
   Alert,
   Grid,
   Chip,
-  InputAdornment
+  InputAdornment,
+  FormControlLabel,
+  Checkbox,
+  Box
 } from '@mui/material';
 import { Edit as EditIcon, Delete as DeleteIcon, Refresh as RefreshIcon, Visibility as VisibilityIcon, FileCopy as FileCopyIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
@@ -46,11 +49,14 @@ const Flights = () => {
     duree: '',
     airport_depart_id: '',
     airport_arrivee_id: '',
-    plane_id: ''
+    plane_id: '',
+    aller_retour: false,
+    retour_depart_date: '',
+    retour_arrive_date: ''
   });
   const [editImage, setEditImage] = useState(null);
   const [editPreviewUrl, setEditPreviewUrl] = useState('');
-  
+
   const [restartDialog, setRestartDialog] = useState({ open: false, flight: null });
   const [restartFormData, setRestartFormData] = useState({
     titre: '',
@@ -60,11 +66,14 @@ const Flights = () => {
     duree: '',
     airport_depart_id: '',
     airport_arrivee_id: '',
-    plane_id: ''
+    plane_id: '',
+    aller_retour: false,
+    retour_depart_date: '',
+    retour_arrive_date: ''
   });
   const [restartImage, setRestartImage] = useState(null);
   const [restartPreviewUrl, setRestartPreviewUrl] = useState('');
-  
+
   // Removed recreateDialog and recreateFormData states as we'll navigate to AddFlight instead
 
   useEffect(() => {
@@ -130,9 +139,12 @@ const Flights = () => {
       duree: flight.duree,
       airport_depart_id: flight.airport_depart?.id || '',
       airport_arrivee_id: flight.airport_arrivee?.id || '',
-      plane_id: flight.plane?.idPlane || ''
+      plane_id: flight.plane?.idPlane || '',
+      aller_retour: flight.aller_retour || false,
+      retour_depart_date: flight.retour_depart_date ? formatDateForInput(flight.retour_depart_date) : '',
+      retour_arrive_date: flight.retour_arrive_date ? formatDateForInput(flight.retour_arrive_date) : ''
     });
-    
+
     if (flight.image_url) {
       setEditPreviewUrl(`http://localhost:5000${flight.image_url}`);
     } else {
@@ -151,7 +163,10 @@ const Flights = () => {
       duree: '',
       airport_depart_id: '',
       airport_arrivee_id: '',
-      plane_id: ''
+      plane_id: '',
+      aller_retour: false,
+      retour_depart_date: '',
+      retour_arrive_date: ''
     });
     setEditImage(null);
     setEditPreviewUrl('');
@@ -167,9 +182,12 @@ const Flights = () => {
       duree: flight.duree,
       airport_depart_id: flight.airport_depart?.id || '',
       airport_arrivee_id: flight.airport_arrivee?.id || '',
-      plane_id: flight.plane?.idPlane || ''
+      plane_id: flight.plane?.idPlane || '',
+      aller_retour: flight.aller_retour || false,
+      retour_depart_date: '',
+      retour_arrive_date: ''
     });
-    
+
     if (flight.image_url) {
       setRestartPreviewUrl(`http://localhost:5000${flight.image_url}`);
     } else {
@@ -188,16 +206,19 @@ const Flights = () => {
       duree: '',
       airport_depart_id: '',
       airport_arrivee_id: '',
-      plane_id: ''
+      plane_id: '',
+      aller_retour: false,
+      retour_depart_date: '',
+      retour_arrive_date: ''
     });
     setRestartImage(null);
     setRestartPreviewUrl('');
   };
-  
+
   const handleRecreateOpen = (flight) => {
     // Instead of opening a dialog, navigate to AddFlight with state
-    navigate('/admin/flights/add', { 
-      state: { 
+    navigate('/admin/flights/add', {
+      state: {
         recreatingFlight: true,
         flightData: {
           titre: flight.titre,
@@ -206,11 +227,12 @@ const Flights = () => {
           airport_depart_id: flight.airport_depart?.id || '',
           airport_arrivee_id: flight.airport_arrivee?.id || '',
           plane_id: flight.plane?.idPlane || '',
-          // Intentionally not including date_depart and date_retour
+          aller_retour: flight.aller_retour || false,
+          // Intentionally not including date_depart, date_retour, retour_depart_date, and retour_arrive_date
           // We'll reuse the image if it exists
           image_url: flight.image_url || ''
         }
-      } 
+      }
     });
   };
 
@@ -260,17 +282,17 @@ const Flights = () => {
     e.preventDefault();
     try {
       const formDataWithImage = new FormData();
-      
+
       Object.keys(formData).forEach(key => {
         formDataWithImage.append(key, formData[key]);
       });
-      
+
       if (editImage) {
         formDataWithImage.append('image', editImage);
       }
-      
+
       await axios.put(
-        `http://localhost:5000/api/flights/${editDialog.flight.id}`, 
+        `http://localhost:5000/api/flights/${editDialog.flight.id}`,
         formDataWithImage,
         {
           headers: {
@@ -278,7 +300,7 @@ const Flights = () => {
           }
         }
       );
-      
+
       showSnackbar('Vol modifié avec succès');
       handleEditClose();
       fetchFlights();
@@ -292,20 +314,20 @@ const Flights = () => {
     e.preventDefault();
     try {
       const formDataWithImage = new FormData();
-      
+
       Object.keys(restartFormData).forEach(key => {
         formDataWithImage.append(key, restartFormData[key]);
       });
-      
+
       if (restartImage) {
         formDataWithImage.append('image', restartImage);
       } else if (restartDialog.flight.image_url) {
         // If no new image is selected but there's an existing image, we need to tell the backend to keep it
         formDataWithImage.append('keepExistingImage', 'true');
       }
-      
+
       await axios.post(
-        `http://localhost:5000/api/flights/${restartDialog.flight.id}/restart`, 
+        `http://localhost:5000/api/flights/${restartDialog.flight.id}/restart`,
         formDataWithImage,
         {
           headers: {
@@ -313,7 +335,7 @@ const Flights = () => {
           }
         }
       );
-      
+
       showSnackbar('Vol redémarré avec succès');
       handleRestartClose();
       fetchFlights();
@@ -322,9 +344,9 @@ const Flights = () => {
       showSnackbar(error.response?.data?.message || 'Erreur lors du redémarrage du vol', 'error');
     }
   };
-  
+
   // Removed handleRecreate as we'll handle this in the AddFlight component
-  
+
   const handleDelete = async (id) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer ce vol ?')) {
       try {
@@ -394,15 +416,15 @@ const Flights = () => {
                   <TableRow key={flight.id}>
                     <TableCell>
                       {flight.image_url ? (
-                        <img 
-                          src={`http://localhost:5000${flight.image_url}`} 
-                          alt={flight.titre} 
+                        <img
+                          src={`http://localhost:5000${flight.image_url}`}
+                          alt={flight.titre}
                           style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: '4px' }}
                         />
                       ) : (
-                        <img 
-                          src={NotFoundImage} 
-                          alt="No image available" 
+                        <img
+                          src={NotFoundImage}
+                          alt="No image available"
                           style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: '4px' }}
                         />
                       )}
@@ -422,10 +444,10 @@ const Flights = () => {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Chip 
-                        label={isPast ? 'Terminé' : 'Actif'} 
-                        color={isPast ? 'default' : 'success'} 
-                        size="small" 
+                      <Chip
+                        label={isPast ? 'Terminé' : 'Actif'}
+                        color={isPast ? 'default' : 'success'}
+                        size="small"
                       />
                     </TableCell>
                     <TableCell>
@@ -462,7 +484,7 @@ const Flights = () => {
         rowsPerPage={rowsPerPage}
         onRowsPerPageChange={handleChangeRowsPerPage}
         labelRowsPerPage="Lignes par page"
-        labelDisplayedRows={({ from, to, count }) => 
+        labelDisplayedRows={({ from, to, count }) =>
           `${from}-${to} sur ${count !== -1 ? count : `plus de ${to}`}`
         }
       />
@@ -475,9 +497,9 @@ const Flights = () => {
             <Grid container spacing={2} sx={{ mt: 1 }}>
               <Grid item xs={12} md={6}>
                 {viewDialog.flight.image_url && (
-                  <img 
-                    src={`http://localhost:5000${viewDialog.flight.image_url}`} 
-                    alt={viewDialog.flight.titre} 
+                  <img
+                    src={`http://localhost:5000${viewDialog.flight.image_url}`}
+                    alt={viewDialog.flight.titre}
                     style={{ width: '100%', maxHeight: 200, objectFit: 'cover', borderRadius: '8px' }}
                   />
                 )}
@@ -518,6 +540,43 @@ const Flights = () => {
                   {viewDialog.flight.airport_arrivee?.location?.ville || '-'}, {viewDialog.flight.airport_arrivee?.pays || '-'}
                 </Typography>
               </Grid>
+
+              {viewDialog.flight.aller_retour && (
+                <>
+                  <Grid item xs={12}>
+                    <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 3 }}>Vol de retour</Typography>
+                    <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
+                      Informations sur le vol de retour
+                    </Typography>
+                  </Grid>
+
+                  <Grid item xs={12} md={6}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mt: 2 }}>Départ du retour</Typography>
+                    <Typography variant="body1">
+                      {viewDialog.flight.retour_depart_date ? formatDate(viewDialog.flight.retour_depart_date) : '-'}
+                    </Typography>
+                    <Typography variant="body1">
+                      {viewDialog.flight.airport_arrivee?.nom || '-'} ({viewDialog.flight.airport_arrivee?.code || '-'})
+                    </Typography>
+                    <Typography variant="body2">
+                      {viewDialog.flight.airport_arrivee?.location?.ville || '-'}, {viewDialog.flight.airport_arrivee?.pays || '-'}
+                    </Typography>
+                  </Grid>
+
+                  <Grid item xs={12} md={6}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mt: 2 }}>Arrivée du retour</Typography>
+                    <Typography variant="body1">
+                      {viewDialog.flight.retour_arrive_date ? formatDate(viewDialog.flight.retour_arrive_date) : '-'}
+                    </Typography>
+                    <Typography variant="body1">
+                      {viewDialog.flight.airport_depart?.nom || '-'} ({viewDialog.flight.airport_depart?.code || '-'})
+                    </Typography>
+                    <Typography variant="body2">
+                      {viewDialog.flight.airport_depart?.location?.ville || '-'}, {viewDialog.flight.airport_depart?.pays || '-'}
+                    </Typography>
+                  </Grid>
+                </>
+              )}
             </Grid>
           )}
         </DialogContent>
@@ -651,6 +710,54 @@ const Flights = () => {
                   ))}
                 </TextField>
               </Grid>
+
+              <Grid item xs={12}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      name="aller_retour"
+                      checked={formData.aller_retour}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        aller_retour: e.target.checked
+                      })}
+                    />
+                  }
+                  label="Vol aller-retour"
+                />
+              </Grid>
+
+              {formData.aller_retour && (
+                <>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      name="retour_depart_date"
+                      label="Date et heure de départ du retour"
+                      type="datetime-local"
+                      value={formData.retour_depart_date}
+                      onChange={handleChange}
+                      fullWidth
+                      required={formData.aller_retour}
+                      margin="normal"
+                      InputLabelProps={{ shrink: true }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      name="retour_arrive_date"
+                      label="Date et heure d'arrivée du retour"
+                      type="datetime-local"
+                      value={formData.retour_arrive_date}
+                      onChange={handleChange}
+                      fullWidth
+                      required={formData.aller_retour}
+                      margin="normal"
+                      InputLabelProps={{ shrink: true }}
+                    />
+                  </Grid>
+                </>
+              )}
+
               <Grid item xs={12}>
                 <div style={{ marginTop: 16 }}>
                   <input
@@ -669,9 +776,9 @@ const Flights = () => {
                 {editPreviewUrl && (
                   <div style={{ marginTop: 16 }}>
                     <Typography variant="subtitle1">Aperçu de l'image:</Typography>
-                    <img 
-                      src={editPreviewUrl} 
-                      alt="Aperçu" 
+                    <img
+                      src={editPreviewUrl}
+                      alt="Aperçu"
                       style={{ maxWidth: '100%', maxHeight: 200, marginTop: 8 }}
                     />
                   </div>
@@ -816,6 +923,54 @@ const Flights = () => {
                   ))}
                 </TextField>
               </Grid>
+
+              <Grid item xs={12}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      name="aller_retour"
+                      checked={restartFormData.aller_retour}
+                      onChange={(e) => setRestartFormData({
+                        ...restartFormData,
+                        aller_retour: e.target.checked
+                      })}
+                    />
+                  }
+                  label="Vol aller-retour"
+                />
+              </Grid>
+
+              {restartFormData.aller_retour && (
+                <>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      name="retour_depart_date"
+                      label="Date et heure de départ du retour"
+                      type="datetime-local"
+                      value={restartFormData.retour_depart_date}
+                      onChange={handleRestartChange}
+                      fullWidth
+                      required={restartFormData.aller_retour}
+                      margin="normal"
+                      InputLabelProps={{ shrink: true }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      name="retour_arrive_date"
+                      label="Date et heure d'arrivée du retour"
+                      type="datetime-local"
+                      value={restartFormData.retour_arrive_date}
+                      onChange={handleRestartChange}
+                      fullWidth
+                      required={restartFormData.aller_retour}
+                      margin="normal"
+                      InputLabelProps={{ shrink: true }}
+                    />
+                  </Grid>
+                </>
+              )}
+
               <Grid item xs={12}>
                 <div style={{ marginTop: 16 }}>
                   <input
@@ -834,338 +989,9 @@ const Flights = () => {
                 {restartPreviewUrl && (
                   <div style={{ marginTop: 16 }}>
                     <Typography variant="subtitle1">Aperçu de l'image:</Typography>
-                    <img 
-                      src={restartPreviewUrl} 
-                      alt="Aperçu" 
-                      style={{ maxWidth: '100%', maxHeight: 200, marginTop: 8 }}
-                    />
-                  </div>
-                )}
-              </Grid>
-            </Grid>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleRestartClose}>Annuler</Button>
-            <Button type="submit" variant="contained" color="primary">
-              Redémarrer
-            </Button>
-          </DialogActions>
-        </form>
-      </Dialog>
-
-      {/* Removed Recreate Dialog - now navigating to AddFlight page instead */}
-
-      {/* Edit Dialog */}
-      <Dialog open={editDialog.open} onClose={handleEditClose} maxWidth="md" fullWidth>
-        <DialogTitle>Modifier le Vol</DialogTitle>
-        <form onSubmit={handleUpdate}>
-          <DialogContent>
-            <Grid container spacing={2}>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  name="titre"
-                  label="Titre"
-                  value={formData.titre}
-                  onChange={handleChange}
-                  fullWidth
-                  required
-                  margin="normal"
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  name="prix"
-                  label="Prix"
-                  type="number"
-                  value={formData.prix}
-                  onChange={handleChange}
-                  fullWidth
-                  required
-                  margin="normal"
-                  InputProps={{
-                    endAdornment: <InputAdornment position="end">DT</InputAdornment>,
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  name="date_depart"
-                  label="Date et heure de départ"
-                  type="datetime-local"
-                  value={formData.date_depart}
-                  onChange={handleChange}
-                  fullWidth
-                  required
-                  margin="normal"
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  name="date_retour"
-                  label="Date et heure de retour"
-                  type="datetime-local"
-                  value={formData.date_retour}
-                  onChange={handleChange}
-                  fullWidth
-                  required
-                  margin="normal"
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  name="duree"
-                  label="Durée"
-                  value={formData.duree}
-                  onChange={handleChange}
-                  fullWidth
-                  margin="normal"
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  name="plane_id"
-                  label="Avion"
-                  select
-                  value={formData.plane_id}
-                  onChange={handleChange}
-                  fullWidth
-                  required
-                  margin="normal"
-                >
-                  <MenuItem value="">Sélectionner un avion</MenuItem>
-                  {planes.map((plane) => (
-                    <MenuItem key={plane.idPlane} value={plane.idPlane}>
-                      {plane.planeModel} ({plane.totalSeats} sièges)
-                    </MenuItem>
-                  ))}
-                </TextField>
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  name="airport_depart_id"
-                  label="Aéroport de départ"
-                  select
-                  value={formData.airport_depart_id}
-                  onChange={handleChange}
-                  fullWidth
-                  required
-                  margin="normal"
-                >
-                  <MenuItem value="">Sélectionner un aéroport</MenuItem>
-                  {airports.map((airport) => (
-                    <MenuItem key={airport.id} value={airport.id}>
-                      {airport.nom} ({airport.code})
-                    </MenuItem>
-                  ))}
-                </TextField>
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  name="airport_arrivee_id"
-                  label="Aéroport d'arrivée"
-                  select
-                  value={formData.airport_arrivee_id}
-                  onChange={handleChange}
-                  fullWidth
-                  required
-                  margin="normal"
-                >
-                  <MenuItem value="">Sélectionner un aéroport</MenuItem>
-                  {airports.map((airport) => (
-                    <MenuItem key={airport.id} value={airport.id}>
-                      {airport.nom} ({airport.code})
-                    </MenuItem>
-                  ))}
-                </TextField>
-              </Grid>
-              <Grid item xs={12}>
-                <div style={{ marginTop: 16 }}>
-                  <input
-                    accept="image/*"
-                    style={{ display: 'none' }}
-                    id="edit-image-upload"
-                    type="file"
-                    onChange={handleEditImageChange}
-                  />
-                  <label htmlFor="edit-image-upload">
-                    <Button variant="outlined" component="span">
-                      {editPreviewUrl ? 'Changer l\'image' : 'Ajouter une image'}
-                    </Button>
-                  </label>
-                </div>
-                {editPreviewUrl && (
-                  <div style={{ marginTop: 16 }}>
-                    <Typography variant="subtitle1">Aperçu de l'image:</Typography>
-                    <img 
-                      src={editPreviewUrl} 
-                      alt="Aperçu" 
-                      style={{ maxWidth: '100%', maxHeight: 200, marginTop: 8 }}
-                    />
-                  </div>
-                )}
-              </Grid>
-            </Grid>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleEditClose}>Annuler</Button>
-            <Button type="submit" variant="contained" color="primary">
-              Mettre à jour
-            </Button>
-          </DialogActions>
-        </form>
-      </Dialog>
-
-      {/* Restart Dialog */}
-      <Dialog open={restartDialog.open} onClose={handleRestartClose} maxWidth="md" fullWidth>
-        <DialogTitle>Redémarrer le Vol</DialogTitle>
-        <form onSubmit={handleRestart}>
-          <DialogContent>
-            <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-              Vous pouvez redémarrer ce vol avec de nouvelles dates. Les autres informations seront conservées.
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  name="titre"
-                  label="Titre"
-                  value={restartFormData.titre}
-                  onChange={handleRestartChange}
-                  fullWidth
-                  required
-                  margin="normal"
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  name="prix"
-                  label="Prix"
-                  type="number"
-                  value={restartFormData.prix}
-                  onChange={handleRestartChange}
-                  fullWidth
-                  required
-                  margin="normal"
-                  InputProps={{
-                    endAdornment: <InputAdornment position="end">DT</InputAdornment>,
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  name="date_depart"
-                  label="Nouvelle date et heure de départ"
-                  type="datetime-local"
-                  value={restartFormData.date_depart}
-                  onChange={handleRestartChange}
-                  fullWidth
-                  required
-                  margin="normal"
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  name="date_retour"
-                  label="Nouvelle date et heure de retour"
-                  type="datetime-local"
-                  value={restartFormData.date_retour}
-                  onChange={handleRestartChange}
-                  fullWidth
-                  required
-                  margin="normal"
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  name="duree"
-                  label="Durée"
-                  value={restartFormData.duree}
-                  onChange={handleRestartChange}
-                  fullWidth
-                  margin="normal"
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  name="plane_id"
-                  label="Avion"
-                  select
-                  value={restartFormData.plane_id}
-                  onChange={handleRestartChange}
-                  fullWidth
-                  required
-                  margin="normal"
-                >
-                  <MenuItem value="">Sélectionner un avion</MenuItem>
-                  {planes.map((plane) => (
-                    <MenuItem key={plane.idPlane} value={plane.idPlane}>
-                      {plane.planeModel} ({plane.totalSeats} sièges)
-                    </MenuItem>
-                  ))}
-                </TextField>
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  name="airport_depart_id"
-                  label="Aéroport de départ"
-                  select
-                  value={restartFormData.airport_depart_id}
-                  onChange={handleRestartChange}
-                  fullWidth
-                  required
-                  margin="normal"
-                >
-                  <MenuItem value="">Sélectionner un aéroport</MenuItem>
-                  {airports.map((airport) => (
-                    <MenuItem key={airport.id} value={airport.id}>
-                      {airport.nom} ({airport.code})
-                    </MenuItem>
-                  ))}
-                </TextField>
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  name="airport_arrivee_id"
-                  label="Aéroport d'arrivée"
-                  select
-                  value={restartFormData.airport_arrivee_id}
-                  onChange={handleRestartChange}
-                  fullWidth
-                  required
-                  margin="normal"
-                >
-                  <MenuItem value="">Sélectionner un aéroport</MenuItem>
-                  {airports.map((airport) => (
-                    <MenuItem key={airport.id} value={airport.id}>
-                      {airport.nom} ({airport.code})
-                    </MenuItem>
-                  ))}
-                </TextField>
-              </Grid>
-              <Grid item xs={12}>
-                <div style={{ marginTop: 16 }}>
-                  <input
-                    accept="image/*"
-                    style={{ display: 'none' }}
-                    id="restart-image-upload"
-                    type="file"
-                    onChange={handleRestartImageChange}
-                  />
-                  <label htmlFor="restart-image-upload">
-                    <Button variant="outlined" component="span">
-                      {restartPreviewUrl ? 'Changer l\'image' : 'Ajouter une image'}
-                    </Button>
-                  </label>
-                </div>
-                {restartPreviewUrl && (
-                  <div style={{ marginTop: 16 }}>
-                    <Typography variant="subtitle1">Aperçu de l'image:</Typography>
-                    <img 
-                      src={restartPreviewUrl} 
-                      alt="Aperçu" 
+                    <img
+                      src={restartPreviewUrl}
+                      alt="Aperçu"
                       style={{ maxWidth: '100%', maxHeight: 200, marginTop: 8 }}
                     />
                   </div>

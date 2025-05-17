@@ -91,7 +91,10 @@ export const addFlight = async (req: Request, res: Response) => {
       duree,
       airport_depart_id,
       airport_arrivee_id,
-      plane_id
+      plane_id,
+      aller_retour,
+      retour_depart_date,
+      retour_arrive_date
     } = req.body;
 
     // Find the departure airport
@@ -122,6 +125,17 @@ export const addFlight = async (req: Request, res: Response) => {
     flight.airport_depart = departureAirport;
     flight.arrival_airport = arrivalAirport;
     flight.plane = plane;
+    flight.aller_retour = aller_retour === 'true' || aller_retour === true;
+    
+    // Set return flight details if it's a round trip
+    if (flight.aller_retour) {
+      if (retour_depart_date) {
+        flight.retour_depart_date = new Date(retour_depart_date);
+      }
+      if (retour_arrive_date) {
+        flight.retour_arrive_date = new Date(retour_arrive_date);
+      }
+    }
     
     // Handle image upload
     if (req.file) {
@@ -175,7 +189,10 @@ export const updateFlight = async (req: Request, res: Response) => {
       duree,
       airport_depart_id,
       airport_arrivee_id,
-      plane_id
+      plane_id,
+      aller_retour,
+      retour_depart_date,
+      retour_arrive_date
     } = req.body;
 
     // Update basic properties
@@ -184,6 +201,25 @@ export const updateFlight = async (req: Request, res: Response) => {
     if (date_depart) flight.date_depart = new Date(date_depart);
     if (date_retour) flight.date_retour = new Date(date_retour);
     if (duree) flight.duree = duree;
+    
+    // Update aller_retour status
+    if (aller_retour !== undefined) {
+      flight.aller_retour = aller_retour === 'true' || aller_retour === true;
+      
+      // Update return flight details if it's a round trip
+      if (flight.aller_retour) {
+        if (retour_depart_date) {
+          flight.retour_depart_date = new Date(retour_depart_date);
+        }
+        if (retour_arrive_date) {
+          flight.retour_arrive_date = new Date(retour_arrive_date);
+        }
+      } else {
+        // Clear return flight details if it's not a round trip
+        flight.retour_depart_date = null;
+        flight.retour_arrive_date = null;
+      }
+    }
 
     // Update departure airport if provided
     if (airport_depart_id) {

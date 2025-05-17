@@ -24,6 +24,16 @@ export class Flight extends BaseEntity {
   @Column('varchar', { nullable: true })
   duree!: string;
 
+  @Column('boolean', { default: false })
+  aller_retour!: boolean;
+  
+  // Optional: Add these fields if you want to track separate return flight details
+  @Column('datetime', { nullable: true })
+  retour_depart_date!: Date | null;
+  
+  @Column('datetime', { nullable: true })
+  retour_arrive_date!: Date | null;
+
   @ManyToOne(() => Airport)
   @JoinColumn({ name: 'airport_depart_id' })
   airport_depart!: Airport;

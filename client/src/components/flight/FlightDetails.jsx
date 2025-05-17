@@ -55,6 +55,36 @@ const FlightDetails = ({ flight, formatDate }) => {
           </Grid>
         </Grid>
 
+        {/* Return Flight Details (if it's a round trip) */}
+        {flight.aller_retour && flight.retour_depart_date && flight.retour_arrive_date && (
+          <>
+            <Typography variant="h6" className="mt-6 mb-3 font-semibold">Vol de retour</Typography>
+            <Grid container spacing={4}>
+              <Grid item xs={12} md={6}>
+                <Box className="flex items-start gap-4">
+                  <FlightTakeoff className="text-red-600 mt-1" />
+                  <Box>
+                    <Typography className="text-sm text-gray-500 font-medium uppercase tracking-wide">Départ du retour</Typography>
+                    <Typography className="text-gray-800 font-semibold text-base">{flight.arrival_airport?.nom}</Typography>
+                    <Typography className="text-sm text-gray-500">{formatDate(flight.retour_depart_date)}</Typography>
+                  </Box>
+                </Box>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Box className="flex items-start gap-4">
+                  <FlightLand className="text-blue-600 mt-1" />
+                  <Box>
+                    <Typography className="text-sm text-gray-500 font-medium uppercase tracking-wide">Arrivée du retour</Typography>
+                    <Typography className="text-gray-800 font-semibold text-base">{flight.airport_depart?.nom}</Typography>
+                    <Typography className="text-sm text-gray-500">{formatDate(flight.retour_arrive_date)}</Typography>
+                  </Box>
+                </Box>
+              </Grid>
+            </Grid>
+          </>
+        )}
+
         <Divider className="my-4" />
 
         {/* Other Info */}
@@ -88,7 +118,7 @@ const FlightDetails = ({ flight, formatDate }) => {
               <CalendarMonth color="primary" />
               <Typography className="text-xs text-gray-500 mt-1">Type</Typography>
               <Typography className="font-semibold text-sm">
-                {flight.date_retour ? 'Aller-retour' : 'Aller simple'}
+                {flight.aller_retour ? 'Aller-retour' : 'Aller simple'}
               </Typography>
             </Box>
           </Grid>
