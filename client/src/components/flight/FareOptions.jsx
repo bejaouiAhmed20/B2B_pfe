@@ -1,11 +1,11 @@
 import React, { useEffect } from 'react';
-import { 
-  Card, 
-  CardContent, 
-  Typography, 
-  Box, 
-  Divider, 
-  Grid 
+import {
+  Card,
+  CardContent,
+  Typography,
+  Box,
+  Divider,
+  Grid
 } from '@mui/material';
 import {
   AirplaneTicket,
@@ -14,9 +14,7 @@ import {
 } from '@mui/icons-material';
 
 const FareOptions = ({ fareTypes, reservation, setReservation }) => {
-  // Ensure both naming conventions work
   useEffect(() => {
-    // Initialize if neither format exists
     if (!reservation.classType && !reservation.class_type) {
       setReservation(prev => ({
         ...prev,
@@ -28,177 +26,124 @@ const FareOptions = ({ fareTypes, reservation, setReservation }) => {
     }
   }, []);
 
-  // Helper function to update both naming conventions
   const updateReservation = (classType, fareType) => {
-    setReservation(prev => ({ 
-      ...prev, 
-      // Set both naming conventions to ensure compatibility
-      classType: classType,
+    setReservation(prev => ({
+      ...prev,
+      classType,
       class_type: classType,
-      fareType: fareType,
+      fareType,
       fare_type: fareType
     }));
-    console.log(`Selected: Class=${classType}, Fare=${fareType}`);
   };
 
+  const selectedClass = reservation.classType || reservation.class_type;
+  const selectedFare = reservation.fareType || reservation.fare_type;
+  const selectedFareObj = fareTypes[selectedClass].find(f => f.id === selectedFare);
+
   return (
-    <Card sx={{ mb: 3, mt: 3 }}>
-      <CardContent>
-        <Typography variant="h6" gutterBottom>
-          Options de voyage
-        </Typography>
-        
-        {/* Class type selection with visual tabs */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="subtitle2" gutterBottom>
-            Choisissez votre classe
+    <Card className="rounded-2xl shadow-sm mb-6 border border-gray-100">
+      <CardContent className="px-6 py-8 space-y-6">
+        {/* Class selection */}
+        <Box>
+          <Typography variant="subtitle1" fontWeight="bold" className="text-gray-700 mb-2">
+            Classe de voyage
           </Typography>
-          <Box sx={{ 
-            display: 'flex', 
-            border: '1px solid #e0e0e0', 
-            borderRadius: 1, 
-            overflow: 'hidden'
-          }}>
-            <Box 
-              onClick={() => updateReservation('economy', 'light')}
-              sx={{ 
-                flex: 1, 
-                p: 2, 
-                textAlign: 'center',
-                bgcolor: (reservation.classType === 'economy' || reservation.class_type === 'economy') ? '#CC0A2B' : 'transparent',
-                color: (reservation.classType === 'economy' || reservation.class_type === 'economy') ? 'white' : 'inherit',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                '&:hover': {
-                  bgcolor: (reservation.classType === 'economy' || reservation.class_type === 'economy') ? '#CC0A2B' : '#f5f5f5'
-                }
-              }}
-            >
-              <Typography variant="subtitle1" fontWeight={(reservation.classType === 'economy' || reservation.class_type === 'economy') ? 'bold' : 'normal'}>
-                Économique
-              </Typography>
-            </Box>
-            <Box 
-              onClick={() => updateReservation('business', 'confort')}
-              sx={{ 
-                flex: 1, 
-                p: 2, 
-                textAlign: 'center',
-                bgcolor: (reservation.classType === 'business' || reservation.class_type === 'business') ? '#CC0A2B' : 'transparent',
-                color: (reservation.classType === 'business' || reservation.class_type === 'business') ? 'white' : 'inherit',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                '&:hover': {
-                  bgcolor: (reservation.classType === 'business' || reservation.class_type === 'business') ? '#CC0A2B' : '#f5f5f5'
-                }
-              }}
-            >
-              <Typography variant="subtitle1" fontWeight={(reservation.classType === 'business' || reservation.class_type === 'business') ? 'bold' : 'normal'}>
-                Affaires
-              </Typography>
-            </Box>
-          </Box>
-        </Box>
-        
-        {/* Use either naming convention, preferring classType if available */}
-        <Typography variant="subtitle2" gutterBottom>
-          Sélectionnez votre tarif en {(reservation.classType || reservation.class_type) === 'economy' ? 'Économique' : 'Affaires'}
-        </Typography>
-        
-        <Box sx={{ display: 'flex', flexDirection: 'row', gap: 2, overflowX: 'auto', pb: 1 }}>
-          {fareTypes[(reservation.classType || reservation.class_type)].map(fare => (
-            <Card 
-              key={fare.id} 
-              onClick={() => updateReservation((reservation.classType || reservation.class_type), fare.id)}
-              sx={{ 
-                minWidth: 180, 
-                cursor: 'pointer',
-                border: (reservation.fareType === fare.id || reservation.fare_type === fare.id) ? '2px solid #CC0A2B' : '1px solid #e0e0e0',
-                boxShadow: (reservation.fareType === fare.id || reservation.fare_type === fare.id) ? '0 4px 8px rgba(204, 10, 43, 0.2)' : 'none',
-                transition: 'all 0.3s ease',
-                '&:hover': {
-                  transform: 'translateY(-4px)',
-                  boxShadow: '0 6px 12px rgba(0, 0, 0, 0.15)'
-                },
-                flex: '0 0 auto',
-                display: 'flex',
-                flexDirection: 'column'
-              }}
-            >
-              <Box sx={{ 
-                bgcolor: (reservation.fareType === fare.id || reservation.fare_type === fare.id) ? '#CC0A2B' : 'grey.100', 
-                color: (reservation.fareType === fare.id || reservation.fare_type === fare.id) ? 'white' : 'text.primary',
-                p: 1.5,
-                textAlign: 'center'
-              }}>
-                <Typography variant="h6" fontWeight="bold">
-                  {fare.name}
-                </Typography>
+          <Box className="flex overflow-hidden rounded-lg border border-gray-200">
+            {['economy', 'business'].map(type => (
+              <Box
+                key={type}
+                onClick={() => updateReservation(type, type === 'economy' ? 'light' : 'confort')}
+                className={`flex-1 text-center px-4 py-2 cursor-pointer transition duration-200 font-medium ${
+                  selectedClass === type
+                    ? 'bg-[#CC0A2B] text-white'
+                    : 'bg-white hover:bg-gray-50 text-gray-800'
+                }`}
+              >
+                {type === 'economy' ? 'Économique' : 'Affaires'}
               </Box>
-              <CardContent sx={{ flexGrow: 1 }}>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  {fare.description}
-                </Typography>
-                <Typography variant="h6" color="primary" align="center" sx={{ my: 1 }}>
-                  {(fare.multiplier).toFixed(2)}x
-                </Typography>
-                <Divider sx={{ my: 1 }} />
-                <Box sx={{ mt: 1 }}>
-                  {fare.features.slice(0, 3).map((feature, index) => (
-                    <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-                      {feature.included ? 
-                        <CheckCircleOutline sx={{ mr: 1, fontSize: '0.9rem', color: 'success.main' }} /> : 
-                        <HighlightOff sx={{ mr: 1, fontSize: '0.9rem', color: 'error.main' }} />
-                      }
-                      <Typography variant="body2" noWrap>
-                        {feature.text}
-                      </Typography>
-                    </Box>
-                  ))}
-                </Box>
-              </CardContent>
-            </Card>
-          ))}
-        </Box>
-        
-        {/* Display selected fare features in detail */}
-        <Box sx={{ 
-          bgcolor: 'primary.light', 
-          color: 'primary.contrastText', 
-          p: 2, 
-          borderRadius: 1, 
-          mt: 3,
-          border: '1px solid',
-          borderColor: 'primary.main',
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
-        }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-            <AirplaneTicket sx={{ mr: 1 }} />
-            <Typography variant="subtitle1" fontWeight="bold">
-              Détails du tarif {fareTypes[(reservation.classType || reservation.class_type)]
-                .find(fare => fare.id === (reservation.fareType || reservation.fare_type))?.name}
-            </Typography>
+            ))}
           </Box>
-          <Divider sx={{ my: 1, borderColor: 'primary.contrastText', opacity: 0.3 }} />
-          <Grid container spacing={1}>
-            {fareTypes[(reservation.classType || reservation.class_type)]
-              .find(fare => fare.id === (reservation.fareType || reservation.fare_type))
-              ?.features.map((feature, index) => (
-                <Grid item xs={12} sm={6} key={index}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
-                    {feature.included ? 
-                      <CheckCircleOutline sx={{ mr: 1, fontSize: '1rem', color: '#8eff8e' }} /> : 
-                      <HighlightOff sx={{ mr: 1, fontSize: '1rem', color: '#ff8e8e' }} />
-                    }
-                    <Typography variant="body2">
-                      {feature.text}
+        </Box>
+
+        {/* Fare cards */}
+        <Box>
+          <Typography variant="subtitle1" fontWeight="bold" className="text-gray-700 mb-3">
+            Tarif en {selectedClass === 'economy' ? 'Économique' : 'Affaires'}
+          </Typography>
+
+          <Box className="flex gap-4 overflow-x-auto pb-1">
+            {fareTypes[selectedClass].map(fare => {
+              const isSelected = selectedFare === fare.id;
+              return (
+                <Card
+                  key={fare.id}
+                  onClick={() => updateReservation(selectedClass, fare.id)}
+                  className={`min-w-[220px] flex-shrink-0 transition-transform border ${
+                    isSelected ? 'border-[#CC0A2B] shadow-md' : 'border-gray-200'
+                  } hover:-translate-y-1 duration-200 rounded-lg overflow-hidden`}
+                >
+                  <Box
+                    className={`p-2 text-center font-bold ${
+                      isSelected ? 'bg-[#CC0A2B] text-white' : 'bg-gray-100 text-gray-800'
+                    }`}
+                  >
+                    {fare.name}
+                  </Box>
+                  <CardContent className="space-y-2">
+                    <Typography variant="body2" color="text.secondary">
+                      {fare.description}
                     </Typography>
+                    <Typography variant="h6" align="center" className="text-primary">
+                      {fare.multiplier.toFixed(2)}x
+                    </Typography>
+                    <Divider />
+                    <Box>
+                      {fare.features.slice(0, 3).map((feature, idx) => (
+                        <Box key={idx} className="flex items-center gap-1 text-sm text-gray-700">
+                          {feature.included ? (
+                            <CheckCircleOutline fontSize="small" className="text-green-600" />
+                          ) : (
+                            <HighlightOff fontSize="small" className="text-red-400" />
+                          )}
+                          <Typography variant="body2" noWrap>
+                            {feature.text}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Box>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </Box>
+        </Box>
+
+        {/* Selected Fare Details */}
+        {selectedFareObj && (
+          <Box className="bg-[#fef6f7] p-4 rounded-xl border border-[#CC0A2B]/20">
+            <Box className="flex items-center gap-2 mb-2">
+              <AirplaneTicket className="text-[#CC0A2B]" />
+              <Typography variant="subtitle1" fontWeight="bold" className="text-gray-800">
+                Détails du tarif {selectedFareObj.name}
+              </Typography>
+            </Box>
+            <Divider className="mb-3" />
+            <Grid container spacing={2}>
+              {selectedFareObj.features.map((feature, idx) => (
+                <Grid item xs={12} sm={6} key={idx}>
+                  <Box className="flex items-center gap-2">
+                    {feature.included ? (
+                      <CheckCircleOutline className="text-green-500" />
+                    ) : (
+                      <HighlightOff className="text-red-400" />
+                    )}
+                    <Typography variant="body2">{feature.text}</Typography>
                   </Box>
                 </Grid>
-              ))
-            }
-          </Grid>
-        </Box>
+              ))}
+            </Grid>
+          </Box>
+        )}
       </CardContent>
     </Card>
   );
