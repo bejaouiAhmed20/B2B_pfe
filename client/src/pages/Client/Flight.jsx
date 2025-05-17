@@ -313,111 +313,133 @@ const Flight = () => {
         </Alert>
       )}
 
-      <Paper sx={{ p: 3, mb: 4 }}>
-        <Tabs 
-          value={filterTab} 
-          onChange={handleFilterTabChange} 
-          centered 
-          sx={{ mb: 2 }}
-          indicatorColor="primary"
-          textColor="primary"
-        >
-          <Tab icon={<Search />} label="Recherche" />
-          <Tab icon={<FilterList />} label="Filtres" />
-          <Tab icon={<Sort />} label="Tri" />
-        </Tabs>
+<Paper
+  elevation={3}
+  sx={{
+    p: 4,
+    mb: 5,
+    borderRadius: 4,
+    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.05)',
+    backgroundColor: 'background.paper',
+  }}
+>
+  <Tabs
+    value={filterTab}
+    onChange={handleFilterTabChange}
+    centered
+    textColor="primary"
+    indicatorColor="primary"
+    sx={{
+      mb: 3,
+      '& .MuiTab-root': {
+        fontWeight: 500,
+        textTransform: 'none',
+        fontSize: '16px',
+      },
+    }}
+  >
+    <Tab icon={<Search />} iconPosition="start" label="Recherche" />
+    <Tab icon={<FilterList />} iconPosition="start" label="Filtres" />
+    <Tab icon={<Sort />} iconPosition="start" label="Tri" />
+  </Tabs>
 
-        {filterTab === 0 && (
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Rechercher"
-                variant="outlined"
-                value={searchTerm}
-                onChange={handleSearchChange}
-                placeholder="Destination, compagnie..."
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Search />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            </Grid>
-          </Grid>
-        )}
+  {filterTab === 0 && (
+    <Grid container spacing={3}>
+      <Grid item xs={12}>
+        <TextField
+          fullWidth
+          label="Rechercher"
+          variant="outlined"
+          value={searchTerm}
+          onChange={handleSearchChange}
+          placeholder="Destination, compagnie..."
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Search color="action" />
+              </InputAdornment>
+            ),
+          }}
+        />
+      </Grid>
+    </Grid>
+  )}
 
-        {filterTab === 1 && (
-          <Grid container spacing={2} alignItems="center">
-            {/* Remove the city filter dropdowns */}
-            <Grid item xs={12} md={6}>
-              {/* Replace DatePicker with TextField */}
-              <TextField
-                fullWidth
-                label="Date de départ"
-                type="date"
-                value={departureDate}
-                onChange={handleDateChange}
-                InputLabelProps={{
-                  shrink: true,
-                }}
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth variant="outlined">
-                <InputLabel>Gamme de prix</InputLabel>
-                <Select
-                  value={priceRange}
-                  onChange={handlePriceRangeChange}
-                  label="Gamme de prix"
-                >
-                  <MenuItem value="">Tous les prix</MenuItem>
-                  <MenuItem value="0-500">0€ - 500€</MenuItem>
-                  <MenuItem value="500-1000">500€ - 1000€</MenuItem>
-                  <MenuItem value="1000-2000">1000€ - 2000€</MenuItem>
-                  <MenuItem value="2000-5000">2000€ - 5000€</MenuItem>
-                  <MenuItem value="5000-100000">Plus de 5000€</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-          </Grid>
-        )}
-
-        {filterTab === 2 && (
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12}>
-              <FormControl fullWidth variant="outlined">
-                <InputLabel>Trier par</InputLabel>
-                <Select
-                  value={sortBy}
-                  onChange={handleSortChange}
-                  label="Trier par"
-                >
-                  <MenuItem value="default">Par défaut</MenuItem>
-                  <MenuItem value="price-asc">Prix croissant</MenuItem>
-                  <MenuItem value="price-desc">Prix décroissant</MenuItem>
-                  <MenuItem value="date-asc">Date (plus proche)</MenuItem>
-                  <MenuItem value="date-desc">Date (plus éloignée)</MenuItem>
-                  <MenuItem value="duration-asc">Durée (plus courte)</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-          </Grid>
-        )}
-
-        {/* Reset filters button */}
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
-          <Button 
-            variant="outlined" 
-            onClick={resetFilters}
-            sx={{ mx: 1 }}
+  {filterTab === 1 && (
+    <Grid container spacing={3}>
+      <Grid item xs={12} md={6}>
+        <TextField
+          fullWidth
+          label="Date de départ"
+          type="date"
+          value={departureDate}
+          onChange={handleDateChange}
+          InputLabelProps={{ shrink: true }}
+        />
+      </Grid>
+      <Grid item xs={12} md={6}>
+        <FormControl fullWidth>
+          <InputLabel>Gamme de prix</InputLabel>
+          <Select
+            value={priceRange}
+            onChange={handlePriceRangeChange}
+            label="Gamme de prix"
           >
-            Réinitialiser les filtres
-          </Button>
-        </Box>
-      </Paper>
+            <MenuItem value="">Tous les prix</MenuItem>
+            <MenuItem value="0-500">0€ - 500€</MenuItem>
+            <MenuItem value="500-1000">500€ - 1000€</MenuItem>
+            <MenuItem value="1000-2000">1000€ - 2000€</MenuItem>
+            <MenuItem value="2000-5000">2000€ - 5000€</MenuItem>
+            <MenuItem value="5000-100000">Plus de 5000€</MenuItem>
+          </Select>
+        </FormControl>
+      </Grid>
+    </Grid>
+  )}
+
+  {filterTab === 2 && (
+    <Grid container spacing={3}>
+      <Grid item xs={12}>
+        <FormControl fullWidth>
+          <InputLabel>Trier par</InputLabel>
+          <Select
+            value={sortBy}
+            onChange={handleSortChange}
+            label="Trier par"
+          >
+            <MenuItem value="default">Par défaut</MenuItem>
+            <MenuItem value="price-asc">Prix croissant</MenuItem>
+            <MenuItem value="price-desc">Prix décroissant</MenuItem>
+            <MenuItem value="date-asc">Date (plus proche)</MenuItem>
+            <MenuItem value="date-desc">Date (plus éloignée)</MenuItem>
+            <MenuItem value="duration-asc">Durée (plus courte)</MenuItem>
+          </Select>
+        </FormControl>
+      </Grid>
+    </Grid>
+  )}
+
+  <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+    <Button
+      variant="outlined"
+      onClick={resetFilters}
+      sx={{
+        px: 4,
+        py: 1.5,
+        fontWeight: 600,
+        borderRadius: 2,
+        borderColor: 'primary.main',
+        '&:hover': {
+          backgroundColor: 'primary.light',
+          borderColor: 'primary.dark',
+        },
+      }}
+    >
+      Réinitialiser les filtres
+    </Button>
+  </Box>
+</Paper>
+
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="body2" color="text.secondary">
