@@ -7,7 +7,8 @@ import {
   Snackbar,
   Alert,
   FormControlLabel,
-  Switch
+  Switch,
+  Box
 } from '@mui/material';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -22,6 +23,8 @@ const AddLocation = () => {
     description: '',
     est_actif: true
   });
+  const [image, setImage] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState('');
 
   const handleChange = (e) => {
     const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
@@ -31,10 +34,40 @@ const AddLocation = () => {
     });
   };
 
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImage(file);
+      // Create a preview URL for the image
+      const fileReader = new FileReader();
+      fileReader.onload = () => {
+        setPreviewUrl(fileReader.result);
+      };
+      fileReader.readAsDataURL(file);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:5000/api/locations', formData);
+      // Create FormData object to handle file upload
+      const formDataWithImage = new FormData();
+      
+      // Add all form fields to FormData
+      Object.keys(formData).forEach(key => {
+        formDataWithImage.append(key, formData[key]);
+      });
+      
+      // Add image if selected
+      if (image) {
+        formDataWithImage.append('image', image);
+      }
+      
+      await axios.post('http://localhost:5000/api/locations', formDataWithImage, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
       setSnackbar({ open: true, message: 'Emplacement ajouté avec succès', severity: 'success' });
       setTimeout(() => navigate('/admin/locations'), 2000);
     } catch (error) {
@@ -90,6 +123,35 @@ const AddLocation = () => {
           rows={4}
           margin="normal"
         />
+        
+        <input
+          accept="image/*"
+          style={{ display: 'none' }}
+          id="location-image-upload"
+          type="file"
+          onChange={handleImageChange}
+        />
+        <label htmlFor="location-image-upload">
+          <Button
+            variant="outlined"
+            component="span"
+            fullWidth
+            sx={{ mt: 2, mb: 2 }}
+          >
+            Choisir une image
+          </Button>
+        </label>
+        
+        {previewUrl && (
+          <Box mt={2} textAlign="center">
+            <img 
+              src={previewUrl} 
+              alt="Aperçu" 
+              style={{ maxWidth: '100%', maxHeight: '200px' }} 
+            />
+          </Box>
+        )}
+        
         <FormControlLabel
           control={
             <Switch

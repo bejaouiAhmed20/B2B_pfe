@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
+  Box,
   Typography,
   Paper,
   Table,
@@ -37,6 +38,8 @@ const Locations = () => {
     description: '',
     est_actif: true
   });
+  const [image, setImage] = useState(null);
+  const [previewImage, setPreviewImage] = useState('');
 
   useEffect(() => {
     fetchLocations();
@@ -69,6 +72,8 @@ const Locations = () => {
       description: location.description || '',
       est_actif: location.est_actif
     });
+    setPreviewImage(location.url_image ? `http://localhost:5000${location.url_image}` : '');
+    setImage(null);
   };
 
   const handleEditClose = () => {
@@ -80,6 +85,8 @@ const Locations = () => {
       description: '',
       est_actif: true
     });
+    setPreviewImage('');
+    setImage(null);
   };
 
   const handleChange = (e) => {
@@ -89,6 +96,20 @@ const Locations = () => {
     });
   };
 
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImage(file);
+      
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewImage(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const showSnackbar = (message, severity = 'success') => {
     setSnackbar({ open: true, message, severity });
   };
@@ -96,7 +117,26 @@ const Locations = () => {
   const handleUpdate = async (e) => {
     e.preventDefault();
     try {
-      await axios.put(`http://localhost:5000/api/locations/${editDialog.location.id}`, formData);
+      const formDataToSend = new FormData();
+      formDataToSend.append('nom', formData.nom);
+      formDataToSend.append('ville', formData.ville);
+      formDataToSend.append('pays', formData.pays);
+      formDataToSend.append('description', formData.description);
+      formDataToSend.append('est_actif', formData.est_actif);
+      
+      if (image) {
+        formDataToSend.append('image', image);
+      }
+
+      await axios.put(
+        `http://localhost:5000/api/locations/${editDialog.location.id}`, 
+        formDataToSend,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
       showSnackbar('Emplacement modifié avec succès');
       handleEditClose();
       fetchLocations();
@@ -136,6 +176,7 @@ const Locations = () => {
         <Table>
           <TableHead>
             <TableRow>
+              <TableCell>Image</TableCell>
               <TableCell>Nom</TableCell>
               <TableCell>Ville</TableCell>
               <TableCell>Pays</TableCell>
@@ -149,6 +190,17 @@ const Locations = () => {
               .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
               .map((location) => (
                 <TableRow key={location.id}>
+                  <TableCell>
+                    {location.url_image ? (
+                      <img 
+                        src={`http://localhost:5000${location.url_image}`} 
+                        alt={location.nom} 
+                        style={{ width: 50, height: 50, objectFit: 'cover' }}
+                      />
+                    ) : (
+                      'Aucune image'
+                    )}
+                  </TableCell>
                   <TableCell>{location.nom}</TableCell>
                   <TableCell>{location.ville}</TableCell>
                   <TableCell>{location.pays}</TableCell>
@@ -222,6 +274,32 @@ const Locations = () => {
               rows={4}
               margin="dense"
             />
+            <input
+              accept="image/*"
+              style={{ display: 'none' }}
+              id="location-image-upload"
+              type="file"
+              onChange={handleImageChange}
+            />
+            <label htmlFor="location-image-upload">
+              <Button
+                variant="outlined"
+                component="span"
+                fullWidth
+                sx={{ mt: 2, mb: 2 }}
+              >
+                Choisir une image
+              </Button>
+            </label>
+            {previewImage && (
+              <Box mt={2} textAlign="center">
+                <img 
+                  src={previewImage} 
+                  alt="Aperçu" 
+                  style={{ maxWidth: '100%', maxHeight: '200px' }} 
+                />
+              </Box>
+            )}
           </DialogContent>
           <DialogActions>
             <Button onClick={handleEditClose}>Annuler</Button>
