@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/flight_model.dart';
+import '../services/flight_service.dart';
+import '../widgets/flight_card.dart';
 import 'flight_detail_screen.dart';
 
 class FlightListScreen extends StatefulWidget {
@@ -18,8 +20,8 @@ class _FlightListScreenState extends State<FlightListScreen> {
   final TextEditingController _maxPriceController = TextEditingController();
   String? _userId;
 
-  List<dynamic> _flights = [];
-  List<dynamic> _filteredFlights = [];
+  List<Flight> _flights = [];
+  List<Flight> _filteredFlights = [];
   bool _loading = false;
   bool _hasSearched = false;
 
@@ -48,23 +50,27 @@ class _FlightListScreenState extends State<FlightListScreen> {
   Future<void> fetchFlights() async {
     try {
       setState(() => _loading = true);
-      final dio = Dio();
-      final response = await dio.get("http://localhost:5000/api/flights");
 
-      if (response.statusCode == 200) {
+      final flightsList = await FlightService.getFlights();
+
+      if (mounted) {
         setState(() {
-          _flights = response.data;
-          _filteredFlights = response.data;
+          _flights = flightsList;
+          _filteredFlights = flightsList;
           _hasSearched = false;
         });
       }
     } catch (e) {
       print("Error fetching flights: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Erreur lors du chargement des vols: $e")),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Erreur lors du chargement des vols: $e")),
+        );
+      }
     } finally {
-      setState(() => _loading = false);
+      if (mounted) {
+        setState(() => _loading = false);
+      }
     }
   }
 
@@ -109,35 +115,34 @@ class _FlightListScreenState extends State<FlightListScreen> {
     final minPrice = double.tryParse(_minPriceController.text);
     final maxPrice = double.tryParse(_maxPriceController.text);
 
-    final filtered = _flights.where((flight) {
-      final price = double.tryParse(flight['prix'].toString()) ?? 0.0;
-      
-      // Check if location is empty before filtering by it
-      final locationMatch = location.isEmpty || 
-          flight['titre'].toString().toLowerCase().contains(location) ||
-          (flight['description'] != null && 
-           flight['description'].toString().toLowerCase().contains(location));
-      
-      final priceMatch =
-          (minPrice == null || price >= minPrice) &&
-          (maxPrice == null || price <= maxPrice);
+    final filtered =
+        _flights.where((flight) {
+          final price = flight.prix;
 
-      bool dateMatch = true;
-      if (_selectedDateRange != null) {
-        final flightDate = DateTime.tryParse(flight['date_depart']);
-        if (flightDate != null) {
-          dateMatch =
-              flightDate.isAfter(
-                _selectedDateRange!.start.subtract(const Duration(days: 1)),
-              ) &&
-              flightDate.isBefore(
-                _selectedDateRange!.end.add(const Duration(days: 1)),
-              );
-        }
-      }
+          // Check if location is empty before filtering by it
+          final locationMatch =
+              location.isEmpty ||
+              flight.titre.toLowerCase().contains(location) ||
+              (flight.description != null &&
+                  flight.description!.toLowerCase().contains(location));
 
-      return locationMatch && priceMatch && dateMatch;
-    }).toList();
+          final priceMatch =
+              (minPrice == null || price >= minPrice) &&
+              (maxPrice == null || price <= maxPrice);
+
+          bool dateMatch = true;
+          if (_selectedDateRange != null) {
+            dateMatch =
+                flight.dateDepart.isAfter(
+                  _selectedDateRange!.start.subtract(const Duration(days: 1)),
+                ) &&
+                flight.dateDepart.isBefore(
+                  _selectedDateRange!.end.add(const Duration(days: 1)),
+                );
+          }
+
+          return locationMatch && priceMatch && dateMatch;
+        }).toList();
 
     setState(() {
       _filteredFlights = filtered;
@@ -165,10 +170,13 @@ class _FlightListScreenState extends State<FlightListScreen> {
         body: Center(child: CircularProgressIndicator(color: Colors.red)),
       );
     }
-    
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Recherche de vols", style: TextStyle(color: Colors.white)),
+        title: const Text(
+          "Recherche de vols",
+          style: TextStyle(color: Colors.white),
+        ),
         backgroundColor: Colors.red,
         actions: [
           IconButton(
@@ -194,7 +202,10 @@ class _FlightListScreenState extends State<FlightListScreen> {
                 labelText: "Destination ou Ville",
                 prefixIcon: Icon(Icons.location_on),
                 border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                contentPadding: EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 16,
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -208,7 +219,10 @@ class _FlightListScreenState extends State<FlightListScreen> {
                       labelText: "Prix Min",
                       prefixIcon: Icon(Icons.money),
                       border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      contentPadding: EdgeInsets.symmetric(
+                        vertical: 12,
+                        horizontal: 16,
+                      ),
                     ),
                   ),
                 ),
@@ -221,7 +235,10 @@ class _FlightListScreenState extends State<FlightListScreen> {
                       labelText: "Prix Max",
                       prefixIcon: Icon(Icons.money_off),
                       border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      contentPadding: EdgeInsets.symmetric(
+                        vertical: 12,
+                        horizontal: 16,
+                      ),
                     ),
                   ),
                 ),
@@ -235,7 +252,10 @@ class _FlightListScreenState extends State<FlightListScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 16,
+                ),
                 minimumSize: const Size(double.infinity, 48),
               ),
             ),
@@ -273,143 +293,57 @@ class _FlightListScreenState extends State<FlightListScreen> {
             ),
             const SizedBox(height: 20),
             Expanded(
-              child: _loading
-                  ? const Center(child: CircularProgressIndicator(color: Colors.red))
-                  : _filteredFlights.isEmpty
+              child:
+                  _loading
+                      ? const Center(
+                        child: CircularProgressIndicator(color: Colors.red),
+                      )
+                      : _filteredFlights.isEmpty
                       ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.flight, size: 64, color: Colors.grey),
-                              const SizedBox(height: 16),
-                              Text(
-                                _hasSearched
-                                    ? "Aucun vol ne correspond à votre recherche."
-                                    : "Aucun vol disponible.",
-                                style: const TextStyle(fontSize: 16, color: Colors.grey),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.flight,
+                              size: 64,
+                              color: Colors.grey,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              _hasSearched
+                                  ? "Aucun vol ne correspond à votre recherche."
+                                  : "Aucun vol disponible.",
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey,
                               ),
-                            ],
-                          ),
-                        )
-                      : ListView.builder(
-                          itemCount: _filteredFlights.length,
-                          itemBuilder: (context, index) {
-                            final flight = _filteredFlights[index];
-                            
-                            // Add null checks for date fields
-                            final departureDate = flight['date_depart'] != null 
-                                ? DateTime.parse(flight['date_depart'].toString()) 
-                                : DateTime.now();
-                                
-                            final arrivalDate = flight['date_arrivee'] != null 
-                                ? DateTime.parse(flight['date_arrivee'].toString()) 
-                                : DateTime.now();
-                            
-                            return Card(
-                              margin: const EdgeInsets.only(bottom: 12),
-                              elevation: 2,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(12),
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => FlightDetailScreen(
-                                        flightId: flight['id'] ?? 0, // Add null check
-                                        userId: _userId ?? '', // Already has null check
-                                      ),
-                                    ),
-                                  );
-                                },
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          const Icon(Icons.flight_takeoff, color: Colors.red),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: Text(
-                                              flight['titre']?.toString() ?? 'Vol sans titre', // Add null check
-                                              style: const TextStyle(
-                                                fontSize: 18,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 12,
-                                              vertical: 6,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: Colors.red,
-                                              borderRadius: BorderRadius.circular(16),
-                                            ),
-                                            child: Text(
-                                              "${flight['prix'] ?? 0} DT", // Add null check
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 12),
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                const Text(
-                                                  "Départ",
-                                                  style: TextStyle(
-                                                    color: Colors.grey,
-                                                    fontSize: 12,
-                                                  ),
-                                                ),
-                                                Text(
-                                                  DateFormat('dd MMM yyyy, HH:mm').format(departureDate),
-                                                  style: const TextStyle(fontWeight: FontWeight.w500),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          const Icon(Icons.arrow_forward, color: Colors.grey),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.end,
-                                              children: [
-                                                const Text(
-                                                  "Arrivée",
-                                                  style: TextStyle(
-                                                    color: Colors.grey,
-                                                    fontSize: 12,
-                                                  ),
-                                                ),
-                                                Text(
-                                                  DateFormat('dd MMM yyyy, HH:mm').format(arrivalDate),
-                                                  style: const TextStyle(fontWeight: FontWeight.w500),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
+                            ),
+                          ],
                         ),
+                      )
+                      : ListView.builder(
+                        itemCount: _filteredFlights.length,
+                        itemBuilder: (context, index) {
+                          final flight = _filteredFlights[index];
+
+                          return FlightCard(
+                            flight: flight,
+                            userId: _userId ?? '',
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (_) => FlightDetailScreen(
+                                        flightId: flight.id,
+                                        userId: _userId ?? '',
+                                      ),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
             ),
           ],
         ),

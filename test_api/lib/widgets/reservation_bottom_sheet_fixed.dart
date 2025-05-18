@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/flight_model.dart';
 import '../models/fare_model.dart';
 import '../services/flight_service.dart';
+import 'package:intl/intl.dart';
 
 class ReservationBottomSheet extends StatefulWidget {
   final Flight flight;
@@ -22,7 +23,6 @@ class _ReservationBottomSheetState extends State<ReservationBottomSheet> {
   bool _useContractPrice = true; // Default to using contract price
   String? _userId;
   bool _isSubmitting = false;
-
   bool _isValidatingCoupon = false;
   Map<String, dynamic>? _appliedCoupon;
   Map<String, dynamic>? _appliedContract;
@@ -52,7 +52,6 @@ class _ReservationBottomSheetState extends State<ReservationBottomSheet> {
     // Load user's contract if available
     if (_userId != null) {
       try {
-        // Use FlightService instead of direct Dio call
         try {
           final contractData = await FlightService.getContractForUser(_userId!);
 
@@ -73,13 +72,10 @@ class _ReservationBottomSheetState extends State<ReservationBottomSheet> {
   }
 
   void _calculatePrice() {
-    final fare = fareTypes[_classType]!.firstWhere(
-      (f) => f['id'] == _fareType,
-      orElse: () => fareTypes[_classType]!.first,
-    );
-
-    // Use a default multiplier of 1.0 if priceMultiplier is null
-    final fareMultiplier = (fare['multiplier'] ?? 1.0) as double;
+    final fareMultiplier =
+        fareTypes[_classType]!.firstWhere(
+          (f) => f['id'] == _fareType,
+        )['multiplier'];
 
     // Calculate original price
     final basePrice = widget.flight.prix * _passengerCount * fareMultiplier;
@@ -92,17 +88,13 @@ class _ReservationBottomSheetState extends State<ReservationBottomSheet> {
 
     // Apply contract price if available and selected
     if (_appliedContract != null && _useContractPrice) {
-      // Get the fixed price with a default of 0.0 if it's null
-      final fixedPrice = (_appliedContract!['fixedPrice'] ?? 0.0) as double;
-      _contractPrice = fixedPrice * _passengerCount;
+      _contractPrice =
+          (_appliedContract!['fixedPrice'] ?? 0.0) * _passengerCount;
       calculatedPrice = _contractPrice;
     }
 
     // Apply coupon discount if available
     if (_appliedCoupon != null) {
-      // Debug print to see what's in the coupon data
-      debugPrint('Applied coupon data: $_appliedCoupon');
-
       // Try to get discount type and value, with fallbacks
       String discountType = _appliedCoupon!['reduction_type'] ?? 'percentage';
 
@@ -126,10 +118,6 @@ class _ReservationBottomSheetState extends State<ReservationBottomSheet> {
             double.tryParse(_appliedCoupon!['discount'].toString()) ?? 0.0;
       }
 
-      debugPrint(
-        'Discount type: $discountType, Discount value: $discountValue',
-      );
-
       // Force a 10% discount for testing
       if (discountValue == 0 && _appliedCoupon!['code'] == 'test300') {
         // Don't reassign discountType as it's final - create a new variable
@@ -139,17 +127,14 @@ class _ReservationBottomSheetState extends State<ReservationBottomSheet> {
         // Apply the discount
         if (effectiveDiscountType == 'percentage') {
           final discountAmount = calculatedPrice * (discountValue / 100);
-          debugPrint('Applying percentage discount: $discountAmount');
           calculatedPrice -= discountAmount;
         }
       } else {
         // Apply the discount based on the original discount type
         if (discountType == 'percentage') {
           final discountAmount = calculatedPrice * (discountValue / 100);
-          debugPrint('Applying percentage discount: $discountAmount');
           calculatedPrice -= discountAmount;
         } else if (discountType == 'fixed') {
-          debugPrint('Applying fixed discount: $discountValue');
           calculatedPrice -= discountValue;
         }
       }
@@ -162,9 +147,6 @@ class _ReservationBottomSheetState extends State<ReservationBottomSheet> {
     setState(() {
       _totalPrice = calculatedPrice;
     });
-
-    // Debug print
-    debugPrint('Original price: $_originalPrice, Total price: $_totalPrice');
   }
 
   // Add this method to toggle between contract and base price
@@ -202,23 +184,13 @@ class _ReservationBottomSheetState extends State<ReservationBottomSheet> {
               _appliedCoupon!['reduction_type'] = 'percentage';
               _appliedCoupon!['valeur'] = 10.0;
             }
-
-            // If coupon data is empty, create a complete coupon object
-            if (_appliedCoupon == null || _appliedCoupon!.isEmpty) {
-              _appliedCoupon = {
-                'code': 'test300',
-                'reduction_type': 'percentage',
-                'valeur': 10.0,
-              };
-            }
-
             _calculatePrice();
           });
 
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Coupon applied with 10% discount'),
+                content: const Text('Coupon applied with 10% discount'),
                 backgroundColor: Colors.green.shade800,
               ),
             );
@@ -411,6 +383,10 @@ class _ReservationBottomSheetState extends State<ReservationBottomSheet> {
           errorMessage = 'Not enough seats available for this flight.';
         } else if (errorMessage.contains('400')) {
           errorMessage = 'Invalid reservation data. Please check your inputs.';
+        } else if (errorMessage.contains('404')) {
+          errorMessage = 'Resource not found. Please try again later.';
+        } else if (errorMessage.contains('Solde insuffisant')) {
+          errorMessage = 'Insufficient balance to make this reservation.';
         }
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -495,7 +471,7 @@ class _ReservationBottomSheetState extends State<ReservationBottomSheet> {
                 isExpanded: true,
                 underline: const SizedBox(),
                 items:
-                    ['economy', 'business']
+                    ['economy', 'business', 'première']
                         .map(
                           (c) => DropdownMenuItem(
                             value: c,
@@ -542,7 +518,7 @@ class _ReservationBottomSheetState extends State<ReservationBottomSheet> {
               ),
             ),
 
-            // Coupon section - keep only this one
+            // Coupon section
             _buildSection(
               icon: Icons.local_offer,
               title: 'Coupon',
@@ -612,93 +588,6 @@ class _ReservationBottomSheetState extends State<ReservationBottomSheet> {
                               });
                             },
                             child: const Text('Remove'),
-                          ),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
-            ),
-
-            // Contract price toggle
-            if (_appliedContract != null)
-              _buildSection(
-                icon: Icons.business,
-                title: 'Contract Price',
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Use contract price',
-                          style: TextStyle(color: Colors.blue.shade800),
-                        ),
-                        Switch(
-                          value: _useContractPrice,
-                          onChanged: (_) => _togglePriceType(),
-                          activeColor: Colors.blue.shade800,
-                        ),
-                      ],
-                    ),
-                    Text(
-                      'Contract price: ${_contractPrice.toStringAsFixed(2)} €',
-                      style: TextStyle(color: Colors.blue.shade700),
-                    ),
-                    Text(
-                      'Standard price: ${_originalPrice.toStringAsFixed(2)} €',
-                      style: TextStyle(color: Colors.blue.shade700),
-                    ),
-                  ],
-                ),
-              ),
-
-            // Price summary
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Total price:'),
-                      Text(
-                        '${_totalPrice.toStringAsFixed(2)} €',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (_appliedCoupon != null ||
-                      (_appliedContract != null && _useContractPrice))
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Original price:',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey,
-                              decoration: TextDecoration.lineThrough,
-                            ),
-                          ),
-                          Text(
-                            '${_originalPrice.toStringAsFixed(2)} €',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey,
-                              decoration: TextDecoration.lineThrough,
-                            ),
                           ),
                         ],
                       ),
