@@ -27,13 +27,52 @@ const FareOptions = ({ fareTypes, reservation, setReservation }) => {
   }, []);
 
   const updateReservation = (classType, fareType) => {
-    setReservation(prev => ({
-      ...prev,
-      classType,
-      class_type: classType,
-      fareType,
-      fare_type: fareType
-    }));
+    try {
+      // Validate inputs
+      if (!fareTypes[classType]) {
+        console.error(`Invalid class type: ${classType}`);
+        return;
+      }
+
+      const fareExists = fareTypes[classType].some(fare => fare.id === fareType);
+      if (!fareExists) {
+        console.error(`Invalid fare type: ${fareType} for class: ${classType}`);
+        return;
+      }
+
+      // Get the fare multiplier for the selected class and fare type
+      const selectedFares = fareTypes[classType];
+      const selectedFare = selectedFares.find(fare => fare.id === fareType);
+      const fareMultiplier = selectedFare ? selectedFare.multiplier : 1.0;
+
+      console.log(`Updating reservation: class=${classType}, fare=${fareType}, multiplier=${fareMultiplier}`);
+
+      // Update the reservation with the new class and fare type
+      setReservation(prev => {
+        // We'll always set the needsPriceUpdate flag to true to ensure the price is recalculated
+        // in the parent component, which has access to all the necessary data
+
+        // Create a new object to avoid reference issues
+        const updatedReservation = {
+          ...prev,
+          classType,
+          class_type: classType,
+          fareType,
+          fare_type: fareType,
+          needsPriceUpdate: true // Flag to indicate that price needs to be recalculated
+        };
+
+        // Return the updated reservation
+        return updatedReservation;
+      });
+
+      // Add a small delay to ensure state is updated before any subsequent operations
+      setTimeout(() => {
+        console.log("Reservation updated with new class and fare type");
+      }, 50);
+    } catch (error) {
+      console.error("Error updating reservation:", error);
+    }
   };
 
   const selectedClass = reservation.classType || reservation.class_type;

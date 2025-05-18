@@ -43,7 +43,7 @@ export const getReservations = async (req: Request, res: Response) => {
   try {
     console.log("Fetching all reservations");
     const includeRelations = req.query.relations === 'true';
-    
+
     let reservations;
     if (includeRelations) {
       // Load all related entities with more comprehensive relations
@@ -51,10 +51,10 @@ export const getReservations = async (req: Request, res: Response) => {
         relations: ['user', 'flight', 'flight.plane'],
         order: { date_reservation: 'DESC' }
       });
-      
+
       // Log for debugging
       console.log(`Loaded ${reservations.length} reservations with relations`);
-      
+
       // Check for missing flight data
       const missingFlightData = reservations.filter(r => !r.flight || !r.flight.id);
       if (missingFlightData.length > 0) {
@@ -67,7 +67,7 @@ export const getReservations = async (req: Request, res: Response) => {
       });
       console.log(`Loaded ${reservations.length} reservations without relations`);
     }
-    
+
     res.json(reservations);
   } catch (error) {
     console.error('Error fetching reservations:', error);
@@ -96,13 +96,13 @@ export const getReservationById = async (req: Request, res: Response) => {
     // Add null checks before accessing properties
     if (reservation.flight) {
       const seatReservations = await FlightSeatReservation.find({
-        where: { 
+        where: {
           reservation: { id: reservation.id },
           flight: { id: reservation.flight.id }
         },
         relations: ['seat']
       });
-      
+
       // Add seat information to the response
       const responseData = {
         ...reservation,
@@ -112,7 +112,7 @@ export const getReservationById = async (req: Request, res: Response) => {
           classType: sr.seat.classType
         }))
       };
-      
+
       return res.json(responseData);
     }
 
@@ -126,16 +126,19 @@ export const getReservationById = async (req: Request, res: Response) => {
 // Ajouter une réservation
 export const addReservation = async (req: Request, res: Response) => {
   try {
-    const { 
-      date_reservation, 
-      statut, 
-      prix_total, 
-      nombre_passagers, 
-      user_id, 
+    const {
+      date_reservation,
+      statut,
+      prix_total,
+      nombre_passagers,
+      user_id,
       flight_id,
       discount_amount,
       class_type,
       fare_type,
+      fare_multiplier,
+      use_contract_price,
+      fixed_price,
       allocated_seats
     } = req.body;
 
@@ -155,13 +158,22 @@ export const addReservation = async (req: Request, res: Response) => {
     const compte = await Compte.findOne({
       where: { user: { id: user_id } }
     });
-    
+
     if (!compte) {
       return res.status(404).json({ message: "Compte utilisateur non trouvé" });
     }
-    
+
+    // Calculate the final price based on contract price if applicable
+    let finalPrice = prix_total;
+    if (use_contract_price && fixed_price) {
+      const actualFareMultiplier = fare_multiplier || 1.0;
+      console.log(`Using contract fixed price: ${fixed_price} with fare multiplier: ${actualFareMultiplier}`);
+      finalPrice = fixed_price * actualFareMultiplier * nombre_passagers;
+      console.log(`Calculated final price: ${fixed_price} * ${actualFareMultiplier} * ${nombre_passagers} = ${finalPrice}`);
+    }
+
     // Check if user has sufficient balance
-    if (compte.solde < prix_total) {
+    if (compte.solde < finalPrice) {
       return res.status(400).json({ message: "Solde insuffisant pour effectuer cette réservation" });
     }
 
@@ -169,7 +181,7 @@ export const addReservation = async (req: Request, res: Response) => {
     const reservationData: any = {
       date_reservation,
       statut,
-      prix_total,
+      prix_total: finalPrice, // Use the calculated final price
       nombre_passagers,
       user,
       flight,
@@ -179,22 +191,22 @@ export const addReservation = async (req: Request, res: Response) => {
     };
 
     // Deduct the reservation price from the user's account
-    compte.solde -= prix_total;
+    compte.solde -= finalPrice;
     await compte.save();
 
     // Create the reservation
     const reservation = Reservation.create(reservationData);
     await reservation.save();
-    
+
     // If seats were allocated, mark them as reserved
     const createdSeatReservations = [];
     if (allocated_seats && allocated_seats.length > 0) {
       for (const seatInfo of allocated_seats) {
         const seatId = typeof seatInfo === 'object' ? seatInfo.id : seatInfo;
         const seatIdNum = typeof seatId === 'string' ? parseInt(seatId) : seatId;
-        
+
         const seat = await Seat.findOneBy({ idSeat: seatIdNum });
-        
+
         if (seat) {
           // Find the FlightSeatReservation record
           const flightSeatReservation = await FlightSeatReservation.findOne({
@@ -203,7 +215,7 @@ export const addReservation = async (req: Request, res: Response) => {
               seat: { idSeat: seatIdNum }
             }
           });
-          
+
           if (flightSeatReservation) {
             // Update the record to mark it as reserved and link to this reservation
             flightSeatReservation.isReserved = true;
@@ -213,14 +225,14 @@ export const addReservation = async (req: Request, res: Response) => {
           }
         }
       }
-      
+
       console.log(`Reserved ${createdSeatReservations.length} seats for reservation ${reservation.id}`);
     }
-    
+
     // Return the reservation with allocated seats info
     res.status(201).json({
       ...reservation,
-      allocatedSeats: createdSeatReservations.length > 0 ? 
+      allocatedSeats: createdSeatReservations.length > 0 ?
         createdSeatReservations.map(sr => ({
           id: sr.seat.idSeat,
           seatNumber: sr.seat.seatNumber,
@@ -236,18 +248,18 @@ export const addReservation = async (req: Request, res: Response) => {
 // Mettre à jour une réservation
 export const updateReservation = async (req: Request, res: Response) => {
   try {
-    const { 
-      date_reservation, 
-      statut, 
-      prix_total, 
-      nombre_passagers, 
-      user_id, 
+    const {
+      date_reservation,
+      statut,
+      prix_total,
+      nombre_passagers,
+      user_id,
       flight_id,
       discount_amount, // New field for discount amount
       class_type, // New field for class type
       fare_type // New field for fare type
     } = req.body;
-    
+
     // Vérifie si la réservation existe
     const reservation = await Reservation.findOneBy({ id: req.params.id });
     if (!reservation) {
@@ -320,11 +332,11 @@ export const getReservationsByFlightId = async (req: Request, res: Response) => 
       where: { flight: { id: flightId } },
       relations: ['user', 'flight'] // Removed coupon relation
     });
-    
+
     if (reservations.length === 0) {
       return res.status(404).json({ message: "No reservations found for this flight" });
     }
-    
+
     res.json(reservations);
   } catch (error) {
     console.log(error);
@@ -337,37 +349,37 @@ export const getReservationsByUserId = async (req: Request, res: Response) => {
   try {
     const userId = req.params.userId;
     console.log(`Fetching reservations for user: ${userId}`);
-    
+
     const reservations = await Reservation.find({
       where: { user: { id: userId } },
       relations: ['user', 'flight', 'flight.plane'],
       order: { date_reservation: 'DESC' }
     });
-    
+
     console.log(`Found ${reservations.length} reservations for user ${userId}`);
-    
+
     if (reservations.length === 0) {
       return res.json([]); // Return empty array instead of 404
     }
-    
+
     // Check for missing flight data
     const missingFlightData = reservations.filter(r => !r.flight || !r.flight.id);
     if (missingFlightData.length > 0) {
       console.log(`Warning: ${missingFlightData.length} reservations for user ${userId} have missing flight data`);
     }
-    
+
     // For each reservation, try to get the seat reservations
     const enhancedReservations = await Promise.all(reservations.map(async (reservation) => {
       try {
         if (reservation.flight) {
           const seatReservations = await FlightSeatReservation.find({
-            where: { 
+            where: {
               reservation: { id: reservation.id },
               flight: { id: reservation.flight.id }
             },
             relations: ['seat']
           });
-          
+
           if (seatReservations.length > 0) {
             return {
               ...reservation,
@@ -385,7 +397,7 @@ export const getReservationsByUserId = async (req: Request, res: Response) => {
         return reservation;
       }
     }));
-    
+
     res.json(enhancedReservations);
   } catch (error) {
     console.error("Error in getReservationsByUserId:", error);
@@ -398,9 +410,9 @@ export const cancelReservation = async (req: Request, res: Response) => {
   try {
     const reservationId = req.params.id;
     const { isRefundEligible } = req.body;
-    
+
     console.log(`Cancelling reservation ${reservationId}, refund eligible: ${isRefundEligible}`);
-    
+
     // Find the reservation
     const reservation = await Reservation.findOne({
       where: { id: reservationId },
@@ -413,7 +425,7 @@ export const cancelReservation = async (req: Request, res: Response) => {
 
     // Update the reservation status to cancelled
     reservation.statut = 'Annulée';
-    
+
     // Process refund if eligible
     if (isRefundEligible) {
       console.log(`Processing refund for reservation ${reservationId}`);
@@ -422,17 +434,17 @@ export const cancelReservation = async (req: Request, res: Response) => {
     }
 
     await reservation.save();
-    
+
     // Release the reserved seats
     await FlightSeatReservation.update(
       { reservation: { id: reservationId } },
       { isReserved: false }
     );
-    
+
     res.json({
       ...reservation,
-      message: isRefundEligible 
-        ? "Réservation annulée avec succès. Un remboursement sera effectué." 
+      message: isRefundEligible
+        ? "Réservation annulée avec succès. Un remboursement sera effectué."
         : "Réservation annulée avec succès. Aucun remboursement n'est applicable."
     });
   } catch (error) {
@@ -473,7 +485,7 @@ export const createReservation = async (req: Request, res: Response) => {
     const compte = await Compte.findOne({
       where: { user: { id: user_id } }
     });
-    
+
     if (!compte) {
       return res.status(404).json({ message: "Compte utilisateur non trouvé" });
     }
@@ -482,19 +494,27 @@ export const createReservation = async (req: Request, res: Response) => {
     let finalPrice = prix_total;
     if (use_contract_price) {
       const activeContract = await Contract.findOne({
-        where: { 
+        where: {
           client: { id: user_id },
           isActive: true,
           fixedTicketPrice: Not(IsNull())
         }
       });
-      
+
       if (activeContract && activeContract.fixedTicketPrice) {
-        console.log(`Using contract fixed price: ${activeContract.fixedTicketPrice}`);
-        finalPrice = activeContract.fixedTicketPrice * nombre_passagers;
+        // Get the fare multiplier from the request
+        const fareMultiplier = req.body.fare_multiplier || 1.0;
+        console.log(`Using contract fixed price: ${activeContract.fixedTicketPrice} with fare multiplier: ${fareMultiplier}`);
+        console.log(`Request body:`, req.body);
+
+        // Apply the fare multiplier to the fixed price
+        finalPrice = activeContract.fixedTicketPrice * fareMultiplier * nombre_passagers;
+        console.log(`Calculated final price: ${activeContract.fixedTicketPrice} * ${fareMultiplier} * ${nombre_passagers} = ${finalPrice}`);
+      } else {
+        console.log("No active contract with fixed price found, using standard price calculation");
       }
     }
-    
+
     // Check if user has sufficient balance
     if (compte.solde < finalPrice) {
       return res.status(400).json({ message: "Solde insuffisant pour effectuer cette réservation" });
@@ -510,7 +530,10 @@ export const createReservation = async (req: Request, res: Response) => {
     reservation.flight = flight;
     reservation.class_type = class_type || 'economy';
     reservation.fare_type = fare_type || 'standard';
-    
+
+    // Log the fare multiplier and final price for debugging
+    console.log(`Creating reservation with fare_type: ${fare_type}, class_type: ${class_type}, fare_multiplier: ${req.body.fare_multiplier}, final price: ${finalPrice}`);
+
     // Set discount amount directly if provided
     if (discount_amount) {
       reservation.discount_amount = discount_amount;
@@ -521,17 +544,17 @@ export const createReservation = async (req: Request, res: Response) => {
     await compte.save();
 
     await reservation.save();
-    
+
     // If seats were allocated, mark them as reserved
     const createdSeatReservations = [];
     if (allocated_seats && allocated_seats.length > 0) {
       for (const seatId of allocated_seats) {
         // Convert seatId to number if it's a string
-        const seatIdNum = typeof seatId === 'object' ? seatId.id : 
+        const seatIdNum = typeof seatId === 'object' ? seatId.id :
                          typeof seatId === 'string' ? parseInt(seatId) : seatId;
-        
+
         const seat = await Seat.findOneBy({ idSeat: seatIdNum });
-        
+
         if (seat) {
           // Find the FlightSeatReservation record
           const flightSeatReservation = await FlightSeatReservation.findOne({
@@ -540,7 +563,7 @@ export const createReservation = async (req: Request, res: Response) => {
               seat: { idSeat: seatIdNum }
             }
           });
-          
+
           if (flightSeatReservation) {
             // Update the record to mark it as reserved and link to this reservation
             flightSeatReservation.isReserved = true;
@@ -559,14 +582,14 @@ export const createReservation = async (req: Request, res: Response) => {
           }
         }
       }
-      
+
       console.log(`Reserved ${createdSeatReservations.length} seats for reservation ${reservation.id}`);
     }
-    
+
     // Return the reservation with allocated seats info
     res.status(201).json({
       ...reservation,
-      allocatedSeats: createdSeatReservations.length > 0 ? 
+      allocatedSeats: createdSeatReservations.length > 0 ?
         createdSeatReservations.map(sr => ({
           id: sr.seat.idSeat,
           seatNumber: sr.seat.seatNumber,

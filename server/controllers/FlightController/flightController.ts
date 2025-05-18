@@ -35,26 +35,26 @@ export const getFlightById = async (req: Request, res: Response) => {
       where: { id: req.params.id },
       relations: ['airport_depart', 'arrival_airport', 'plane', 'plane.seats', 'seatReservations', 'seatReservations.seat']
     });
-    
+
     if (!flight) {
       return res.status(404).json({ message: "Flight not found" });
     }
-    
+
     // Get all seats for this flight
     const allSeats = flight.plane?.seats || [];
-    
+
     // Get reserved seats using FlightSeatReservation
     const reservedSeats = flight.seatReservations?.filter(sr => sr.isReserved) || [];
     const reservedSeatIds = reservedSeats.map(sr => sr.seat.idSeat);
-    
+
     // Calculate available seats
     const availableSeats = allSeats.filter(seat => !reservedSeatIds.includes(seat.idSeat));
-    
+
     // Count seats by class
     const economySeats = availableSeats.filter(seat => seat.classType === 'economy').length;
     const businessSeats = availableSeats.filter(seat => seat.classType === 'business').length;
     const firstClassSeats = availableSeats.filter(seat => seat.classType === 'first').length;
-    
+
     // Add seat availability to the response
     const flightWithSeats = {
       ...flight,
@@ -65,9 +65,9 @@ export const getFlightById = async (req: Request, res: Response) => {
         total: availableSeats.length
       }
     };
-    
+
     res.json(flightWithSeats);
-    
+
     console.log('Flight ID:', req.params.id);
     console.log('All seats count:', allSeats.length);
     console.log('Reserved seats count:', reservedSeats.length);
@@ -83,11 +83,11 @@ export const getFlightById = async (req: Request, res: Response) => {
 
 export const addFlight = async (req: Request, res: Response) => {
   try {
-    const { 
-      titre, 
-      prix, 
-      date_depart, 
-      date_retour, 
+    const {
+      titre,
+      prix,
+      date_depart,
+      date_retour,
       duree,
       airport_depart_id,
       airport_arrivee_id,
@@ -126,7 +126,7 @@ export const addFlight = async (req: Request, res: Response) => {
     flight.arrival_airport = arrivalAirport;
     flight.plane = plane;
     flight.aller_retour = aller_retour === 'true' || aller_retour === true;
-    
+
     // Set return flight details if it's a round trip
     if (flight.aller_retour) {
       if (retour_depart_date) {
@@ -136,7 +136,7 @@ export const addFlight = async (req: Request, res: Response) => {
         flight.retour_arrive_date = new Date(retour_arrive_date);
       }
     }
-    
+
     // Handle image upload
     if (req.file) {
       // Save the relative path to the image
@@ -144,12 +144,12 @@ export const addFlight = async (req: Request, res: Response) => {
     }
 
     await flight.save();
-    
+
     // Get all seats for this plane
     const seats = await Seat.find({
       where: { plane: { idPlane: plane_id } }
     });
-    
+
     // Create flight seat reservation records for each seat
     const flightSeatReservations = [];
     for (const seat of seats) {
@@ -157,13 +157,13 @@ export const addFlight = async (req: Request, res: Response) => {
       flightSeatReservation.flight = flight;
       flightSeatReservation.seat = seat;
       flightSeatReservation.isReserved = false; // Initially not reserved
-      
+
       await flightSeatReservation.save();
       flightSeatReservations.push(flightSeatReservation);
     }
-    
+
     console.log(`Created ${flightSeatReservations.length} seat reservation records for flight ${flight.id}`);
-    
+
     res.status(201).json({
       ...flight,
       seatReservationsCreated: flightSeatReservations.length
@@ -181,11 +181,11 @@ export const updateFlight = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Flight not found" });
     }
 
-    const { 
-      titre, 
-      prix, 
-      date_depart, 
-      date_retour, 
+    const {
+      titre,
+      prix,
+      date_depart,
+      date_retour,
       duree,
       airport_depart_id,
       airport_arrivee_id,
@@ -201,11 +201,11 @@ export const updateFlight = async (req: Request, res: Response) => {
     if (date_depart) flight.date_depart = new Date(date_depart);
     if (date_retour) flight.date_retour = new Date(date_retour);
     if (duree) flight.duree = duree;
-    
+
     // Update aller_retour status
     if (aller_retour !== undefined) {
       flight.aller_retour = aller_retour === 'true' || aller_retour === true;
-      
+
       // Update return flight details if it's a round trip
       if (flight.aller_retour) {
         if (retour_depart_date) {
@@ -247,7 +247,7 @@ export const updateFlight = async (req: Request, res: Response) => {
       }
       flight.plane = plane;
     }
-    
+
     // Handle image upload
     if (req.file) {
       // Delete old image if exists
@@ -257,7 +257,7 @@ export const updateFlight = async (req: Request, res: Response) => {
           fs.unlinkSync(oldImagePath);
         }
       }
-      
+
       // Save the relative path to the new image
       flight.image_url = `/uploads/${req.file.filename}`;
     }
@@ -273,11 +273,11 @@ export const updateFlight = async (req: Request, res: Response) => {
 export const deleteFlight = async (req: Request, res: Response) => {
   try {
     const flight = await Flight.findOneBy({ id: req.params.id });
-    
+
     if (!flight) {
       return res.status(404).json({ message: "Flight not found" });
     }
-    
+
     // Delete associated image if exists
     if (flight.image_url) {
       const imagePath = path.join(__dirname, '../../../', flight.image_url);
@@ -285,7 +285,7 @@ export const deleteFlight = async (req: Request, res: Response) => {
         fs.unlinkSync(imagePath);
       }
     }
-    
+
     await flight.remove();
     res.status(200).json({ message: "Flight deleted successfully" });
   } catch (error) {
@@ -297,20 +297,20 @@ export const deleteFlight = async (req: Request, res: Response) => {
 export const assignPlaneToFlight = async (req: Request, res: Response) => {
   try {
     const { flightId, planeId } = req.body;
-    
+
     const flight = await Flight.findOneBy({ id: flightId });
     if (!flight) {
       return res.status(404).json({ message: 'Flight not found' });
     }
-    
+
     const plane = await Plane.findOneBy({ idPlane: planeId });
     if (!plane) {
       return res.status(404).json({ message: 'Plane not found' });
     }
-    
+
     flight.plane = plane;
     await flight.save();
-    
+
     res.status(200).json({ message: 'Plane assigned to flight successfully', flight });
   } catch (error) {
     console.error('Failed to assign plane to flight:', error);
@@ -323,37 +323,40 @@ export const assignPlaneToFlight = async (req: Request, res: Response) => {
 export const getFlightSeats = async (req: Request, res: Response) => {
   try {
     const flightId = req.params.id;
-    
+
     // Find the flight with its plane, seats, and seat reservations
     const flight = await Flight.findOne({
       where: { id: flightId },
       relations: ['plane', 'plane.seats', 'seatReservations', 'seatReservations.seat']
     });
-    
+
     if (!flight) {
       return res.status(404).json({ message: 'Flight not found' });
     }
-    
+
     // Get all seats for this flight
     const allSeats = flight.plane.seats || [];
-    
+
     // Get reserved seats using FlightSeatReservation
     const reservedSeats = flight.seatReservations?.filter(sr => sr.isReserved) || [];
     const reservedSeatIds = reservedSeats.map(sr => sr.seat.idSeat);
-    
+
     // Calculate available seats
     const availableSeats = allSeats.filter(seat => !reservedSeatIds.includes(seat.idSeat));
-    
+
     // Count seats by class
     const economySeats = availableSeats.filter(seat => seat.classType === 'economy').length;
     const businessSeats = availableSeats.filter(seat => seat.classType === 'business').length;
     const firstClassSeats = availableSeats.filter(seat => seat.classType === 'first').length;
-    
+
     res.json({
       totalSeats: allSeats.length,
-      economySeats,
-      businessSeats,
-      firstClassSeats,
+      economy: economySeats,
+      business: businessSeats,
+      first: firstClassSeats,
+      economySeats,  // Keep for backward compatibility
+      businessSeats, // Keep for backward compatibility
+      firstClassSeats, // Keep for backward compatibility
       availableSeats
     });
   } catch (error) {
@@ -370,11 +373,11 @@ const getReservedSeatIds = async (flightId: string): Promise<number[]> => {
       where: { id: flightId },
       relations: ['seatReservations', 'seatReservations.seat']
     });
-    
+
     if (!flight || !flight.seatReservations) {
       return [];
     }
-    
+
     // Filter reserved seats and map to seat IDs
     return flight.seatReservations
       .filter(reservation => reservation.isReserved)
@@ -390,52 +393,54 @@ export const allocateSeats = async (req: Request, res: Response) => {
   try {
     const { id: flightId } = req.params;
     const { numberOfSeats, classType, reservationId } = req.body;
-    
+
     if (!numberOfSeats || !classType || !reservationId) {
       return res.status(400).json({ message: 'Number of seats, class type, and reservation ID are required' });
     }
-    
+
     // Find the flight with its plane, seats, and seat reservations
     const flight = await Flight.findOne({
       where: { id: flightId },
       relations: ['plane', 'plane.seats', 'seatReservations', 'seatReservations.seat']
     });
-    
+
     if (!flight) {
       return res.status(404).json({ message: 'Flight not found' });
     }
-    
+
     // Find the reservation
     const reservation = await Reservation.findOneBy({ id: reservationId });
     if (!reservation) {
       return res.status(404).json({ message: 'Reservation not found' });
     }
-    
+
     // Get all seats for this flight
     const allSeats = flight.plane?.seats || [];
-    
+
     // Get reserved seats using FlightSeatReservation
     const reservedSeats = flight.seatReservations?.filter(sr => sr.isReserved) || [];
     const reservedSeatIds = reservedSeats.map(sr => sr.seat.idSeat);
-    
+
     // Find available seats of the requested class
     const availableSeats = allSeats.filter(
       seat => !reservedSeatIds.includes(seat.idSeat) && seat.classType === classType
     );
-    
+
+    console.log(`Allocating seats - Class: ${classType}, Requested: ${numberOfSeats}, Available: ${availableSeats.length}`);
+
     if (availableSeats.length < Number(numberOfSeats)) {
-      return res.status(400).json({ 
-        message: `Not enough ${classType} seats available. Only ${availableSeats.length} seats left.` 
+      return res.status(400).json({
+        message: `Not enough ${classType} seats available. Only ${availableSeats.length} seats left.`
       });
     }
-    
+
     // Randomly select the required number of seats
     const shuffledSeats = [...availableSeats].sort(() => 0.5 - Math.random());
     const allocatedSeats = shuffledSeats.slice(0, Number(numberOfSeats));
-    
+
     // Create flight seat reservations for the allocated seats
     const createdReservations = [];
-    
+
     for (const seat of allocatedSeats) {
       // Find the existing FlightSeatReservation record for this seat
       const flightSeatReservation = await FlightSeatReservation.findOne({
@@ -444,7 +449,7 @@ export const allocateSeats = async (req: Request, res: Response) => {
           seat: { idSeat: seat.idSeat }
         }
       });
-      
+
       if (flightSeatReservation) {
         // Update the existing record
         flightSeatReservation.reservation = reservation;
@@ -458,16 +463,16 @@ export const allocateSeats = async (req: Request, res: Response) => {
         newFlightSeatReservation.seat = seat;
         newFlightSeatReservation.reservation = reservation;
         newFlightSeatReservation.isReserved = true;
-        
+
         await newFlightSeatReservation.save();
         createdReservations.push(newFlightSeatReservation);
       }
-      
+
       console.log(`Reserved seat ${seat.seatNumber} (ID: ${seat.idSeat}) for reservation ${reservationId}`);
     }
-    
+
     // Return the allocated seat information
-    res.status(200).json({ 
+    res.status(200).json({
       message: 'Seats allocated successfully',
       allocatedSeats: allocatedSeats.map(seat => ({
         id: seat.idSeat,
@@ -476,7 +481,7 @@ export const allocateSeats = async (req: Request, res: Response) => {
       })),
       reservationId: reservationId
     });
-    
+
   } catch (error) {
     console.error('Error allocating seats:', error);
     res.status(500).json({ message: 'Failed to allocate seats' });
@@ -486,36 +491,36 @@ export const allocateSeats = async (req: Request, res: Response) => {
 export const createSeatReservations = async (req: Request, res: Response) => {
   try {
     const { flightId, reservationId, seatIds } = req.body;
-    
+
     // Validate input
     if (!flightId || !reservationId || !seatIds || !Array.isArray(seatIds) || seatIds.length === 0) {
       return res.status(400).json({ message: 'Invalid input data' });
     }
-    
+
     // Find the flight
     const flight = await Flight.findOneBy({ id: flightId });
     if (!flight) {
       return res.status(404).json({ message: 'Flight not found' });
     }
-    
+
     // Find the reservation
     const reservation = await Reservation.findOneBy({ id: reservationId });
     if (!reservation) {
       return res.status(404).json({ message: 'Reservation not found' });
     }
-    
+
     // Create flight seat reservations
     const createdReservations = [];
-    
+
     for (const seatId of seatIds) {
       // Convert seatId to number if it's a string
       const seatIdNum = typeof seatId === 'string' ? parseInt(seatId) : seatId;
-      
+
       const seat = await Seat.findOneBy({ idSeat: seatIdNum });
       if (!seat) {
         return res.status(404).json({ message: `Seat with ID ${seatId} not found` });
       }
-      
+
       // Check if seat is already reserved for this flight
       const existingReservation = await FlightSeatReservation.findOne({
         where: {
@@ -524,26 +529,26 @@ export const createSeatReservations = async (req: Request, res: Response) => {
           isReserved: true
         }
       });
-      
+
       if (existingReservation) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           message: `Seat ${seatId} is already reserved for this flight`,
           reservedSeats: createdReservations
         });
       }
-      
+
       // Create new flight seat reservation
       const flightSeatReservation = new FlightSeatReservation();
       flightSeatReservation.flight = flight;
       flightSeatReservation.reservation = reservation;
       flightSeatReservation.seat = seat;
       flightSeatReservation.isReserved = true; // Make sure this is set to true
-      
+
       await flightSeatReservation.save();
       console.log(`Created reservation for seat ${seatId}, isReserved: ${flightSeatReservation.isReserved}`);
       createdReservations.push(flightSeatReservation);
     }
-    
+
     res.status(201).json({
       message: 'Seat reservations created successfully',
       seatReservations: createdReservations
