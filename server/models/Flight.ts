@@ -26,11 +26,11 @@ export class Flight extends BaseEntity {
 
   @Column('boolean', { default: false })
   aller_retour!: boolean;
-  
+
   // Optional: Add these fields if you want to track separate return flight details
   @Column('datetime', { nullable: true })
   retour_depart_date!: Date | null;
-  
+
   @Column('datetime', { nullable: true })
   retour_arrive_date!: Date | null;
 
@@ -47,7 +47,7 @@ export class Flight extends BaseEntity {
   plane!: Plane;
 
   // Add the missing relationship to Reservation
-  @OneToMany(() => Reservation, reservation => reservation.flight)
+  @OneToMany(() => Reservation, reservation => reservation.flight, { cascade: true })
   reservations!: Reservation[];
 
   @Column('varchar', { default: 'active' })
@@ -55,9 +55,9 @@ export class Flight extends BaseEntity {
 
   @Column({ type: "varchar", length: 255, nullable: true })
   image_url!: string;
-  
+
   // Add relationship to FlightSeatReservation
-  @OneToMany(() => FlightSeatReservation, flightSeatReservation => flightSeatReservation.flight)
+  @OneToMany(() => FlightSeatReservation, flightSeatReservation => flightSeatReservation.flight, { cascade: true })
   seatReservations!: FlightSeatReservation[];
 }
 

@@ -30,16 +30,16 @@ export class Reservation extends BaseEntity {
   fare_type!: string;
 
   // Relation Many-to-One avec l'entité User
-  @ManyToOne(() => User, (user) => user.reservations, { eager: true })
+  @ManyToOne(() => User, (user) => user.reservations, { eager: true, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user!: User;
 
   // Relation Many-to-One avec l'entité Flight
-  @ManyToOne(() => Flight, (flight) => flight.reservations, { eager: true })
+  @ManyToOne(() => Flight, (flight) => flight.reservations, { eager: true, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'flight_id' })
   flight!: Flight;
 
   // Relation One-to-Many with SeatReservation entity
-  @OneToMany(() => SeatReservation, (seatReservation) => seatReservation.reservation)
+  @OneToMany(() => SeatReservation, (seatReservation) => seatReservation.reservation, { cascade: true })
   seatReservations!: SeatReservation[];
 }

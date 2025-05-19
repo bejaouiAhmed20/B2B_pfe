@@ -24,7 +24,7 @@ export class Reclamation extends BaseEntity {
   @Column('datetime', { nullable: true })
   date_reponse?: Date;
 
-  @ManyToOne(() => User, { eager: true })
+  @ManyToOne(() => User, (user) => user.reclamations, { eager: true, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user!: User;
 }

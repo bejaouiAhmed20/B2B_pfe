@@ -10,7 +10,7 @@ export class Contract extends BaseEntity {
   @Column('varchar', { length: 100 })
   clientType!: string; // Type de client
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, (user) => user.contracts, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'client_id' })
   client!: User; // Liste (Client name)
 

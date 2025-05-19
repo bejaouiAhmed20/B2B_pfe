@@ -28,9 +28,9 @@ export class Airport extends BaseEntity {
   location!: Location;
 
   // Fix the reverse relations for flights
-  @OneToMany(() => Flight, flight => flight.airport_depart)
+  @OneToMany(() => Flight, flight => flight.airport_depart, { cascade: true })
   departing_flights!: Flight[];
 
-  @OneToMany(() => Flight, flight => flight.arrival_airport)
+  @OneToMany(() => Flight, flight => flight.arrival_airport, { cascade: true })
   arriving_flights!: Flight[];
 }

@@ -22,6 +22,6 @@ export class Seat extends BaseEntity {
   plane!: Plane;
 
   // Relation One-to-Many with SeatReservation entity
-  @OneToMany(() => SeatReservation, (seatReservation) => seatReservation.seat)
+  @OneToMany(() => SeatReservation, (seatReservation) => seatReservation.seat, { cascade: true })
   seatReservations!: SeatReservation[];
 }

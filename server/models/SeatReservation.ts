@@ -15,12 +15,12 @@ export class SeatReservation extends BaseEntity {
   seat!: Seat;
 
   // Relation Many-to-One with Reservation entity
-  @ManyToOne(() => Reservation, (reservation) => reservation.seatReservations)
+  @ManyToOne(() => Reservation, (reservation) => reservation.seatReservations, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'reservation_id' })
   reservation!: Reservation;
 
   // Relation Many-to-One with Flight entity
-  @ManyToOne(() => Flight)
+  @ManyToOne(() => Flight, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'flight_id' })
   flight!: Flight;
 }

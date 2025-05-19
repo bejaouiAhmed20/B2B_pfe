@@ -15,7 +15,7 @@ export class Compte extends BaseEntity {
   @Column('timestamp', { default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
   updated_at!: Date;
 
-  @OneToOne(() => User)
+  @OneToOne(() => User, (user) => user.compte, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user!: User;
 }

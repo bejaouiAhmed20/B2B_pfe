@@ -12,7 +12,7 @@ export class RequestSolde extends BaseEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, (user) => user.requestSoldes, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'client_id' })
   client!: User;
 
