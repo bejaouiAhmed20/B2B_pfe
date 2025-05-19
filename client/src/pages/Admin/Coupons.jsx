@@ -95,7 +95,7 @@ const Coupons = () => {
     e.preventDefault();
     try {
       await axios.put(
-        `http://localhost:5000/api/coupons/${editDialog.coupon.id}`, 
+        `http://localhost:5000/api/coupons/${editDialog.coupon.id}`,
         formData
       );
       showSnackbar('Coupon modifié avec succès');
@@ -132,14 +132,14 @@ const Coupons = () => {
     <Paper sx={{ p: 3 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
         <Typography variant="h4" gutterBottom>
-          Gestion des Coupons
+          Gestion des Codes Promo
         </Typography>
         <Button
           variant="contained"
           onClick={() => navigate('/admin/coupons/add')}
           style={{ backgroundColor: '#CC0A2B' }}
         >
-          Ajouter un Coupon
+          Ajouter un Code Promo
         </Button>
       </div>
 
@@ -189,13 +189,13 @@ const Coupons = () => {
         rowsPerPage={rowsPerPage}
         onRowsPerPageChange={handleChangeRowsPerPage}
         labelRowsPerPage="Lignes par page"
-        labelDisplayedRows={({ from, to, count }) => 
+        labelDisplayedRows={({ from, to, count }) =>
           `${from}-${to} sur ${count !== -1 ? count : `plus de ${to}`}`
         }
       />
 
       <Dialog open={editDialog.open} onClose={handleEditClose} maxWidth="sm" fullWidth>
-        <DialogTitle>Modifier le Coupon</DialogTitle>
+        <DialogTitle>Modifier le Code Promo</DialogTitle>
         <form onSubmit={handleUpdate}>
           <DialogContent>
             <TextField
@@ -245,9 +245,9 @@ const Coupons = () => {
           </DialogContent>
           <DialogActions>
             <Button onClick={handleEditClose}>Annuler</Button>
-            <Button 
-              type="submit" 
-              variant="contained" 
+            <Button
+              type="submit"
+              variant="contained"
               style={{ backgroundColor: '#CC0A2B' }}
             >
               Modifier

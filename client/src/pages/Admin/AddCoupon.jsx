@@ -30,17 +30,17 @@ const AddCoupon = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     try {
       await axios.post('http://localhost:5000/api/coupons', formData);
-      
+
       setSnackbar({ open: true, message: 'Coupon ajouté avec succès', severity: 'success' });
       setTimeout(() => navigate('/admin/coupons'), 2000);
     } catch (error) {
-      setSnackbar({ 
-        open: true, 
-        message: error.response?.data?.message || 'Une erreur est survenue', 
-        severity: 'error' 
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.message || 'Une erreur est survenue',
+        severity: 'error'
       });
     }
   };
@@ -48,9 +48,9 @@ const AddCoupon = () => {
   return (
     <Paper sx={{ p: 3, maxWidth: 600, mx: 'auto' }}>
       <Typography variant="h4" gutterBottom>
-        Ajouter un Coupon
+        Ajouter un Code Promo
       </Typography>
-      
+
       <form onSubmit={handleSubmit}>
         <TextField
           name="code"
@@ -62,7 +62,7 @@ const AddCoupon = () => {
           margin="normal"
           helperText="Code unique pour le coupon"
         />
-        
+
         <TextField
           name="reduction"
           label="Réduction"
@@ -72,13 +72,13 @@ const AddCoupon = () => {
           required
           margin="normal"
           type="number"
-          inputProps={{ 
-            min: 0, 
-            step: formData.reduction_type === 'percentage' ? 1 : 0.01 
+          inputProps={{
+            min: 0,
+            step: formData.reduction_type === 'percentage' ? 1 : 0.01
           }}
           helperText={formData.reduction_type === 'percentage' ? 'Valeur en pourcentage (%)' : 'Montant fixe'}
         />
-        
+
         <TextField
           name="reduction_type"
           label="Type de réduction"
@@ -92,7 +92,7 @@ const AddCoupon = () => {
           <MenuItem value="percentage">Pourcentage (%)</MenuItem>
           <MenuItem value="fixed">Montant fixe</MenuItem>
         </TextField>
-        
+
         <TextField
           name="date_fin"
           label="Date d'expiration"
@@ -104,14 +104,14 @@ const AddCoupon = () => {
           type="date"
           InputLabelProps={{ shrink: true }}
         />
-        
+
         <div style={{ marginTop: 24, display: 'flex', gap: 16, justifyContent: 'flex-end' }}>
           <Button onClick={() => navigate('/admin/coupons')}>
             Annuler
           </Button>
-          <Button 
-            type="submit" 
-            variant="contained" 
+          <Button
+            type="submit"
+            variant="contained"
             style={{ backgroundColor: '#CC0A2B' }}
           >
             Ajouter

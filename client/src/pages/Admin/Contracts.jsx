@@ -113,10 +113,10 @@ const Contracts = () => {
 
   const handleEditOpen = (contract) => {
     setEditDialog({ open: true, contract });
-    
+
     // Extract coupon IDs from the contract's coupons array
     const couponIds = contract.coupons ? contract.coupons.map(coupon => coupon.id) : [];
-    
+
     setFormData({
       clientType: contract.clientType,
       client_id: contract.client.id,
@@ -164,7 +164,7 @@ const Contracts = () => {
         const existingContract = error.response.data.existingContract;
         const clientName = clients.find(c => c.id === existingContract.client.id)?.nom || 'Client';
         const endDate = new Date(existingContract.contractEndDate).toLocaleDateString('fr-FR');
-        
+
         showSnackbar(
           `Ce client a déjà un contrat actif (${existingContract.label}) qui se termine le ${endDate}. Veuillez désactiver ce contrat avant d'en activer un autre.`,
           'error'
@@ -219,18 +219,18 @@ const Contracts = () => {
   return (
     <Paper sx={{ p: 3 }}>
       <Typography variant="h4" gutterBottom>
-        Gestion des Contrats
+        Gestion des Contrats B2B
       </Typography>
-      
-      <Button 
-        variant="contained" 
-        color="primary" 
+
+      <Button
+        variant="contained"
+        color="primary"
         onClick={() => navigate('add')}
         sx={{ mb: 3 }}
       >
-        Ajouter un Contrat
+        Ajouter un Contrat B2B
       </Button>
-      
+
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
@@ -259,9 +259,9 @@ const Contracts = () => {
                   </TableCell>
                   <TableCell>{contract.guaranteedMinimum} €</TableCell>
                   <TableCell>
-                    <Chip 
-                      label={contract.isActive ? 'Actif' : 'Inactif'} 
-                      color={contract.isActive ? 'success' : 'default'} 
+                    <Chip
+                      label={contract.isActive ? 'Actif' : 'Inactif'}
+                      color={contract.isActive ? 'success' : 'default'}
                     />
                   </TableCell>
                   <TableCell>
@@ -280,7 +280,7 @@ const Contracts = () => {
           </TableBody>
         </Table>
       </TableContainer>
-      
+
       <TablePagination
         component="div"
         count={contracts.length}
@@ -290,10 +290,10 @@ const Contracts = () => {
         onRowsPerPageChange={handleChangeRowsPerPage}
         labelRowsPerPage="Lignes par page"
       />
-      
+
       {/* View Contract Dialog */}
       <Dialog open={viewDialog.open} onClose={handleViewClose} maxWidth="md" fullWidth>
-        <DialogTitle>Détails du Contrat</DialogTitle>
+        <DialogTitle>Détails du Contrat B2B</DialogTitle>
         <DialogContent dividers>
           {viewDialog.contract && (
             <Grid container spacing={2}>
@@ -329,19 +329,19 @@ const Contracts = () => {
               </Grid>
               <Grid item xs={12} md={6}>
                 <Typography variant="subtitle2">Statut:</Typography>
-                <Chip 
-                  label={viewDialog.contract.isActive ? 'Actif' : 'Inactif'} 
-                  color={viewDialog.contract.isActive ? 'success' : 'default'} 
+                <Chip
+                  label={viewDialog.contract.isActive ? 'Actif' : 'Inactif'}
+                  color={viewDialog.contract.isActive ? 'success' : 'default'}
                   size="small"
                 />
               </Grid>
               <Grid item xs={12}>
-                <Typography variant="subtitle2">Coupons Associés:</Typography>
+                <Typography variant="subtitle2">Codes Promo Associés:</Typography>
                 {viewDialog.contract.coupons && viewDialog.contract.coupons.length > 0 ? (
                   <List dense>
                     {viewDialog.contract.coupons.map(coupon => (
                       <ListItem key={coupon.id}>
-                        <ListItemText 
+                        <ListItemText
                           primary={`${coupon.code} - ${coupon.reduction_type === 'percentage' ? `${coupon.reduction}%` : `${coupon.reduction}€`}`}
                           secondary={`Expire le: ${formatDate(coupon.date_fin)}`}
                         />
@@ -349,7 +349,7 @@ const Contracts = () => {
                     ))}
                   </List>
                 ) : (
-                  <Typography>Aucun coupon associé</Typography>
+                  <Typography>Aucun code promo associé</Typography>
                 )}
               </Grid>
             </Grid>
@@ -359,10 +359,10 @@ const Contracts = () => {
           <Button onClick={handleViewClose}>Fermer</Button>
         </DialogActions>
       </Dialog>
-      
+
       {/* Edit Contract Dialog */}
       <Dialog open={editDialog.open} onClose={handleEditClose} maxWidth="md" fullWidth>
-        <DialogTitle>Modifier le Contrat</DialogTitle>
+        <DialogTitle>Modifier le Contrat B2B</DialogTitle>
         <form onSubmit={handleSubmit}>
           <DialogContent dividers>
             <Grid container spacing={2}>
@@ -375,7 +375,7 @@ const Contracts = () => {
                 required
                 margin="normal"
               />
-              
+
               <TextField
                 name="client_id"
                 label="Client"
@@ -392,7 +392,7 @@ const Contracts = () => {
                   </MenuItem>
                 ))}
               </TextField>
-              
+
               <TextField
                 name="label"
                 label="Libellé"
@@ -402,7 +402,7 @@ const Contracts = () => {
                 required
                 margin="normal"
               />
-              
+
               <TextField
                 name="contractStartDate"
                 label="Date Début du Contrat"
@@ -414,7 +414,7 @@ const Contracts = () => {
                 margin="normal"
                 InputLabelProps={{ shrink: true }}
               />
-              
+
               <TextField
                 name="contractEndDate"
                 label="Date Fin du Contrat"
@@ -426,7 +426,7 @@ const Contracts = () => {
                 margin="normal"
                 InputLabelProps={{ shrink: true }}
               />
-              
+
               <TextField
                 name="guaranteedMinimum"
                 label="Minimum Garanti (€)"
@@ -438,7 +438,7 @@ const Contracts = () => {
                 margin="normal"
                 inputProps={{ step: "0.01" }}
               />
-              
+
               <TextField
                 name="travelStartDate"
                 label="Date Début de Voyage"
@@ -450,7 +450,7 @@ const Contracts = () => {
                 margin="normal"
                 InputLabelProps={{ shrink: true }}
               />
-              
+
               <TextField
                 name="travelEndDate"
                 label="Date Fin de Voyage"
@@ -462,7 +462,7 @@ const Contracts = () => {
                 margin="normal"
                 InputLabelProps={{ shrink: true }}
               />
-              
+
               <FormControlLabel
                 control={
                   <Switch
@@ -475,7 +475,7 @@ const Contracts = () => {
                 label="Actif"
                 sx={{ mt: 2 }}
               />
-              
+
               <FormControlLabel
                 control={
                   <Switch
@@ -488,7 +488,7 @@ const Contracts = () => {
                 label="Activer les Frais Internet"
                 sx={{ mt: 1 }}
               />
-              
+
               <TextField
                 name="modifiedFeeAmount"
                 label="Montant des Frais Modifié (€)"
@@ -499,7 +499,7 @@ const Contracts = () => {
                 margin="normal"
                 inputProps={{ step: "0.01" }}
               />
-              
+
               <TextField
                 name="toxlFee"
                 label="TOXL (€)"
@@ -510,7 +510,7 @@ const Contracts = () => {
                 margin="normal"
                 inputProps={{ step: "0.01" }}
               />
-              
+
               <TextField
                 name="twoHourConstraint"
                 label="Contrainte 2H"
@@ -520,7 +520,7 @@ const Contracts = () => {
                 fullWidth
                 margin="normal"
               />
-              
+
               <FormControlLabel
                 control={
                   <Switch
@@ -533,7 +533,7 @@ const Contracts = () => {
                 label="Payer Plus Tard"
                 sx={{ mt: 1 }}
               />
-              
+
               <TextField
                 name="payLaterTimeLimit"
                 label="Limite de Temps pour Payer Plus Tard (heures)"
@@ -543,7 +543,7 @@ const Contracts = () => {
                 fullWidth
                 margin="normal"
               />
-              
+
               <TextField
                 name="minTimeBeforeCCFlight"
                 label="Temps Minimum Avant Vol CC (heures)"
@@ -553,7 +553,7 @@ const Contracts = () => {
                 fullWidth
                 margin="normal"
               />
-              
+
               <TextField
                 name="minTimeBeforeBalanceFlight"
                 label="Temps Minimum Avant Vol Balance (heures)"
@@ -563,7 +563,7 @@ const Contracts = () => {
                 fullWidth
                 margin="normal"
               />
-              
+
               <TextField
                 name="invoiceStamp"
                 label="Timbre de Facture (€)"
@@ -574,7 +574,7 @@ const Contracts = () => {
                 margin="normal"
                 inputProps={{ step: "0.01" }}
               />
-              
+
               <TextField
                 name="finalClientAdditionalFees"
                 label="Frais Supplémentaires Client Final (€)"
@@ -585,7 +585,7 @@ const Contracts = () => {
                 margin="normal"
                 inputProps={{ step: "0.01" }}
               />
-              
+
               <TextField
                 name="discount"
                 label="Remise (€)"
@@ -606,7 +606,7 @@ const Contracts = () => {
           </DialogActions>
         </form>
       </Dialog>
-      
+
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
