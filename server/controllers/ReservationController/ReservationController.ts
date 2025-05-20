@@ -523,13 +523,13 @@ export const createReservation = async (req: Request, res: Response) => {
     // Create the reservation
     const reservation = new Reservation();
     reservation.date_reservation = new Date();
-    reservation.statut = "Confirmée";
+    reservation.statut = req.body.statut || "confirmée"; // Utiliser la même casse que le frontend
     reservation.prix_total = finalPrice;
     reservation.nombre_passagers = nombre_passagers;
     reservation.user = user;
     reservation.flight = flight;
     reservation.class_type = class_type || 'economy';
-    reservation.fare_type = fare_type || 'standard';
+    reservation.fare_type = fare_type || 'light'; // Utiliser 'light' comme valeur par défaut
 
     // Log the fare multiplier and final price for debugging
     console.log(`Creating reservation with fare_type: ${fare_type}, class_type: ${class_type}, fare_multiplier: ${req.body.fare_multiplier}, final price: ${finalPrice}`);

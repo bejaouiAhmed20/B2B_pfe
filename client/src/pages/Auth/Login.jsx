@@ -37,11 +37,16 @@ const Login = () => {
     setError(''); // Effacer les erreurs précédentes
 
     try {
-      console.log('Tentative de connexion avec:', { email: formData.email });
+      console.log('Tentative de connexion admin avec:', { email: formData.email });
 
-      const response = await axios.post('http://localhost:5000/api/auth/login', formData, {
-        withCredentials: true // Important for cookies
+      // Utiliser l'endpoint login standard pour les administrateurs
+      // Créer une instance axios séparée pour éviter les redirections automatiques
+      const axiosInstance = axios.create({
+        baseURL: 'http://localhost:5000/api',
+        withCredentials: true // Important pour les cookies
       });
+
+      const response = await axiosInstance.post('/auth/login', formData);
 
       console.log('Réponse du serveur:', response.data);
 
@@ -55,14 +60,34 @@ const Login = () => {
           return;
         }
 
+        // Nettoyer d'abord les données d'authentification existantes
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('user');
+
         // Stocker le token et les informations utilisateur
         localStorage.setItem('accessToken', response.data.accessToken);
         localStorage.setItem('user', JSON.stringify(user));
 
         console.log('Connexion réussie, redirection vers /admin');
 
-        // Naviguer vers le tableau de bord administrateur
-        navigate('/admin');
+        // Vérifier s'il y a un chemin de redirection stocké
+        const redirectPath = localStorage.getItem('redirectAfterLogin');
+        console.log('Chemin de redirection:', redirectPath);
+
+        if (redirectPath && redirectPath.startsWith('/admin')) {
+          localStorage.removeItem('redirectAfterLogin');
+          console.log('Redirection vers:', redirectPath);
+          // Utiliser setTimeout pour s'assurer que le token est bien stocké avant la redirection
+          setTimeout(() => {
+            navigate(redirectPath);
+          }, 100);
+        } else {
+          // Naviguer vers le tableau de bord administrateur
+          // Utiliser setTimeout pour s'assurer que le token est bien stocké avant la redirection
+          setTimeout(() => {
+            navigate('/admin');
+          }, 100);
+        }
       } else {
         setError(response.data.message || 'Authentification échouée. Veuillez réessayer.');
       }

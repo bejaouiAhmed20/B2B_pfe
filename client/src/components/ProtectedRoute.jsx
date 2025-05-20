@@ -21,7 +21,7 @@ const ProtectedRoute = ({ children, requireAdmin = false }) => {
       try {
         console.log('Vérification de l\'authentification...');
 
-        // Vérifier si le token existe
+        // Vérifier si le token existe (vérifier les deux noms possibles)
         const token = localStorage.getItem('accessToken');
         const userStr = localStorage.getItem('user');
 
@@ -59,25 +59,77 @@ const ProtectedRoute = ({ children, requireAdmin = false }) => {
         try {
           // Vérifier la validité du token avec une requête au serveur
           console.log('Envoi de la requête de vérification...');
-          const response = await api.get('/users/me/verify');
-          console.log('Réponse de vérification:', response.data);
 
-          // Si la requête réussit, l'utilisateur est authentifié
-          if (response.data.success) {
-            console.log('Authentification réussie');
-            setIsAuthenticated(true);
+          // Ajouter un timeout pour éviter que la requête ne bloque indéfiniment
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-            // Mettre à jour les informations de l'utilisateur si nécessaire
-            if (response.data.user) {
-              localStorage.setItem('user', JSON.stringify(response.data.user));
-              setIsAdmin(response.data.user.est_admin === true);
+          try {
+            const response = await api.get('/users/me/verify', {
+              signal: controller.signal,
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Cache-Control': 'no-cache'
+              }
+            });
+
+            clearTimeout(timeoutId);
+            console.log('Réponse de vérification:', response.data);
+
+            // Si la requête réussit, l'utilisateur est authentifié
+            if (response.data.success) {
+              console.log('Authentification réussie');
+              setIsAuthenticated(true);
+
+              // Mettre à jour les informations de l'utilisateur si nécessaire
+              if (response.data.user) {
+                localStorage.setItem('user', JSON.stringify(response.data.user));
+                setIsAdmin(response.data.user.est_admin === true);
+              }
+            } else {
+              console.log('Échec de l\'authentification:', response.data.message);
+              throw new Error(response.data.message || 'Authentication failed');
             }
-          } else {
-            console.log('Échec de l\'authentification:', response.data.message);
-            throw new Error(response.data.message || 'Authentication failed');
+          } catch (error) {
+            clearTimeout(timeoutId);
+            if (error.name === 'AbortError') {
+              console.error('La requête de vérification a expiré');
+              // Si la requête a expiré, on considère que l'utilisateur est authentifié
+              // basé sur la présence du token et des données utilisateur
+              console.log('Authentification basée sur les données locales');
+              setIsAuthenticated(true);
+            } else {
+              throw error; // Relancer l'erreur pour qu'elle soit traitée par le bloc catch externe
+            }
           }
         } catch (error) {
           console.error('Erreur lors de la vérification du token:', error);
+
+          // Si l'erreur est 401 (Unauthorized), on essaie de rafraîchir le token
+          if (error.response && error.response.status === 401) {
+            console.log('Tentative de rafraîchissement du token...');
+            try {
+              // Essayer de rafraîchir le token
+              const refreshResponse = await api.post('/auth/refresh-token');
+
+              if (refreshResponse.data && refreshResponse.data.accessToken) {
+                console.log('Token rafraîchi avec succès');
+                localStorage.setItem('accessToken', refreshResponse.data.accessToken);
+
+                if (refreshResponse.data.user) {
+                  localStorage.setItem('user', JSON.stringify(refreshResponse.data.user));
+                }
+
+                setIsAuthenticated(true);
+                setIsAdmin(refreshResponse.data.user?.est_admin === true);
+                setIsLoading(false);
+                return;
+              }
+            } catch (refreshError) {
+              console.error('Échec du rafraîchissement du token:', refreshError);
+            }
+          }
+
           setIsAuthenticated(false);
 
           // Supprimer les tokens invalides

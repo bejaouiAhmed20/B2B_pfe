@@ -31,7 +31,7 @@ import {
   Cancel,
   HourglassEmpty
 } from '@mui/icons-material';
-import axios from 'axios';
+import api from '../../services/api';
 
 const RequestSolde = () => {
   const [loading, setLoading] = useState(false);
@@ -59,17 +59,16 @@ const RequestSolde = () => {
 
   const fetchUserAccount = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       const userData = JSON.parse(localStorage.getItem('user'));
-      
+
       if (!token || !userData) {
         setError('Vous devez être connecté pour accéder à cette page');
         return;
       }
 
-      const response = await axios.get(`http://localhost:5000/api/comptes/user/${userData.id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      // Utiliser le service API qui gère automatiquement les tokens
+      const response = await api.get(`/comptes/user/${userData.id}`);
 
       setCompte(response.data);
     } catch (error) {
@@ -85,16 +84,15 @@ const RequestSolde = () => {
   const fetchRequestHistory = async () => {
     try {
       setHistoryLoading(true);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       const userData = JSON.parse(localStorage.getItem('user'));
-      
+
       if (!token || !userData) {
         return;
       }
 
-      const response = await axios.get(`http://localhost:5000/api/request-solde/client/${userData.id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      // Utiliser le service API qui gère automatiquement les tokens
+      const response = await api.get(`/request-solde/client/${userData.id}`);
 
       setRequestHistory(response.data);
       setHistoryLoading(false);
@@ -129,7 +127,7 @@ const RequestSolde = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!formData.montant || parseFloat(formData.montant) <= 0) {
       setSnackbar({
         open: true,
@@ -141,24 +139,23 @@ const RequestSolde = () => {
 
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       const userData = JSON.parse(localStorage.getItem('user'));
-      
+
       // First upload the image if there is one
       let imageUrl = '';
       if (imageFile) {
         try {
           const formDataImage = new FormData();
           formDataImage.append('file', imageFile);
-          
-          // Use the new dedicated upload endpoint
-          const uploadResponse = await axios.post('http://localhost:5000/api/upload', formDataImage, {
+
+          // Use the new dedicated upload endpoint with the API service
+          const uploadResponse = await api.post('/upload', formDataImage, {
             headers: {
-              'Content-Type': 'multipart/form-data',
-              Authorization: `Bearer ${token}`
+              'Content-Type': 'multipart/form-data'
             }
           });
-          
+
           imageUrl = uploadResponse.data.filePath;
         } catch (uploadError) {
           console.error('Error uploading image:', uploadError);
@@ -171,7 +168,7 @@ const RequestSolde = () => {
           return;
         }
       }
-      
+
       // Then create the request
       const requestData = {
         client_id: userData.id,
@@ -179,17 +176,16 @@ const RequestSolde = () => {
         description: formData.description,
         imageUrl: imageUrl
       };
-      
-      await axios.post('http://localhost:5000/api/request-solde', requestData, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
+
+      // Utiliser le service API qui gère automatiquement les tokens
+      await api.post('/request-solde', requestData);
+
       setSnackbar({
         open: true,
         message: 'Demande de solde envoyée avec succès',
         severity: 'success'
       });
-      
+
       // Reset form
       setFormData({
         montant: '',
@@ -198,10 +194,10 @@ const RequestSolde = () => {
       });
       setImageFile(null);
       setImagePreview('');
-      
+
       // Refresh history
       fetchRequestHistory();
-      
+
       setLoading(false);
     } catch (error) {
       console.error('Error submitting request:', error);
@@ -245,7 +241,7 @@ const RequestSolde = () => {
       <Typography variant="h4" component="h1" gutterBottom>
         Demande de Solde
       </Typography>
-      
+
       {compte && (
         <Paper sx={{ p: 3, mb: 4, bgcolor: '#f8f9fa' }}>
           <Typography variant="h6" gutterBottom>
@@ -256,7 +252,7 @@ const RequestSolde = () => {
           </Typography>
         </Paper>
       )}
-      
+
       <Grid container spacing={4}>
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 3 }}>
@@ -264,7 +260,7 @@ const RequestSolde = () => {
               Nouvelle Demande
             </Typography>
             <Divider sx={{ mb: 3 }} />
-            
+
             <form onSubmit={handleSubmit}>
               <TextField
                 fullWidth
@@ -273,11 +269,11 @@ const RequestSolde = () => {
                 type="number"
                 value={formData.montant}
                 onChange={handleChange}
-            
+
                 margin="normal"
                 required
               />
-              
+
               <TextField
                 fullWidth
                 label="Description"
@@ -296,7 +292,7 @@ const RequestSolde = () => {
                 margin="normal"
                 required
               />
-              
+
               <Button
                 variant="outlined"
                 component="label"
@@ -312,24 +308,24 @@ const RequestSolde = () => {
                   onChange={handleImageChange}
                 />
               </Button>
-              
+
               {imagePreview && (
                 <Box sx={{ mt: 2, mb: 2 }}>
-                  <img 
-                    src={imagePreview} 
-                    alt="Aperçu" 
-                    style={{ maxWidth: '100%', maxHeight: '200px', display: 'block', margin: '0 auto' }} 
+                  <img
+                    src={imagePreview}
+                    alt="Aperçu"
+                    style={{ maxWidth: '100%', maxHeight: '200px', display: 'block', margin: '0 auto' }}
                   />
                 </Box>
               )}
-              
+
               <Button
                 type="submit"
                 variant="contained"
                 fullWidth
                 startIcon={<Add />}
                 disabled={loading}
-                sx={{ 
+                sx={{
                   mt: 3,
                   backgroundColor: '#CC0A2B',
                   '&:hover': {
@@ -342,7 +338,7 @@ const RequestSolde = () => {
             </form>
           </Paper>
         </Grid>
-        
+
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 3 }}>
             <Typography variant="h5" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
@@ -350,7 +346,7 @@ const RequestSolde = () => {
               Historique des Demandes
             </Typography>
             <Divider sx={{ mb: 3 }} />
-            
+
             {historyLoading ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
                 <CircularProgress />
@@ -368,21 +364,21 @@ const RequestSolde = () => {
                         </Typography>
                         {getStatusChip(request.status)}
                       </Box>
-                      
+
                       <Typography variant="body2" color="text.secondary" gutterBottom>
                         {formatDate(request.date)}
                       </Typography>
-                      
+
                       {request.description && (
                         <Typography variant="body2" sx={{ mt: 1 }}>
                           {request.description}
                         </Typography>
                       )}
-                      
+
                       {request.imageUrl && (
                         <Box sx={{ mt: 2 }}>
-                          <Button 
-                            size="small" 
+                          <Button
+                            size="small"
                             variant="outlined"
                             onClick={() => window.open(`http://localhost:5000${request.imageUrl}`, '_blank')}
                           >
@@ -398,14 +394,14 @@ const RequestSolde = () => {
           </Paper>
         </Grid>
       </Grid>
-      
+
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
       >
-        <Alert 
-          onClose={() => setSnackbar({ ...snackbar, open: false })} 
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
           severity={snackbar.severity}
           sx={{ width: '100%' }}
         >

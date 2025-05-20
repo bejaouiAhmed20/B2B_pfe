@@ -16,7 +16,7 @@ import {
   Grid
 } from '@mui/material';
 import { Send, Feedback, CheckCircle, HourglassEmpty, Cancel } from '@mui/icons-material';
-import axios from 'axios';
+import api from '../../services/api';
 
 const Reclamation = () => {
   const [formData, setFormData] = useState({
@@ -36,18 +36,17 @@ const Reclamation = () => {
   const fetchUserReclamations = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       const userData = JSON.parse(localStorage.getItem('user'));
-      
+
       if (!token || !userData) {
         setError('Vous devez être connecté pour accéder à cette page');
         setLoading(false);
         return;
       }
 
-      const response = await axios.get(`http://localhost:5000/api/reclamations/user/${userData.id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      // Utiliser le service API qui gère automatiquement les tokens
+      const response = await api.get(`/reclamations/user/${userData.id}`);
 
       setReclamations(response.data);
       setLoading(false);
@@ -72,7 +71,7 @@ const Reclamation = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!formData.sujet || !formData.description) {
       setError('Veuillez remplir tous les champs');
       return;
@@ -80,20 +79,19 @@ const Reclamation = () => {
 
     try {
       setSubmitting(true);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       const userData = JSON.parse(localStorage.getItem('user'));
-      
+
       if (!token || !userData) {
         setError('Vous devez être connecté pour soumettre une réclamation');
         setSubmitting(false);
         return;
       }
 
-      await axios.post('http://localhost:5000/api/reclamations', {
+      // Utiliser le service API qui gère automatiquement les tokens
+      await api.post('/reclamations', {
         ...formData,
         user_id: userData.id
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
       });
 
       setSuccess(true);
@@ -147,7 +145,7 @@ const Reclamation = () => {
       <Typography variant="h4" component="h1" gutterBottom>
         Réclamations
       </Typography>
-      
+
       <Paper elevation={3} sx={{ p: 4, mb: 4 }}>
         <Typography variant="h5" gutterBottom>
           Soumettre une nouvelle réclamation
@@ -178,7 +176,7 @@ const Reclamation = () => {
             variant="contained"
             startIcon={<Send />}
             disabled={submitting}
-            sx={{ 
+            sx={{
               mt: 2,
               backgroundColor: '#CC0A2B',
               '&:hover': {
@@ -231,21 +229,21 @@ const Reclamation = () => {
                     <Typography variant="h6">
                       {reclamation.sujet}
                     </Typography>
-                    <Chip 
+                    <Chip
                       icon={getStatusIcon(reclamation.statut)}
-                      label={reclamation.statut} 
+                      label={reclamation.statut}
                       color={getStatusColor(reclamation.statut)}
                     />
                   </Box>
-                  
+
                   <Typography variant="body2" color="text.secondary" gutterBottom>
                     Soumise le {formatDate(reclamation.date_creation)}
                   </Typography>
-                  
+
                   <Typography variant="body1" paragraph>
                     {reclamation.description}
                   </Typography>
-                  
+
                   {reclamation.reponse && (
                     <>
                       <Divider sx={{ my: 2 }} />

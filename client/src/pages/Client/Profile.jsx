@@ -21,7 +21,7 @@ import {
   Edit,
   Save
 } from '@mui/icons-material';
-import axios from 'axios';
+import api from '../../services/api';
 
 const Profile = () => {
   const [user, setUser] = useState(null);
@@ -48,18 +48,17 @@ const Profile = () => {
   const fetchUserData = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       const userData = JSON.parse(localStorage.getItem('user'));
-      
+
       if (!token || !userData) {
         setError('Vous devez être connecté pour accéder à cette page');
         setLoading(false);
         return;
       }
 
-      const response = await axios.get(`http://localhost:5000/api/users/${userData.id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      // Utiliser le service API qui gère automatiquement les tokens
+      const response = await api.get(`/users/${userData.id}`);
 
       setUser(response.data);
       setFormData({
@@ -87,17 +86,15 @@ const Profile = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('token');
       const userData = JSON.parse(localStorage.getItem('user'));
-      
-      await axios.put(`http://localhost:5000/api/users/${userData.id}`, formData, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+
+      // Utiliser le service API qui gère automatiquement les tokens
+      await api.put(`/users/${userData.id}`, formData);
 
       // Update local storage with new user data
       const updatedUser = { ...userData, ...formData };
       localStorage.setItem('user', JSON.stringify(updatedUser));
-      
+
       setUser(updatedUser);
       setEditMode(false);
       setSnackbar({
@@ -135,10 +132,10 @@ const Profile = () => {
     <Container maxWidth="md" sx={{ py: 4 }}>
       <Paper elevation={3} sx={{ p: 4 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
-          <Avatar 
-            sx={{ 
-              width: 80, 
-              height: 80, 
+          <Avatar
+            sx={{
+              width: 80,
+              height: 80,
               bgcolor: '#CC0A2B',
               fontSize: '2rem',
               mr: 2
@@ -155,7 +152,7 @@ const Profile = () => {
             </Typography>
           </Box>
           <Box sx={{ flexGrow: 1 }} />
-          <Button 
+          <Button
             variant={editMode ? "outlined" : "contained"}
             startIcon={editMode ? <Save /> : <Edit />}
             onClick={() => {
@@ -165,7 +162,7 @@ const Profile = () => {
                 setEditMode(true);
               }
             }}
-            sx={{ 
+            sx={{
               backgroundColor: editMode ? 'transparent' : '#CC0A2B',
               color: editMode ? '#CC0A2B' : 'white',
               '&:hover': {
@@ -205,7 +202,7 @@ const Profile = () => {
                 )}
               </Box>
             </Grid>
-            
+
             <Grid item xs={12} md={6}>
               <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
                 <Person sx={{ mr: 2, color: 'text.secondary', mt: 0.5 }} />
@@ -230,7 +227,7 @@ const Profile = () => {
                 )}
               </Box>
             </Grid>
-            
+
             <Grid item xs={12}>
               <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
                 <Email sx={{ mr: 2, color: 'text.secondary', mt: 0.5 }} />
@@ -256,7 +253,7 @@ const Profile = () => {
                 )}
               </Box>
             </Grid>
-            
+
             <Grid item xs={12}>
               <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
                 <Phone sx={{ mr: 2, color: 'text.secondary', mt: 0.5 }} />
@@ -281,7 +278,7 @@ const Profile = () => {
                 )}
               </Box>
             </Grid>
-            
+
             <Grid item xs={12}>
               <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
                 <LocationOn sx={{ mr: 2, color: 'text.secondary', mt: 0.5 }} />
@@ -312,8 +309,8 @@ const Profile = () => {
 
           {editMode && (
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
-              <Button 
-                variant="outlined" 
+              <Button
+                variant="outlined"
                 onClick={() => {
                   setEditMode(false);
                   setFormData({
@@ -328,10 +325,10 @@ const Profile = () => {
               >
                 Annuler
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 variant="contained"
-                sx={{ 
+                sx={{
                   backgroundColor: '#CC0A2B',
                   '&:hover': {
                     backgroundColor: '#A00823',
@@ -350,8 +347,8 @@ const Profile = () => {
         autoHideDuration={6000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
       >
-        <Alert 
-          onClose={() => setSnackbar({ ...snackbar, open: false })} 
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
           severity={snackbar.severity}
         >
           {snackbar.message}

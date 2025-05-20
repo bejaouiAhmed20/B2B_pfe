@@ -43,12 +43,16 @@ const LoginClient = () => {
     try {
       console.log('Tentative de connexion client avec:', { email: formData.email });
 
-      // Utiliser l'endpoint login-client spécifique
-      const response = await axios.post('http://localhost:5000/api/auth/login-client', {
+      // Utiliser l'endpoint login-client spécifique avec le service API
+      // Créer une instance axios séparée pour éviter les redirections automatiques
+      const axiosInstance = axios.create({
+        baseURL: 'http://localhost:5000/api',
+        withCredentials: true // Important pour les cookies
+      });
+
+      const response = await axiosInstance.post('/auth/login-client', {
         email: formData.email,
         mot_de_passe: formData.mot_de_passe
-      }, {
-        withCredentials: true // Important pour les cookies
       });
 
       console.log('Réponse du serveur:', response.data);
@@ -57,6 +61,10 @@ const LoginClient = () => {
       if (!response.data.accessToken) {
         throw new Error('Aucun token reçu du serveur');
       }
+
+      // Nettoyer d'abord les données d'authentification existantes
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('user');
 
       // Stocker le token d'accès et les informations utilisateur dans localStorage
       localStorage.setItem('accessToken', response.data.accessToken);
@@ -79,11 +87,17 @@ const LoginClient = () => {
       if (redirectPath && redirectPath.startsWith('/client')) {
         localStorage.removeItem('redirectAfterLogin');
         console.log('Redirection vers:', redirectPath);
-        navigate(redirectPath);
+        // Utiliser setTimeout pour s'assurer que le token est bien stocké avant la redirection
+        setTimeout(() => {
+          navigate(redirectPath);
+        }, 100);
       } else {
         // Redirection par défaut vers le tableau de bord client
         console.log('Redirection par défaut vers /client');
-        navigate('/client');
+        // Utiliser setTimeout pour s'assurer que le token est bien stocké avant la redirection
+        setTimeout(() => {
+          navigate('/client');
+        }, 100);
       }
     } catch (error) {
       console.error('Erreur de connexion:', error);

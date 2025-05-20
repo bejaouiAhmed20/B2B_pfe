@@ -186,47 +186,64 @@ const ReservationForm = ({
     return `${remainingHours} heure${remainingHours > 1 ? 's' : ''}`;
   };
 
-  // Modified handleSubmit to include priceType
+  // Modified handleSubmit to include priceType and better error handling
   const handleSubmitReservation = () => {
-    // Make sure we're passing the current price type and the correct price
-    console.log("Submitting reservation with price type:", priceType, "and price:", reservation.prix_total);
+    try {
+      // Make sure we're passing the current price type and the correct price
+      console.log("Submitting reservation with price type:", priceType, "and price:", reservation.prix_total);
 
-    // Get the fixed price if we're using the fixed price type
-    const fixedPrice = priceType === 'fixed' ? userContract?.fixedTicketPrice : null;
-
-    // Get the current fare multiplier
-    const fareMultiplier = getCurrentFareMultiplier();
-    console.log(`Using fare multiplier: ${fareMultiplier} for class ${reservation.classType} and fare type ${reservation.fareType}`);
-
-    // Calculate the correct price based on the price type
-    let finalPrice;
-    if (priceType === 'fixed' && fixedPrice) {
-      finalPrice = fixedPrice * fareMultiplier * reservation.nombre_passagers;
-      console.log(`Final fixed price calculation: ${fixedPrice} * ${fareMultiplier} * ${reservation.nombre_passagers} = ${finalPrice}`);
-    } else {
-      finalPrice = flight.prix * fareMultiplier * reservation.nombre_passagers;
-      if (validCoupon && reservation.discountAmount > 0) {
-        finalPrice -= reservation.discountAmount;
+      // Vérifier si le nombre de passagers est valide
+      if (reservation.nombre_passagers <= 0) {
+        console.error("Nombre de passagers invalide:", reservation.nombre_passagers);
+        return;
       }
-      console.log(`Final base price calculation: ${flight.prix} * ${fareMultiplier} * ${reservation.nombre_passagers} = ${finalPrice}`);
+
+      // Get the fixed price if we're using the fixed price type
+      const fixedPrice = priceType === 'fixed' ? userContract?.fixedTicketPrice : null;
+
+      // Get the current fare multiplier
+      const fareMultiplier = getCurrentFareMultiplier();
+      console.log(`Using fare multiplier: ${fareMultiplier} for class ${reservation.classType} and fare type ${reservation.fareType}`);
+
+      // Calculate the correct price based on the price type
+      let finalPrice;
+      if (priceType === 'fixed' && fixedPrice) {
+        finalPrice = fixedPrice * fareMultiplier * reservation.nombre_passagers;
+        console.log(`Final fixed price calculation: ${fixedPrice} * ${fareMultiplier} * ${reservation.nombre_passagers} = ${finalPrice}`);
+      } else {
+        finalPrice = flight.prix * fareMultiplier * reservation.nombre_passagers;
+        if (validCoupon && reservation.discountAmount > 0) {
+          finalPrice -= reservation.discountAmount;
+        }
+        console.log(`Final base price calculation: ${flight.prix} * ${fareMultiplier} * ${reservation.nombre_passagers} = ${finalPrice}`);
+      }
+
+      // Vérifier que le prix final est valide
+      if (isNaN(finalPrice) || finalPrice <= 0) {
+        console.error("Prix final invalide:", finalPrice);
+        finalPrice = flight.prix * fareMultiplier * reservation.nombre_passagers;
+        console.log(`Prix corrigé: ${finalPrice}`);
+      }
+
+      // Update the reservation with the current price type using handlePassengerChange
+      // This is a proxy to update the reservation in the parent component
+      handlePassengerChange(
+        { target: { value: reservation.nombre_passagers } },
+        reservation.classType,
+        reservation.fareType,
+        finalPrice,
+        priceType, // Pass the current price type
+        fixedPrice // Pass the fixed price
+      );
+
+      // Give the state time to update
+      setTimeout(() => {
+        // Pass the priceType along with the reservation data
+        handleReservation(priceType);
+      }, 200); // Augmenter le délai pour s'assurer que l'état est mis à jour
+    } catch (error) {
+      console.error("Erreur lors de la soumission de la réservation:", error);
     }
-
-    // Update the reservation with the current price type using handlePassengerChange
-    // This is a proxy to update the reservation in the parent component
-    handlePassengerChange(
-      { target: { value: reservation.nombre_passagers } },
-      reservation.classType,
-      reservation.fareType,
-      finalPrice,
-      priceType, // Pass the current price type
-      fixedPrice // Pass the fixed price
-    );
-
-    // Give the state time to update
-    setTimeout(() => {
-      // Pass the priceType along with the reservation data
-      handleReservation(priceType);
-    }, 100);
   };
 
   // Add state for passenger input error
@@ -573,16 +590,3 @@ const ReservationForm = ({
 };
 
 export default ReservationForm;
-
-// When handling the reservation submission
-const handleSubmit = () => {
-  // Make sure priceType is accessible here
-  console.log("Using price type:", priceType);
-
-  const reservationData = {
-    use_contract_price: priceType === 'fixed',
-    prix_total: reservation.prix_total
-  };
-
-  handleReservation(reservationData);
-};

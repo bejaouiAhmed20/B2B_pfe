@@ -30,6 +30,9 @@ const processQueue = (error, token = null) => {
 // Add a request interceptor to add the auth token to every request
 api.interceptors.request.use(
   (config) => {
+    // Vérifier si la requête est pour le rafraîchissement du token
+    const isRefreshRequest = config.url && config.url.includes('/auth/refresh-token');
+
     // Get token from localStorage
     const token = localStorage.getItem('accessToken');
 
@@ -40,6 +43,12 @@ api.interceptors.request.use(
     } else {
       console.log('No token available for request:', config.url);
 
+      // Ne pas rediriger si c'est une requête de rafraîchissement de token
+      if (isRefreshRequest) {
+        console.log('Requête de rafraîchissement de token, pas de redirection nécessaire');
+        return config;
+      }
+
       // Check if we're on a protected route and not already on a public page
       const currentPath = window.location.pathname;
       const publicPaths = [
@@ -47,6 +56,7 @@ api.interceptors.request.use(
         '/login-client',
         '/forgot-password',
         '/reset-password',
+        '/reset-password/',
         '/contact'
       ];
 
@@ -63,7 +73,10 @@ api.interceptors.request.use(
         const loginPath = isAdminRoute ? '/login' : '/login-client';
 
         console.log('Redirection vers:', loginPath);
-        window.location.href = loginPath;
+        // Utiliser setTimeout pour éviter les redirections en boucle
+        setTimeout(() => {
+          window.location.href = loginPath;
+        }, 100);
       } else {
         console.log('Déjà sur une page publique, pas de redirection nécessaire');
       }
@@ -82,11 +95,28 @@ api.interceptors.response.use(
     return response;
   },
   async (error) => {
+    // Si la requête a été annulée, ne pas traiter l'erreur
+    if (error.name === 'CanceledError' || error.name === 'AbortError') {
+      console.log('Requête annulée:', error.message);
+      return Promise.reject(error);
+    }
+
     const originalRequest = error.config;
+    if (!originalRequest) {
+      console.error('Configuration de requête originale manquante:', error);
+      return Promise.reject(error);
+    }
 
     console.log('API Error:', error.message);
     console.log('Status:', error.response?.status);
     console.log('Original request URL:', originalRequest?.url);
+
+    // Si la requête est déjà une tentative de rafraîchissement, ne pas essayer à nouveau
+    const isRefreshRequest = originalRequest.url && originalRequest.url.includes('/auth/refresh-token');
+    if (isRefreshRequest) {
+      console.log('Échec de la requête de rafraîchissement, pas de nouvelle tentative');
+      return Promise.reject(error);
+    }
 
     // If we get a 401 error and we haven't tried to refresh the token yet
     if (error.response && error.response.status === 401 && !originalRequest._retry) {
@@ -113,7 +143,14 @@ api.interceptors.response.use(
       try {
         // Try to refresh the token
         console.log('Envoi de la requête de rafraîchissement du token');
-        const response = await api.post('/auth/refresh-token');
+
+        // Utiliser axios directement pour éviter les intercepteurs
+        const axiosInstance = axios.create({
+          baseURL: 'http://localhost:5000/api',
+          withCredentials: true
+        });
+
+        const response = await axiosInstance.post('/auth/refresh-token');
         console.log('Réponse de rafraîchissement:', response.data);
 
         const { accessToken } = response.data;
@@ -159,7 +196,9 @@ api.interceptors.response.use(
           localStorage.setItem('redirectAfterLogin', currentPath);
 
           // Redirect to login page
-          window.location.href = loginPath;
+          setTimeout(() => {
+            window.location.href = loginPath;
+          }, 100);
         }
       } finally {
         isRefreshing = false;
@@ -174,7 +213,9 @@ api.interceptors.response.use(
         const user = JSON.parse(localStorage.getItem('user') || '{}');
         if (!user.est_admin) {
           console.log('Utilisateur non-admin tentant d\'accéder à une route admin, redirection...');
-          window.location.href = '/client';
+          setTimeout(() => {
+            window.location.href = '/client';
+          }, 100);
         }
       }
     }

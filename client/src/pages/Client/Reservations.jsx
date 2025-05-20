@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../services/api';
 import {
   Container,
   Typography,
@@ -55,7 +55,7 @@ const Reservations = () => {
     open: false,
     reservationId: null
   });
-  
+
   // Add pagination state
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -68,28 +68,28 @@ const Reservations = () => {
   const fetchUserReservations = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       const userData = JSON.parse(localStorage.getItem('user'));
-      
+
       if (!token || !userData) {
         setError('Vous devez être connecté pour accéder à cette page');
         setLoading(false);
         return;
       }
 
-      // Get all reservations with flight data in a single request using axios instead of api service
-      const response = await axios.get(`http://localhost:5000/api/reservations/user/${userData.id}`);
-      
+      // Get all reservations with flight data in a single request using the API service
+      const response = await api.get(`/reservations/user/${userData.id}`);
+
       // No need for additional flight fetching as the backend now includes this data
       const allReservations = response.data || [];
-      
+
       // Calculate total pages
       setTotalPages(Math.ceil(allReservations.length / itemsPerPage));
-      
+
       // Paginate the data client-side
       const startIndex = (page - 1) * itemsPerPage;
       const paginatedReservations = allReservations.slice(startIndex, startIndex + itemsPerPage);
-      
+
       setReservations(paginatedReservations);
       setLoading(false);
     } catch (error) {
@@ -112,9 +112,9 @@ const Reservations = () => {
   const handleCancelReservation = async (reservation) => {
     try {
       setLoading(true);
-      
+
       const userData = JSON.parse(localStorage.getItem('user'));
-      
+
       if (!userData) {
         setSnackbar({
           open: true,
@@ -124,19 +124,19 @@ const Reservations = () => {
         setLoading(false);
         return;
       }
-      
-      // Use the cancelReservation endpoint instead of manually updating status
-      await axios.put(`http://localhost:5000/api/reservations/${reservation.id}/cancel`, {
-        isRefundEligible: 
-          (reservation.class_type === 'economy' && reservation.fare_type === 'light') || 
+
+      // Use the cancelReservation endpoint with the API service
+      await api.put(`/reservations/${reservation.id}/cancel`, {
+        isRefundEligible:
+          (reservation.class_type === 'economy' && reservation.fare_type === 'light') ||
           (reservation.class_type === 'Affaires')
       });
-      
+
       setSuccessMessage('Réservation annulée avec succès! Votre compte a été remboursé.');
-      
+
       // Refresh the reservations list
       fetchUserReservations();
-      
+
       setCancelDialog({ open: false, reservationId: null });
       setLoading(false);
     } catch (error) {
@@ -169,7 +169,7 @@ const Reservations = () => {
     open: false,
     flight: null
   });
-  
+
   const handleViewFlightDetails = (flight) => {
     if (flight) {
       setFlightDetailsDialog({
@@ -190,23 +190,23 @@ const Reservations = () => {
   const generatePDF = async (reservation) => {
     try {
       console.log('Starting PDF generation for reservation:', reservation.id);
-      
+
       // Create a new jsPDF instance with portrait orientation
       const doc = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
         format: 'a4'
       });
-      
+
       // Change background color to white instead of red
       doc.setFillColor(255, 255, 255);
       doc.rect(0, 0, 210, 30, 'F');
-      
+
       // Add a thin red line at the bottom of the header for visual separation
       doc.setDrawColor(204, 10, 43);
       doc.setLineWidth(1);
       doc.line(0, 30, 210, 30);
-    
+
       // Logo - Handle with proper error checking
       try {
         const logoImg = new Image();
@@ -229,16 +229,16 @@ const Reservations = () => {
         console.warn('Error loading logo:', logoError);
         // Continue without the logo
       }
-    
+
       // Title - Change text color to red instead of white
       doc.setTextColor(204, 10, 43);
       doc.setFontSize(20);
       doc.setFont(undefined, 'bold');
       doc.text('FACTURE DE RÉSERVATION', 130, 18, { align: 'center' });
-    
+
       doc.setTextColor(0, 0, 0);
       doc.setFontSize(12);
-    
+
       // Détails Réservation
       doc.setFont(undefined, 'bold');
       doc.text('Détails de la Réservation', 14, 40);
@@ -253,7 +253,7 @@ const Reservations = () => {
       doc.text(`Passagers: ${reservation.nombre_passagers}`, 14, 66);
       doc.text(`Classe: ${reservation.class_type}`, 14, 72);
       doc.text(`Type de Tarif: ${reservation.fare_type}`, 14, 78);
-    
+
       // Total Box
       doc.setFillColor(245, 245, 245);
       doc.rect(120, 48, 76, 22, 'F');
@@ -267,7 +267,7 @@ const Reservations = () => {
       doc.setTextColor(204, 10, 43);
       doc.text(`${reservation.prix_total} DT`, 190, 63, { align: 'right' });
       doc.setTextColor(0, 0, 0);
-    
+
       // Vol
       doc.setFontSize(12);
       doc.setFont(undefined, 'bold');
@@ -281,7 +281,7 @@ const Reservations = () => {
       doc.text(`Retour: ${formatDate(reservation.flight?.date_retour) || 'N/A'}`, 14, 110);
       doc.text(`Durée: ${reservation.flight?.duree || 'N/A'}`, 14, 116);
       doc.text(`Statut: ${reservation.flight?.status || 'N/A'}`, 14, 122);
-    
+
       // Passager
       doc.setFont(undefined, 'bold');
       doc.text('Informations du Passager', 14, 135);
@@ -294,13 +294,13 @@ const Reservations = () => {
       doc.text(`Téléphone: ${user.numero_telephone || 'N/A'}`, 14, 155);
       doc.text(`Adresse: ${user.adresse || 'N/A'}`, 14, 161);
       doc.text(`Pays: ${user.pays || 'N/A'}`, 14, 167);
-    
+
       // Footer
       doc.setFontSize(9);
       doc.setTextColor(120, 120, 120);
       doc.text('Ce document est généré automatiquement par Tunisair B2B.', 105, 285, { align: 'center' });
       doc.text('Pour toute question, contactez-nous à contact@tunisair.com', 105, 290, { align: 'center' });
-    
+
       doc.save(`Facture_${reservation.id}.pdf`);
       setSnackbar({
         open: true,
@@ -334,8 +334,8 @@ const Reservations = () => {
           <Typography variant="h5" color="error" gutterBottom>
             {error}
           </Typography>
-          <Button 
-            variant="contained" 
+          <Button
+            variant="contained"
             onClick={() => navigate('/login')}
             sx={{ mt: 2 }}
           >
@@ -378,10 +378,10 @@ const Reservations = () => {
         ) : (
           reservations.map((reservation) => (
             <Grid item xs={12} md={6} key={reservation.id}>
-              <Card 
-                sx={{ 
-                  height: '100%', 
-                  display: 'flex', 
+              <Card
+                sx={{
+                  height: '100%',
+                  display: 'flex',
                   flexDirection: 'column',
                   transition: 'transform 0.2s, box-shadow 0.2s',
                   '&:hover': {
@@ -395,15 +395,15 @@ const Reservations = () => {
                     <Typography variant="h6" component="div">
                       {reservation.flight?.titre || 'Vol'}
                     </Typography>
-                    <Chip 
-                      label={reservation.statut} 
+                    <Chip
+                      label={reservation.statut}
                       color={getStatusColor(reservation.statut)}
                       size="small"
                     />
                   </Box>
-                  
+
                   <Divider sx={{ mb: 2 }} />
-                  
+
                   <Grid container spacing={2}>
                     <Grid item xs={6}>
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -416,7 +416,7 @@ const Reservations = () => {
                         {reservation.flight?.date_depart ? formatDate(reservation.flight.date_depart) : 'N/A'}
                       </Typography>
                     </Grid>
-                    
+
                     <Grid item xs={6}>
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <FlightLand sx={{ mr: 1, color: 'primary.main', fontSize: 20 }} />
@@ -428,7 +428,7 @@ const Reservations = () => {
                         {reservation.flight?.date_retour ? formatDate(reservation.flight.date_retour) : 'N/A'}
                       </Typography>
                     </Grid>
-                    
+
                     <Grid item xs={6}>
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <People sx={{ mr: 1, color: 'primary.main', fontSize: 20 }} />
@@ -440,7 +440,7 @@ const Reservations = () => {
                         {reservation.nombre_passagers || 1}
                       </Typography>
                     </Grid>
-                    
+
                     <Grid item xs={6}>
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <AttachMoney sx={{ mr: 1, color: 'primary.main', fontSize: 20 }} />
@@ -453,7 +453,7 @@ const Reservations = () => {
                       </Typography>
                     </Grid>
                   </Grid>
-                  
+
                   <Box sx={{ mt: 2 }}>
                     <Typography variant="body2" color="text.secondary">
                       Classe: <Chip size="small" label={reservation.class_type === 'economy' ? 'Économique' : 'Affaires'} />
@@ -463,28 +463,28 @@ const Reservations = () => {
                     </Typography>
                   </Box>
                 </CardContent>
-                
+
                 <CardActions sx={{ p: 2, pt: 0 }}>
-                  <Button 
-                    size="small" 
+                  <Button
+                    size="small"
                     startIcon={<Info />}
                     onClick={() => handleViewFlightDetails(reservation.flight)}
                   >
                     Détails
                   </Button>
-                  
-                  <Button 
-                    size="small" 
+
+                  <Button
+                    size="small"
                     startIcon={<PictureAsPdf />}
                     onClick={() => generatePDF(reservation)}
                   >
                     Facture
                   </Button>
-                  
+
                   {reservation.statut !== 'Annulée' && (
-                    <Button 
-                      size="small" 
-                      color="error" 
+                    <Button
+                      size="small"
+                      color="error"
                       startIcon={<Cancel />}
                       onClick={() => setCancelDialog({ open: true, reservationId: reservation.id })}
                       sx={{ ml: 'auto' }}
@@ -498,15 +498,15 @@ const Reservations = () => {
           ))
         )}
       </Grid>
-      
+
       {/* Add pagination at the bottom */}
       {totalPages > 1 && (
         <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-          <Pagination 
-            count={totalPages} 
-            page={page} 
-            onChange={handlePageChange} 
-            color="primary" 
+          <Pagination
+            count={totalPages}
+            page={page}
+            onChange={handlePageChange}
+            color="primary"
           />
         </Box>
       )}
@@ -526,12 +526,12 @@ const Reservations = () => {
               {(() => {
                 const reservation = reservations.find(r => r.id === cancelDialog.reservationId);
                 if (!reservation) return '';
-                
-                const isRefundEligible = 
-                  (reservation.class_type === 'economy' && reservation.fare_type === 'light') || 
+
+                const isRefundEligible =
+                  (reservation.class_type === 'economy' && reservation.fare_type === 'light') ||
                   (reservation.class_type === 'Affaires');
-                
-                return isRefundEligible 
+
+                return isRefundEligible
                   ? "Vous êtes éligible à un remboursement pour cette annulation."
                   : "Cette annulation ne donne pas droit à un remboursement selon nos conditions.";
               })()}
@@ -542,21 +542,21 @@ const Reservations = () => {
           <Button onClick={() => setCancelDialog({ open: false, reservationId: null })}>
             Non, garder ma réservation
           </Button>
-          <Button 
+          <Button
             onClick={() => {
               const reservation = reservations.find(r => r.id === cancelDialog.reservationId);
               if (reservation) {
                 handleCancelReservation(reservation);
               }
-            }} 
-            color="error" 
+            }}
+            color="error"
             autoFocus
           >
             Oui, annuler ma réservation
           </Button>
         </DialogActions>
       </Dialog>
-      
+
       {/* Flight Details Dialog */}
       <Dialog
         open={flightDetailsDialog.open}
@@ -571,7 +571,7 @@ const Reservations = () => {
               <Typography variant="h5" gutterBottom color="primary">
                 {flightDetailsDialog.flight.titre || 'Vol'}
               </Typography>
-              
+
               <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
                 <Grid container spacing={3}>
                   <Grid item xs={12} md={6}>
@@ -585,7 +585,7 @@ const Reservations = () => {
                       </Box>
                     </Box>
                   </Grid>
-                  
+
                   <Grid item xs={12} md={6}>
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
                       <FlightLand sx={{ mr: 2, color: '#1976d2' }} />
@@ -599,7 +599,7 @@ const Reservations = () => {
                   </Grid>
                 </Grid>
               </Paper>
-              
+
               <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
                 <Typography variant="h6" gutterBottom>Informations sur l'avion</Typography>
                 <Grid container spacing={3}>
@@ -609,21 +609,21 @@ const Reservations = () => {
                       {flightDetailsDialog.flight.plane?.planeModel || 'N/A'}
                     </Typography>
                   </Grid>
-                  
+
                   <Grid item xs={12} md={6}>
                     <Typography variant="subtitle2" color="text.secondary">Nombre total de sièges</Typography>
                     <Typography variant="body1" gutterBottom>
                       {flightDetailsDialog.flight.plane?.totalSeats || 'N/A'}
                     </Typography>
                   </Grid>
-                  
+
                   <Grid item xs={12} md={6}>
                     <Typography variant="subtitle2" color="text.secondary">Configuration des sièges</Typography>
                     <Typography variant="body1" gutterBottom>
                       {flightDetailsDialog.flight.plane?.seatConfiguration || 'N/A'}
                     </Typography>
                   </Grid>
-                  
+
                   <Grid item xs={12} md={6}>
                     <Typography variant="subtitle2" color="text.secondary">Durée du vol</Typography>
                     <Typography variant="body1" gutterBottom>
@@ -632,7 +632,7 @@ const Reservations = () => {
                   </Grid>
                 </Grid>
               </Paper>
-              
+
               <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
                 <Typography variant="h6" gutterBottom>Informations tarifaires</Typography>
                 <Grid container spacing={3}>
@@ -642,25 +642,25 @@ const Reservations = () => {
                       {flightDetailsDialog.flight.prix} DT
                     </Typography>
                   </Grid>
-                  
+
                   <Grid item xs={12} md={6}>
                     <Typography variant="subtitle2" color="text.secondary">Statut du vol</Typography>
-                    <Chip 
-                      label={flightDetailsDialog.flight.status || 'N/A'} 
+                    <Chip
+                      label={flightDetailsDialog.flight.status || 'N/A'}
                       color={flightDetailsDialog.flight.status === 'active' ? 'success' : 'default'}
                       size="small"
                     />
                   </Grid>
                 </Grid>
               </Paper>
-              
+
               {/* If there are allocated seats for this reservation */}
               {reservations.find(r => r.flight?.id === flightDetailsDialog.flight.id)?.allocatedSeats?.length > 0 && (
                 <Paper elevation={2} sx={{ p: 2 }}>
                   <Typography variant="h6" gutterBottom>Sièges réservés</Typography>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                     {reservations.find(r => r.flight?.id === flightDetailsDialog.flight.id)?.allocatedSeats.map((seat) => (
-                      <Chip 
+                      <Chip
                         key={seat.id}
                         label={`${seat.seatNumber} (${seat.classType === 'economy' ? 'Économique' : 'Affaires'})`}
                         color="primary"
@@ -682,7 +682,7 @@ const Reservations = () => {
           </Button>
         </DialogActions>
       </Dialog>
-      
+
       {/* Snackbar for notifications */}
       <Snackbar
         open={snackbar.open}
@@ -690,9 +690,9 @@ const Reservations = () => {
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert 
-          onClose={handleCloseSnackbar} 
-          severity={snackbar.severity} 
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
           sx={{ width: '100%' }}
         >
           {snackbar.message}
