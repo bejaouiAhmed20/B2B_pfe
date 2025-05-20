@@ -47,7 +47,8 @@ const LoginClient = () => {
       // Créer une instance axios séparée pour éviter les redirections automatiques
       const axiosInstance = axios.create({
         baseURL: 'http://localhost:5000/api',
-        withCredentials: true // Important pour les cookies
+        withCredentials: true, // Important pour les cookies
+        timeout: 10000 // Augmenter le timeout à 10 secondes
       });
 
       const response = await axiosInstance.post('/auth/login-client', {

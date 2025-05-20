@@ -26,6 +26,7 @@ import planeRoutes from './routes/PlaneRoutes/planeRoutes';
 import seatRoutes from './routes/SeatRoutes/seatRoutes';
 // Import the chat routes
 import chatRoutes from './routes/ChatRoutes/chatRoutes';
+import popupRoutes from './routes/PopupRoutes/popupRoutes';
 import { SeatReservation } from './models/SeatReservation';
 import { FlightSeatReservation } from './models/FlightSeatReservation';
 
@@ -42,12 +43,13 @@ import { Contract } from './models/Contract';
 import { Reclamation } from './models/Reclamation';
 import { Plane } from './models/Plane';
 import { Seat } from './models/Seat';
+import { Popup } from './models/Popup';
 
 const app = express();
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:5173'], // Add your client URLs
+  origin: true, // Allow all origins during development
   credentials: true
 }));
 
@@ -74,6 +76,8 @@ app.use('/api/contracts', contractRoutes);
 app.use('/api/reclamations', reclamationRoutes);
 // Register the chat routes
 app.use('/api/chat', chatRoutes);
+// Register popup routes
+app.use('/api/popups', popupRoutes);
 
 // Make sure you have this line to serve static files
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
@@ -109,7 +113,8 @@ const AppDataSource = new DataSource({
     Plane,
     Seat,
     SeatReservation,
-    FlightSeatReservation
+    FlightSeatReservation,
+    Popup
   ],
   synchronize: true,
   logging: true,

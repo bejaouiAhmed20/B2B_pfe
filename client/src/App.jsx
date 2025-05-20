@@ -17,6 +17,7 @@ import AddNews from './pages/Admin/AddNews';
 import Coupons from './pages/Admin/Coupons';
 import AddCoupon from './pages/Admin/AddCoupon';
 import Popups from './pages/Admin/Popups';
+import AddPopup from './pages/Admin/AddPopup';
 import AddClient from './pages/Admin/AddClient';
 import Clients from './pages/Admin/clients';
 import AddLocation from './pages/Admin/AddLocation';
@@ -110,6 +111,8 @@ function App() {
           <Route path="coupons" element={<Coupons />} />
           <Route path="coupons/add" element={<AddCoupon />} />
           <Route path="popups" element={<Popups />} />
+          <Route path="popups/add" element={<AddPopup />} />
+          <Route path="popups/edit/:id" element={<AddPopup />} />
           <Route path="reservations" element={<AdminReservations />} />
           <Route path="reservations/add" element={<AddReservation />} />
           <Route path="request-solde" element={<RequestSoldeManagement />} />
