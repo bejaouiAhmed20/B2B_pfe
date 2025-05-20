@@ -14,7 +14,7 @@ class NewsListScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         title: const Text(
           "Actualités",
-          style: TextStyle( fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
       body: FutureBuilder<List<News>>(
@@ -80,7 +80,7 @@ class NewsListScreen extends StatelessWidget {
             ),
           );
         },
-        splashColor: const Color(0xFFCC0A2B).withOpacity(0.1),
+        splashColor: const Color(0x1ACC0A2B), // 0x1A = 10% d'opacité
         borderRadius: BorderRadius.circular(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -134,7 +134,9 @@ class NewsListScreen extends StatelessWidget {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFCC0A2B).withOpacity(0.1),
+                          color: const Color(
+                            0x1ACC0A2B,
+                          ), // 0x1A = 10% d'opacité
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: const Row(
@@ -174,10 +176,10 @@ class NewsListScreen extends StatelessWidget {
       height: 180,
       width: double.infinity,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           colors: [
-            const Color(0xFF7B0519).withOpacity(0.3),
-            const Color(0xFFCC0A2B).withOpacity(0.1),
+            Color(0x4D7B0519), // 0x4D = 30% d'opacité
+            Color(0x1ACC0A2B), // 0x1A = 10% d'opacité
           ],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,

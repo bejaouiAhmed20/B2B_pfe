@@ -85,21 +85,23 @@ class _ReclamationScreenState extends State<ReclamationScreen> {
     }
   }
 
+  Color _getStatusColorWithOpacity(String status) {
+    switch (status.toLowerCase()) {
+      case 'résolue':
+        return const Color(0x1A4CAF50); // Vert avec 10% d'opacité
+      case 'en cours':
+        return const Color(0x1AF57C00); // Orange avec 10% d'opacité
+      case 'nouvelle':
+        return const Color(0x1AC62828); // Rouge avec 10% d'opacité
+      default:
+        return const Color(0x1A757575); // Gris avec 10% d'opacité
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Mes Réclamations"),
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.red.shade800, Colors.red.shade400],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-        ),
-      ),
+      appBar: AppBar(title: const Text("Mes Réclamations")),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -282,9 +284,9 @@ class _ReclamationScreenState extends State<ReclamationScreen> {
                                       vertical: 6,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: _getStatusColor(
+                                      color: _getStatusColorWithOpacity(
                                         r.statut,
-                                      ).withOpacity(0.1),
+                                      ),
                                       borderRadius: BorderRadius.circular(20),
                                     ),
                                     child: Text(

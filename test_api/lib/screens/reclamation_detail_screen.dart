@@ -14,13 +14,13 @@ class ReclamationDetailScreen extends StatefulWidget {
   });
 
   @override
-  State<ReclamationDetailScreen> createState() => _ReclamationDetailScreenState();
+  State<ReclamationDetailScreen> createState() =>
+      _ReclamationDetailScreenState();
 }
 
 class _ReclamationDetailScreenState extends State<ReclamationDetailScreen> {
   late Future<Reclamation> _reclamationFuture;
-  final TextEditingController _responseController = TextEditingController();
-  bool _sending = false;
+  // Suppression des variables inutilisées
 
   @override
   void initState() {
@@ -49,41 +49,53 @@ class _ReclamationDetailScreenState extends State<ReclamationDetailScreen> {
     }
   }
 
+  Color _getStatusColorWithOpacity(String status) {
+    switch (status.toLowerCase()) {
+      case 'résolue':
+        return const Color(0x1A4CAF50); // Vert avec 10% d'opacité
+      case 'en cours':
+        return const Color(0x1AF57C00); // Orange avec 10% d'opacité
+      case 'nouvelle':
+        return const Color(0x1AC62828); // Rouge avec 10% d'opacité
+      default:
+        return const Color(0x1A757575); // Gris avec 10% d'opacité
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Détails Réclamation"),
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.red.shade800, Colors.red.shade400],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-        ),
-      ),
+      appBar: AppBar(title: const Text("Détails Réclamation")),
       body: FutureBuilder<Reclamation>(
         future: _reclamationFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator(color: Colors.red.shade800));
+            return Center(
+              child: CircularProgressIndicator(color: Colors.red.shade800),
+            );
           }
-          
+
           if (snapshot.hasError) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.error_outline, size: 48, color: Colors.red.shade800),
+                  Icon(
+                    Icons.error_outline,
+                    size: 48,
+                    color: Colors.red.shade800,
+                  ),
                   const SizedBox(height: 16),
-                  Text("Erreur de chargement", 
-                      style: TextStyle(color: Colors.red.shade800)),
+                  Text(
+                    "Erreur de chargement",
+                    style: TextStyle(color: Colors.red.shade800),
+                  ),
                   TextButton(
-                    child: Text("Réessayer", 
-                        style: TextStyle(color: Colors.red.shade800)),
                     onPressed: _loadReclamation,
+                    child: Text(
+                      "Réessayer",
+                      style: TextStyle(color: Colors.red.shade800),
+                    ),
                   ),
                 ],
               ),
@@ -103,10 +115,12 @@ class _ReclamationDetailScreenState extends State<ReclamationDetailScreen> {
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.1),
+                      const BoxShadow(
+                        color: Color(
+                          0x1A9E9E9E,
+                        ), // Colors.grey avec 10% d'opacité
                         blurRadius: 8,
-                        offset: const Offset(0, 2),
+                        offset: Offset(0, 2),
                       ),
                     ],
                   ),
@@ -123,8 +137,11 @@ class _ReclamationDetailScreenState extends State<ReclamationDetailScreen> {
                       const SizedBox(height: 12),
                       Row(
                         children: [
-                          Icon(Icons.calendar_today, 
-                              size: 18, color: Colors.grey.shade600),
+                          Icon(
+                            Icons.calendar_today,
+                            size: 18,
+                            color: Colors.grey.shade600,
+                          ),
                           const SizedBox(width: 8),
                           Text(
                             _formatDate(reclamation.dateCreation),
@@ -135,9 +152,11 @@ class _ReclamationDetailScreenState extends State<ReclamationDetailScreen> {
                       const SizedBox(height: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
-                          color: _getStatusColor(reclamation.statut).withOpacity(0.1),
+                          color: _getStatusColorWithOpacity(reclamation.statut),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
                             color: _getStatusColor(reclamation.statut),
@@ -164,10 +183,12 @@ class _ReclamationDetailScreenState extends State<ReclamationDetailScreen> {
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.1),
+                      const BoxShadow(
+                        color: Color(
+                          0x1A9E9E9E,
+                        ), // Colors.grey avec 10% d'opacité
                         blurRadius: 8,
-                        offset: const Offset(0, 2),
+                        offset: Offset(0, 2),
                       ),
                     ],
                   ),
@@ -205,8 +226,10 @@ class _ReclamationDetailScreenState extends State<ReclamationDetailScreen> {
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.verified_user, 
-                                color: Colors.green.shade800),
+                            Icon(
+                              Icons.verified_user,
+                              color: Colors.green.shade800,
+                            ),
                             const SizedBox(width: 8),
                             Text(
                               "Réponse de l'administration",
