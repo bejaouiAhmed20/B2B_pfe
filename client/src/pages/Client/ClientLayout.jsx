@@ -55,8 +55,7 @@ const ClientLayout = () => {
   const userMenuItems = [
     { label: 'Mon Profil', path: '/client/profile' },
     { label: 'Demande Solde', path: '/client/request-solde' },
-          { label: 'Réclamations', path: '/client/reclamations' }
-,
+    { label: 'Réclamations', path: '/client/reclamations' },
     {
       label: 'Déconnexion',
       action: async () => {

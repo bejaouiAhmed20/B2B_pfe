@@ -18,6 +18,8 @@ import { Email } from '@mui/icons-material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import logo from '../../assets/Tunisair-Logo.png';
 
+import LockResetIcon from '@mui/icons-material/LockReset';
+
 const ForgetPassword = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
@@ -88,7 +90,7 @@ const ForgetPassword = () => {
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 3 }}>
-          <img
+            <img
               onClick={() => navigate('/client')}
               src={logo}
               alt="Tunisair Logo"
@@ -182,4 +184,3 @@ const ForgetPassword = () => {
 };
 
 export default ForgetPassword;
-

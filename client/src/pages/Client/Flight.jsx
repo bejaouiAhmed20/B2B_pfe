@@ -458,6 +458,7 @@ const Flight = () => {
       ) : (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           {filteredFlights.map((flight) => (
+<<<<<<< Updated upstream
             <Card
   key={flight.id}
   sx={{
@@ -631,6 +632,69 @@ const Flight = () => {
   </Box>
 </Card>
      
+=======
+            <Grid item xs={12} sm={6} md={4} key={flight.id}>
+              <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <CardContent sx={{ flexGrow: 1 }}>
+                  <Typography variant="h6" component="div" gutterBottom noWrap>
+                    {flight.titre}
+                  </Typography>
+                  
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <FlightTakeoff sx={{ mr: 1, color: '#CC0A2B', fontSize: '1rem' }} />
+                    <Typography variant="body2" noWrap>
+                      <strong>De:</strong> {flight.departureAirport || flight.airport_depart?.nom || 'N/A'}
+                    </Typography>
+                  </Box>
+                  
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <FlightLand sx={{ mr: 1, color: '#1976d2', fontSize: '1rem' }} />
+                    <Typography variant="body2" noWrap>
+                      <strong>À:</strong> {flight.arrivalAirport || flight.arrival_airport?.nom || 'N/A'}
+                    </Typography>
+                  </Box>
+                  
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <AccessTime sx={{ mr: 1, color: '#4caf50', fontSize: '1rem' }} />
+                    <Typography variant="body2">
+                      <strong>Date:</strong> {formatDate(flight.date_depart)}
+                    </Typography>
+                  </Box>
+                  
+                  <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+                  
+                    <Typography variant="h5" color="primary" sx={{ fontWeight: 'bold', mt: 1 }}>
+                      {flight.prix} DT
+                    </Typography>
+                  </Box>
+                  
+                  <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
+                    <Chip 
+                      label={isFlightAvailable(flight.date_depart) ? "Disponible" : "Complet"} 
+                      color={isFlightAvailable(flight.date_depart) ? "success" : "error"}
+                      size="small"
+                    />
+                  </Box>
+                </CardContent>
+                
+                <CardActions sx={{ justifyContent: 'center', p: 2 }}>
+                  <Button 
+                    variant="contained" 
+                    onClick={() => navigate(`/client/flights/${flight.id}`)}
+                    fullWidth
+                    sx={{ 
+                      backgroundColor: '#CC0A2B',
+                      '&:hover': {
+                        backgroundColor: '#A00823',
+                      }
+                    }}
+                  >
+                    Voir plus
+                  </Button>
+                </CardActions>
+              </Card>
+            </Grid>
+>>>>>>> Stashed changes
           ))}
         </Box>
       )}
