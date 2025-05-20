@@ -49,14 +49,14 @@ const ClientLayout = () => {
     news: [{ label: 'Actualités', path: '/client/news' }],
     reservations: [
       { label: 'Mes Réservations', path: '/client/reservations' },
-      { label: 'Tableau des Réservations', path: '/client/reservations-table' },
-      { label: 'Réclamations', path: '/client/reclamations' }
     ]
   };
 
   const userMenuItems = [
     { label: 'Mon Profil', path: '/client/profile' },
     { label: 'Demande Solde', path: '/client/request-solde' },
+          { label: 'Réclamations', path: '/client/reclamations' }
+,
     {
       label: 'Déconnexion',
       action: async () => {
