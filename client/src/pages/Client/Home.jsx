@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Container, 
-  Typography, 
-  Box, 
-  Grid, 
-  Card, 
+import {
+  Container,
+  Typography,
+  Box,
+  Grid,
+  Card,
   CardContent,
   Button,
   CardMedia,
@@ -68,14 +68,14 @@ const Home = () => {
       try {
         // Fetch flights
         const flightsResponse = await axios.get('http://localhost:5000/api/flights');
-        
+
         // Get only the first 3 flights for featured section
         // Filter for upcoming flights only
         const upcomingFlights = flightsResponse.data
         .filter(flight => new Date(flight.date_depart) > new Date())
         .sort((a, b) => new Date(a.date_depart) - new Date(b.date_depart))
         .slice(0, 3);
-        
+
         const flights = upcomingFlights.map(flight => ({
           id: flight.id,
           title: flight.titre,
@@ -85,9 +85,9 @@ const Home = () => {
           price: flight.prix,
           image_url: flight.image_url
         }));
-        
+
         setFeaturedFlights(flights);
-        
+
         // Create popular locations from locations data
         const locationsResponse = await axios.get('http://localhost:5000/api/locations');
         const locations = locationsResponse.data.slice(0, 6).map(location => ({
@@ -96,9 +96,9 @@ const Home = () => {
           country: location.pays || 'International',
           image_url: location.url_image || null
         }));
-        
+
         setPopularLocations(locations);
-        
+
         // Fetch news
         try {
           const newsResponse = await axios.get('http://localhost:5000/api/news');
@@ -127,14 +127,14 @@ const Home = () => {
             }
           ]);
         }
-        
+
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
         setLoading(false);
       }
     };
-    
+
     fetchData();
   }, []);
 
@@ -173,7 +173,7 @@ const Home = () => {
   return (
     <Box>
       {/* Hero Section - Enhanced with overlay and animation */}
-      <Box sx={{ 
+      <Box sx={{
         height: { xs: '400px', md: '600px' },
         backgroundImage: `linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url(https://images.unsplash.com/photo-1436491865332-7a61a109cc05?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1674&q=80)`,
         backgroundSize: 'cover',
@@ -198,23 +198,23 @@ const Home = () => {
         }
       }}>
         <Container sx={{ position: 'relative', zIndex: 2, animation: 'fadeIn 1.5s ease-in-out' }}>
-          <Typography 
-            variant="h2" 
-            gutterBottom 
+          <Typography
+            variant="h2"
+            gutterBottom
             fontWeight="bold"
-            sx={{ 
+            sx={{
               textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
               fontSize: { xs: '2rem', sm: '2.5rem', md: '3.5rem' }
             }}
           >
             Voyagez Avec Nous
           </Typography>
-          <Typography 
-            variant="h5" 
-            gutterBottom 
-            sx={{ 
-              mb: 4, 
-              maxWidth: '800px', 
+          <Typography
+            variant="h5"
+            gutterBottom
+            sx={{
+              mb: 4,
+              maxWidth: '800px',
               mx: 'auto',
               textShadow: '1px 1px 3px rgba(0,0,0,0.5)',
               fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' }
@@ -222,16 +222,16 @@ const Home = () => {
           >
             Découvrez le monde avec nos offres exclusives
           </Typography>
-          <Button 
-            variant="contained" 
-            component={Link} 
+          <Button
+            variant="contained"
+            component={Link}
             to="/client/flights"
             size="large"
             endIcon={<ArrowForwardIcon />}
-            sx={{ 
-              mt: 3, 
-              bgcolor: '#CC0A2B', 
-              '&:hover': { 
+            sx={{
+              mt: 3,
+              bgcolor: '#CC0A2B',
+              '&:hover': {
                 bgcolor: '#a00923',
                 transform: 'translateY(-3px)',
                 boxShadow: '0 6px 12px rgba(204, 10, 43, 0.3)'
@@ -250,8 +250,8 @@ const Home = () => {
       </Box>
 
       {/* Featured Flights - Enhanced card design to match destinations */}
-      <Box sx={{ 
-        bgcolor: '#f8f9fa', 
+      <Box sx={{
+        bgcolor: '#f8f9fa',
         py: { xs: 4, md: 8 },
         position: 'relative',
         '&::before': {
@@ -274,7 +274,7 @@ const Home = () => {
               Vols Récents
             </Typography>
           </Box>
-          
+
           {loading ? (
             renderSkeletonLoading()
           ) : (
@@ -288,8 +288,8 @@ const Home = () => {
               ) : (
                 featuredFlights.map((flight) => (
                   <Grid item xs={12} md={4} key={flight.id}>
-                    <Card 
-                      sx={{ 
+                    <Card
+                      sx={{
                         position: 'relative',
                         height: '100%',
                         borderRadius: '12px',
@@ -312,7 +312,7 @@ const Home = () => {
                         onError={(e) => {
                           e.target.src = NotFoundImage;
                         }}
-                        sx={{ 
+                        sx={{
                           objectFit: 'cover',
                           transition: 'transform 0.5s ease',
                           '&:hover': {
@@ -320,20 +320,20 @@ const Home = () => {
                           }
                         }}
                       />
-                      <Chip 
-                        label="Récent" 
+                      <Chip
+                        label="Récent"
                         size="small"
-                        sx={{ 
-                          position: 'absolute', 
-                          top: 10, 
-                          right: 10, 
-                          bgcolor: '#CC0A2B', 
+                        sx={{
+                          position: 'absolute',
+                          top: 10,
+                          right: 10,
+                          bgcolor: '#CC0A2B',
                           color: 'white',
                           fontWeight: 'bold'
                         }}
                       />
-                      <Box 
-                        sx={{ 
+                      <Box
+                        sx={{
                           position: 'absolute',
                           bottom: 0,
                           left: 0,
@@ -346,17 +346,17 @@ const Home = () => {
                         <Typography variant="h6" fontWeight="bold" gutterBottom>
                           {flight.title}
                         </Typography>
-                        
+
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                           <FlightIcon sx={{ color: 'white', mr: 1, fontSize: '1rem' }} />
                           <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
                             <Typography variant="body2" sx={{ fontWeight: 'medium', color: 'white' }}>
                               {flight.departure}
                             </Typography>
-                            <Box sx={{ 
-                              height: '1px', 
-                              bgcolor: 'rgba(255,255,255,0.5)', 
-                              flex: 1, 
+                            <Box sx={{
+                              height: '1px',
+                              bgcolor: 'rgba(255,255,255,0.5)',
+                              flex: 1,
                               mx: 1,
                               position: 'relative',
                               '&::after': {
@@ -376,26 +376,26 @@ const Home = () => {
                             </Typography>
                           </Box>
                         </Box>
-                        
+
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                           <CalendarTodayIcon sx={{ color: 'white', mr: 1, fontSize: '0.9rem' }} />
                           <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
                             {formatDate(flight.date)}
                           </Typography>
                         </Box>
-                        
+
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
                           <Typography variant="h6" sx={{ color: 'white', fontWeight: 'bold' }}>
                             {flight.price} DT
                           </Typography>
-                          <Button 
-                            size="small" 
+                          <Button
+                            size="small"
                             variant="outlined"
-                            sx={{ 
-                              color: 'white', 
+                            sx={{
+                              color: 'white',
                               borderColor: 'white',
                               borderRadius: '20px',
-                              '&:hover': { 
+                              '&:hover': {
                                 bgcolor: 'rgba(255,255,255,0.2)',
                                 borderColor: 'white'
                               }
@@ -411,20 +411,20 @@ const Home = () => {
               )}
             </Grid>
           )}
-          
+
           <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-            <Button 
-              variant="outlined" 
-              component={Link} 
+            <Button
+              variant="outlined"
+              component={Link}
               to="/client/flights"
               endIcon={<ArrowForwardIcon />}
-              sx={{ 
-                borderColor: '#CC0A2B', 
+              sx={{
+                borderColor: '#CC0A2B',
                 color: '#CC0A2B',
                 borderRadius: '30px',
                 px: 3,
-                '&:hover': { 
-                  borderColor: '#a00923', 
+                '&:hover': {
+                  borderColor: '#a00923',
                   backgroundColor: 'rgba(204, 10, 43, 0.04)',
                   transform: 'translateY(-2px)'
                 },
@@ -438,8 +438,8 @@ const Home = () => {
       </Box>
 
       {/* Popular Locations - Updated to show 6 destinations */}
-      <Box sx={{ 
-        bgcolor: 'white', 
+      <Box sx={{
+        bgcolor: 'white',
         py: { xs: 4, md: 8 },
         position: 'relative'
       }}>
@@ -452,7 +452,7 @@ const Home = () => {
               Destinations Populaires
             </Typography>
           </Box>
-          
+
           {loading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
               <CircularProgress sx={{ color: '#CC0A2B' }} />
@@ -469,7 +469,7 @@ const Home = () => {
                 // Modify this to show 6 destinations instead of 3
                 [...popularLocations, ...popularLocations].slice(0, 6).map((location, index) => (
                   <Grid item xs={12} sm={6} md={4} key={`${location.id}-${index}`}>
-                    <Card sx={{ 
+                    <Card sx={{
                       position: 'relative',
                       height: 280,
                       borderRadius: '12px',
@@ -496,7 +496,7 @@ const Home = () => {
                             : 'https://source.unsplash.com/random/?city'
                         }
                         alt={location.name}
-                        sx={{ 
+                        sx={{
                           objectFit: 'cover',
                           transition: 'transform 0.5s ease',
                           '&:hover': {
@@ -504,12 +504,12 @@ const Home = () => {
                           }
                         }}
                       />
-                      <Box 
+                      <Box
                         className="location-overlay"
-                        sx={{ 
-                          position: 'absolute', 
-                          top: 0, 
-                          left: 0, 
+                        sx={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
                           right: 0,
                           bottom: 0,
                           background: 'linear-gradient(to top, rgba(0,0,0,0.8) 30%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0.1))',
@@ -517,12 +517,12 @@ const Home = () => {
                           transition: 'opacity 0.3s ease'
                         }}
                       />
-                      <Box 
+                      <Box
                         className="location-content"
-                        sx={{ 
-                          position: 'absolute', 
-                          bottom: 0, 
-                          left: 0, 
+                        sx={{
+                          position: 'absolute',
+                          bottom: 0,
+                          left: 0,
                           right: 0,
                           p: 3,
                           color: 'white',
@@ -539,11 +539,13 @@ const Home = () => {
                             {location.country}
                           </Typography>
                         </Box>
-                        <Button 
-                          variant="outlined" 
+                        <Button
+                          variant="outlined"
                           size="small"
-                          sx={{ 
-                            color: 'white', 
+                          component={Link}
+                          to={`/client/locations/${location.id}`}
+                          sx={{
+                            color: 'white',
                             borderColor: 'white',
                             mt: 1,
                             '&:hover': {
@@ -569,13 +571,13 @@ const Home = () => {
         <Typography variant="h4" gutterBottom fontWeight="medium" sx={{ mb: 4, textAlign: 'center', fontSize: { xs: '1.5rem', md: '2rem' } }}>
           Nos Services
         </Typography>
-        
+
         <Grid container spacing={4}>
           {services.map((service) => (
             <Grid item xs={12} md={4} key={service.id}>
-              <Card sx={{ 
-                height: '100%', 
-                display: 'flex', 
+              <Card sx={{
+                height: '100%',
+                display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 textAlign: 'center',
@@ -590,10 +592,10 @@ const Home = () => {
                   borderColor: 'transparent'
                 }
               }}>
-                <Box sx={{ 
-                  mb: 3, 
-                  p: 2, 
-                  borderRadius: '50%', 
+                <Box sx={{
+                  mb: 3,
+                  p: 2,
+                  borderRadius: '50%',
                   bgcolor: 'rgba(204, 10, 43, 0.1)',
                   display: 'flex',
                   alignItems: 'center',
@@ -629,7 +631,7 @@ const Home = () => {
               Dernières Actualités
             </Typography>
           </Box>
-          
+
           {loading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
               <CircularProgress sx={{ color: '#CC0A2B' }} />
@@ -638,9 +640,9 @@ const Home = () => {
             <Grid container spacing={3}>
               {latestNews.slice(0, 3).map((news, index) => (
                 <Grid item xs={12} md={4} key={news.id}>
-                  <Card sx={{ 
-                    height: '100%', 
-                    display: 'flex', 
+                  <Card sx={{
+                    height: '100%',
+                    display: 'flex',
                     flexDirection: 'column',
                     borderRadius: '12px',
                     overflow: 'hidden',
@@ -651,10 +653,10 @@ const Home = () => {
                       boxShadow: '0 10px 20px rgba(0,0,0,0.1)'
                     }
                   }}>
-                    <Box sx={{ 
-                      p: 3, 
+                    <Box sx={{
+                      p: 3,
                       borderBottom: '1px solid #f0f0f0',
-                      background: index % 3 === 0 ? 'linear-gradient(135deg, #f8f9fa, #e9ecef)' : 
+                      background: index % 3 === 0 ? 'linear-gradient(135deg, #f8f9fa, #e9ecef)' :
                                index % 3 === 1 ? 'linear-gradient(135deg, #f8f9fa, #e2f0fd)' :
                                'linear-gradient(135deg, #f8f9fa, #ffeae9)'
                     }}>
@@ -675,14 +677,14 @@ const Home = () => {
                       </Typography>
                     </CardContent>
                     <Box sx={{ p: 2, pt: 0, borderTop: '1px solid #f0f0f0', textAlign: 'right' }}>
-                      <Button 
-                        size="small" 
-                        component={Link} 
+                      <Button
+                        size="small"
+                        component={Link}
                         to={`/client/news/${news.id}`}
                         endIcon={<ArrowForwardIcon />}
-                        sx={{ 
+                        sx={{
                           color: '#CC0A2B',
-                          '&:hover': { 
+                          '&:hover': {
                             backgroundColor: 'rgba(204, 10, 43, 0.04)',
                             transform: 'translateX(3px)'
                           },
@@ -697,20 +699,20 @@ const Home = () => {
               ))}
             </Grid>
           )}
-          
+
           <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-            <Button 
-              variant="outlined" 
-              component={Link} 
+            <Button
+              variant="outlined"
+              component={Link}
               to="/client/news"
               endIcon={<ArrowForwardIcon />}
-              sx={{ 
-                borderColor: '#CC0A2B', 
+              sx={{
+                borderColor: '#CC0A2B',
                 color: '#CC0A2B',
                 borderRadius: '30px',
                 px: 3,
-                '&:hover': { 
-                  borderColor: '#a00923', 
+                '&:hover': {
+                  borderColor: '#a00923',
                   backgroundColor: 'rgba(204, 10, 43, 0.04)',
                   transform: 'translateY(-2px)'
                 },

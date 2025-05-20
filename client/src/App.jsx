@@ -50,6 +50,7 @@ import ClientNews from './pages/Client/News';
 import NewsDetail from './pages/Client/NewsDetail';
 import ClientLayout from './pages/Client/ClientLayout';
 import FlightDescription from './pages/Client/FlightDescription';
+import LocationDetail from './pages/Client/LocationDetail';
 import Contact from './pages/Auth/Contact';
 import Login from './pages/Auth/Login';
 
@@ -82,6 +83,8 @@ function App() {
           {/* News routes */}
           <Route path="news" element={<ClientNews />} />
           <Route path="news/:id" element={<NewsDetail />} />
+          {/* Locations routes */}
+          <Route path="locations/:id" element={<LocationDetail />} />
         </Route>
 
         {/* Admin Routes - Protected with admin requirement */}
