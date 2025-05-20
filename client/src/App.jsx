@@ -8,6 +8,8 @@ import {
 import ErrorPage from './pages/ErrorPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import HomeRedirect from './components/HomeRedirect';
+import { PopupProvider } from './contexts/PopupContext';
+import PopupManager from './components/PopupManager';
 import DashboardHome from './pages/Admin/DashboardHome';
 import Flights from './pages/Admin/Flights';
 import Locations from './pages/Admin/Locations';
@@ -133,7 +135,12 @@ function App() {
     )
   );
 
-  return <RouterProvider router={router} />;
+  return (
+    <PopupProvider>
+      <RouterProvider router={router} />
+      <PopupManager />
+    </PopupProvider>
+  );
 }
 
 export default App;

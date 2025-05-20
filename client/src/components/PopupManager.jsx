@@ -18,54 +18,59 @@ import {
   CheckCircle as SuccessIcon,
   Error as ErrorIcon
 } from '@mui/icons-material';
+import { usePopup } from '../contexts/PopupContext';
 
 const Transition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
 });
 
 function PopupManager() {
-  const [popups, setPopups] = useState([]);
+  const { popups, loading, showPopups, resetTrigger } = usePopup();
   const [currentPopupIndex, setCurrentPopupIndex] = useState(0);
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [hasShownPopups, setHasShownPopups] = useState(false);
 
-  // Fetch active popups
+  // Show popup when triggered or automatically if not shown before
   useEffect(() => {
-    const fetchPopups = async () => {
-      try {
-        const response = await fetch('http://localhost:5000/api/popups/active');
-        if (response.ok) {
-          const data = await response.json();
-          setPopups(data);
-        }
-      } catch (error) {
-        console.error('Error fetching popups:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    // If popups are explicitly triggered (after login)
+    if (showPopups && popups.length > 0 && !loading) {
+      showNextPopup();
+      setHasShownPopups(true);
+    }
+    // If popups haven't been shown yet and we're not waiting for a trigger
+    else if (!hasShownPopups && popups.length > 0 && !loading && !showPopups) {
+      showNextPopup();
+      setHasShownPopups(true);
+    }
+  }, [popups, loading, showPopups, hasShownPopups]);
 
-    fetchPopups();
-  }, []);
+  // Function to show the next available popup
+  const showNextPopup = () => {
+    // Find the first popup that hasn't been seen yet
+    let nextIndex = currentPopupIndex;
+    let foundUnseen = false;
 
-  // Show popup if available
-  useEffect(() => {
-    if (popups.length > 0 && !loading) {
-      // Check if we've already seen this popup
-      const popupId = popups[currentPopupIndex].id;
+    while (nextIndex < popups.length && !foundUnseen) {
+      const popupId = popups[nextIndex].id;
       const lastSeen = localStorage.getItem(`popup_${popupId}_lastSeen`);
 
-      // If we've never seen this popup, show it
       if (!lastSeen) {
+        foundUnseen = true;
+        setCurrentPopupIndex(nextIndex);
         setOpen(true);
-      } else {
-        // Move to next popup
-        if (currentPopupIndex < popups.length - 1) {
-          setCurrentPopupIndex(currentPopupIndex + 1);
-        }
+        break;
       }
+
+      nextIndex++;
     }
-  }, [popups, currentPopupIndex, loading]);
+
+    // If we've gone through all popups and they've all been seen
+    if (!foundUnseen && showPopups) {
+      // If triggered after login, show the first popup anyway
+      setCurrentPopupIndex(0);
+      setOpen(true);
+    }
+  };
 
   const handleClose = () => {
     // Record that we've seen this popup
@@ -80,7 +85,11 @@ function PopupManager() {
     if (currentPopupIndex < popups.length - 1) {
       setTimeout(() => {
         setCurrentPopupIndex(currentPopupIndex + 1);
+        showNextPopup();
       }, 500);
+    } else {
+      // Reset the trigger when all popups have been shown
+      resetTrigger();
     }
   };
 
