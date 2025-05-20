@@ -53,7 +53,7 @@ import ExpandMore from '@mui/icons-material/ExpandMore';
 import FeedbackIcon from '@mui/icons-material/Feedback';
 import AirlinesIcon from '@mui/icons-material/Airlines';
 import EventSeatIcon from '@mui/icons-material/EventSeat';
-import axios from 'axios';
+import api from '../../services/api';
 import tunisairLogo from '../../assets/Tunisair-Logo.png';
 
 const drawerWidth = 260;
@@ -217,14 +217,33 @@ export default function DashboardLayout() {
 
   const handleLogout = async () => {
     try {
-      await axios.post('http://localhost:5000/api/auth/logout');
-      localStorage.removeItem('token');
+      console.log('Déconnexion en cours...');
+
+      // Utiliser le service API qui gère automatiquement les headers et cookies
+      await api.post('/auth/logout', {});
+
+      console.log('Réponse de déconnexion reçue, suppression des données locales');
+
+      // Supprimer les données d'authentification du localStorage
+      localStorage.removeItem('accessToken');
       localStorage.removeItem('user');
+
+      // Vider également sessionStorage par précaution
+      sessionStorage.clear();
+
+      console.log('Données d\'authentification supprimées, redirection vers la page de connexion');
+
+      // Rediriger vers la page de connexion
       navigate('/login');
     } catch (error) {
-      console.error('Logout failed:', error);
-      localStorage.removeItem('token');
+      console.error('Échec de la déconnexion:', error);
+
+      // Même en cas d'erreur, supprimer les données d'authentification
+      localStorage.removeItem('accessToken');
       localStorage.removeItem('user');
+      sessionStorage.clear();
+
+      // Rediriger vers la page de connexion
       navigate('/login');
     }
   };

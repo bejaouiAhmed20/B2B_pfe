@@ -1,5 +1,13 @@
 import React from 'react'
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import {
+  createBrowserRouter,
+  RouterProvider,
+  Route,
+  createRoutesFromElements
+} from 'react-router-dom';
+import ErrorPage from './pages/ErrorPage';
+import ProtectedRoute from './components/ProtectedRoute';
+import HomeRedirect from './components/HomeRedirect';
 import DashboardHome from './pages/Admin/DashboardHome';
 import Flights from './pages/Admin/Flights';
 import Locations from './pages/Admin/Locations';
@@ -46,15 +54,23 @@ import Contact from './pages/Auth/Contact';
 import Login from './pages/Auth/Login';
 
 function App() {
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Login />} />
+  const router = createBrowserRouter(
+    createRoutesFromElements(
+      <Route errorElement={<ErrorPage />}>
+        {/* Redirection intelligente de la page d'accueil */}
+        <Route path="/" element={<HomeRedirect />} />
         <Route path="/login" element={<Login />} />
         <Route path="/login-client" element={<LoginClient />} />
-        
-        {/* Client Routes */}
-        <Route path="/client" element={<ClientLayout />}>
+
+        {/* Client Routes - Protected */}
+        <Route
+          path="/client"
+          element={
+            <ProtectedRoute>
+              <ClientLayout />
+            </ProtectedRoute>
+          }
+        >
           <Route index element={<Home />} />
           <Route path="flights" element={<Flight />} />
           <Route path="flights/:id" element={<FlightDescription />} />
@@ -67,14 +83,21 @@ function App() {
           <Route path="news" element={<ClientNews />} />
           <Route path="news/:id" element={<NewsDetail />} />
         </Route>
-        
-        {/* Admin Routes */}
-        <Route path="/admin" element={<DashboardLayout />}>
+
+        {/* Admin Routes - Protected with admin requirement */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute requireAdmin={true}>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }
+        >
           <Route index element={<DashboardHome />} />
           <Route path="clients" element={<Clients />} />
           <Route path="clients/add" element={<AddClient />} />
           <Route path="flights" element={<Flights />} />
-          <Route path="flights/add" element={<AddFlight />} />   
+          <Route path="flights/add" element={<AddFlight />} />
           <Route path="locations" element={<Locations />} />
           <Route path="locations/add" element={<AddLocation />} />
           <Route path="airports" element={<Airports />} />
@@ -96,14 +119,15 @@ function App() {
           <Route path="seats" element={<Seats />} />
           <Route path="seats/add" element={<AddSeat />} />
         </Route>
-        
+
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
         <Route path="/contact" element={<Contact />} />
-
-      </Routes>
-    </BrowserRouter>
+      </Route>
+    )
   );
+
+  return <RouterProvider router={router} />;
 }
 
 export default App;

@@ -6,12 +6,53 @@ import '../models/reservation_model.dart';
 import '../models/compte_model.dart';
 import '../models/request_solde_model.dart';
 import '../models/news_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 
 class ApiService {
   static const String baseUrl =
       "http://localhost:5000/api"; // Change if you're not using Android emulator
 
   final Dio _dio = Dio();
+
+  ApiService() {
+    _initDio();
+  }
+
+  Future<void> _initDio() async {
+    // Get token from SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    final accessToken = prefs.getString('accessToken');
+
+    if (accessToken != null) {
+      _dio.options.headers['Authorization'] = 'Bearer $accessToken';
+
+      if (kDebugMode) {
+        print('API Service initialized with token');
+      }
+    }
+
+    // Add interceptor to handle 401 errors
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onError: (DioException error, ErrorInterceptorHandler handler) async {
+          if (error.response?.statusCode == 401) {
+            if (kDebugMode) {
+              print('Token expired, redirecting to login');
+            }
+
+            // Clear token and redirect to login
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.remove('accessToken');
+
+            // Let the error continue
+            return handler.next(error);
+          }
+          return handler.next(error);
+        },
+      ),
+    );
+  }
 
   Future<UserModel> fetchUserById(String id) async {
     final response = await _dio.get('$baseUrl/users/$id');
@@ -107,17 +148,24 @@ class ApiService {
       data: {"user_id": userId, "sujet": sujet, "description": description},
     );
   }
-  
+
   Future<Reclamation> getReclamationById(String id) async {
     final response = await _dio.get('$baseUrl/reclamations/$id');
     return Reclamation.fromJson(response.data);
   }
 
-  Future<void> sendFollowUpMessage(String id, String message, String userId) async {
-    await _dio.post('$baseUrl/reclamations/$id/messages', data: {
-      'content': message,
-      'sender_type': 'client', // adapt based on your backend
-      'sender_id': userId
-    });
-  } 
+  Future<void> sendFollowUpMessage(
+    String id,
+    String message,
+    String userId,
+  ) async {
+    await _dio.post(
+      '$baseUrl/reclamations/$id/messages',
+      data: {
+        'content': message,
+        'sender_type': 'client', // adapt based on your backend
+        'sender_id': userId,
+      },
+    );
+  }
 }

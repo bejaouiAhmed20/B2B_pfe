@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { 
-  Button, 
-  TextField, 
-  Typography, 
-  Paper, 
-  Alert, 
-  Box, 
+import {
+  Button,
+  TextField,
+  Typography,
+  Paper,
+  Alert,
+  Box,
   Container,
   InputAdornment,
   IconButton,
@@ -39,36 +39,66 @@ const LoginClient = () => {
     e.preventDefault();
     setLoading(true);
     setError('');
-    
+
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/loginClient', {
+      console.log('Tentative de connexion client avec:', { email: formData.email });
+
+      // Utiliser l'endpoint login-client spécifique
+      const response = await axios.post('http://localhost:5000/api/auth/login-client', {
         email: formData.email,
         mot_de_passe: formData.mot_de_passe
+      }, {
+        withCredentials: true // Important pour les cookies
       });
-      
-      // Check if token exists in response
-      if (!response.data.token) {
-        throw new Error('No token received from server');
+
+      console.log('Réponse du serveur:', response.data);
+
+      // Vérifier si le token d'accès existe dans la réponse
+      if (!response.data.accessToken) {
+        throw new Error('Aucun token reçu du serveur');
       }
-      
-      // Store token and user info in localStorage
-      localStorage.setItem('token', response.data.token);
+
+      // Stocker le token d'accès et les informations utilisateur dans localStorage
+      localStorage.setItem('accessToken', response.data.accessToken);
       localStorage.setItem('user', JSON.stringify(response.data.user));
-      
-      console.log('Login successful, token stored');
-      
-      // Check if there's a redirect path stored
+
+      console.log('Connexion réussie, token stocké');
+
+      // Vérifier si l'utilisateur est un administrateur (pour éviter les redirections incorrectes)
+      const user = response.data.user;
+      if (user.est_admin) {
+        console.log('Utilisateur admin détecté, redirection vers /admin');
+        navigate('/admin');
+        return;
+      }
+
+      // Vérifier s'il y a un chemin de redirection stocké
       const redirectPath = localStorage.getItem('redirectAfterLogin');
-      if (redirectPath) {
+      console.log('Chemin de redirection:', redirectPath);
+
+      if (redirectPath && redirectPath.startsWith('/client')) {
         localStorage.removeItem('redirectAfterLogin');
+        console.log('Redirection vers:', redirectPath);
         navigate(redirectPath);
       } else {
-        // Default redirect to client dashboard
+        // Redirection par défaut vers le tableau de bord client
+        console.log('Redirection par défaut vers /client');
         navigate('/client');
       }
     } catch (error) {
-      console.error('Login error:', error);
-      setError(error.response?.data?.message || 'Une erreur est survenue lors de la connexion. Veuillez vérifier vos identifiants.');
+      console.error('Erreur de connexion:', error);
+
+      // Afficher un message d'erreur détaillé
+      if (error.response) {
+        // Le serveur a répondu avec un statut d'erreur
+        setError(error.response.data?.message || `Erreur ${error.response.status}: ${error.response.statusText}`);
+      } else if (error.request) {
+        // La requête a été faite mais pas de réponse reçue
+        setError('Aucune réponse du serveur. Veuillez vérifier votre connexion internet.');
+      } else {
+        // Une erreur s'est produite lors de la configuration de la requête
+        setError(`Erreur: ${error.message}`);
+      }
     } finally {
       setLoading(false);
     }
@@ -99,10 +129,10 @@ const LoginClient = () => {
           backgroundColor: 'rgba(0, 0, 0, 0.5)',
         }}
       />
-      
+
       <Container maxWidth="sm" sx={{ position: 'relative', zIndex: 2 }}>
-        <Paper 
-          elevation={6} 
+        <Paper
+          elevation={6}
           sx={{
             p: 4,
             borderRadius: 2,
@@ -116,31 +146,31 @@ const LoginClient = () => {
               src={logo}
               alt="Tunisair Logo"
               style={{ height: 50, marginRight: 10, cursor: 'pointer' }}
-            />        
+            />
           </Box>
-          
+
           <Typography variant="h5" component="h2" gutterBottom align="center" sx={{ mb: 1, fontWeight: 500 }}>
             Espace Client Professionnel
           </Typography>
-          
+
           <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 3 }}>
             Connectez-vous pour accéder à votre espace client
           </Typography>
-          
+
           {error && (
             <Alert severity="error" sx={{ mb: 3 }}>
               {error}
             </Alert>
           )}
-          
+
           <form onSubmit={handleSubmit}>
-            <TextField 
-              label="Email" 
+            <TextField
+              label="Email"
               name="email"
               value={formData.email}
               onChange={handleChange}
-              variant="outlined" 
-              fullWidth 
+              variant="outlined"
+              fullWidth
               required
               margin="normal"
               InputProps={{
@@ -152,14 +182,14 @@ const LoginClient = () => {
               }}
               sx={{ mb: 2 }}
             />
-            <TextField 
-              label="Mot de passe" 
+            <TextField
+              label="Mot de passe"
               name="mot_de_passe"
               value={formData.mot_de_passe}
               onChange={handleChange}
               type={showPassword ? "text" : "password"}
-              variant="outlined" 
-              fullWidth 
+              variant="outlined"
+              fullWidth
               required
               margin="normal"
               InputProps={{
@@ -181,13 +211,13 @@ const LoginClient = () => {
               }}
               sx={{ mb: 3 }}
             />
-            <Button 
-              type="submit" 
-              variant="contained" 
+            <Button
+              type="submit"
+              variant="contained"
               fullWidth
               disabled={loading}
-              sx={{ 
-                py: 1.2, 
+              sx={{
+                py: 1.2,
                 backgroundColor: '#CC0A2B',
                 '&:hover': { backgroundColor: '#a00823' },
                 fontWeight: 'bold',
@@ -196,13 +226,13 @@ const LoginClient = () => {
             >
               {loading ? <CircularProgress size={24} color="inherit" /> : 'Se connecter'}
             </Button>
-            
+
             <Divider sx={{ my: 2 }}>
               <Typography variant="body2" color="text.secondary">
                 Options
               </Typography>
             </Divider>
-            
+
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
               <Link to="/forgot-password" style={{ textDecoration: 'none' }}>
                 <MuiLink component="span" underline="hover" sx={{ color: '#CC0A2B' }}>

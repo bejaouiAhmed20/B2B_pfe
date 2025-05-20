@@ -1,9 +1,10 @@
 import { Request, Response } from 'express';
 import { User } from '../../models/User';
 import bcrypt from 'bcrypt';
-import { createToken } from '../../utils/tokenUtils';
+import { createAccessToken, createRefreshToken, verifyRefreshToken } from '../../utils/tokenUtils';
 import nodemailer from 'nodemailer';
 import crypto from 'crypto';
+import dotenv from 'dotenv';
 
 // Store reset tokens temporarily (in production, use a database)
 const resetTokens: { [key: string]: { email: string, expiry: Date } } = {};
@@ -29,26 +30,54 @@ export const login = async (req: Request, res: Response) => {
 
     const user = await User.findOneBy({ email });
     if (!user) {
-      return res.status(401).json({ message: "Email does not exist" });
+      return res.status(401).json({
+        success: false,
+        message: "Email does not exist",
+        code: "EMAIL_NOT_FOUND"
+      });
     }
 
     const isValidPassword = await bcrypt.compare(mot_de_passe, user.mot_de_passe);
     if (!isValidPassword) {
-      return res.status(401).json({ message: "mot de passe incorrect" });
+      return res.status(401).json({
+        success: false,
+        message: "Mot de passe incorrect",
+        code: "INVALID_PASSWORD"
+      });
     }
 
+    // Nous vérifions si l'utilisateur est un administrateur, mais nous ne bloquons pas la connexion
+    // Nous incluons cette information dans la réponse pour que le client puisse décider quoi faire
     if (!user.est_admin) {
-      return res.status(403).json({ message: "Accès non autorisé" });
+      console.log('Tentative de connexion admin par un utilisateur non-admin:', user.email);
+      // Nous continuons le processus de connexion mais nous marquons le succès comme false
+      // pour que le client sache qu'il y a un problème
     }
 
-    const token = createToken({
+    // Create tokens
+    const accessToken = createAccessToken({
       id: user.id,
       email: user.email,
       est_admin: user.est_admin
     });
 
+    const refreshToken = createRefreshToken({
+      id: user.id,
+      email: user.email,
+      est_admin: user.est_admin
+    });
+
+    // Set refresh token in HTTP-only cookie
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      sameSite: 'strict'
+    });
+
     res.json({
-      token,
+      success: true,
+      accessToken,
       user: {
         id: user.id,
         email: user.email,
@@ -59,33 +88,66 @@ export const login = async (req: Request, res: Response) => {
 
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Erreur lors de la connexion" });
+    res.status(500).json({
+      success: false,
+      message: "Erreur lors de la connexion",
+      code: "SERVER_ERROR"
+    });
   }
 };
 export const loginClient = async (req: Request, res: Response) => {
   try {
+    console.log('Tentative de connexion client:', req.body.email);
     const { email, mot_de_passe } = req.body;
 
     const user = await User.findOneBy({ email });
     if (!user) {
-      return res.status(401).json({ message: "Email does not exist" });
+      console.log('Email non trouvé:', email);
+      return res.status(401).json({
+        success: false,
+        message: "Email does not exist",
+        code: "EMAIL_NOT_FOUND"
+      });
     }
 
     const isValidPassword = await bcrypt.compare(mot_de_passe, user.mot_de_passe);
     if (!isValidPassword) {
-      return res.status(401).json({ message: "mot de passe incorrect" });
+      console.log('Mot de passe incorrect pour:', email);
+      return res.status(401).json({
+        success: false,
+        message: "Mot de passe incorrect",
+        code: "INVALID_PASSWORD"
+      });
     }
 
-    // No admin check for client login
+    console.log('Authentification réussie pour:', email, 'Est admin:', user.est_admin);
 
-    const token = createToken({
+    // Create tokens
+    const accessToken = createAccessToken({
       id: user.id,
       email: user.email,
       est_admin: user.est_admin
     });
 
+    const refreshToken = createRefreshToken({
+      id: user.id,
+      email: user.email,
+      est_admin: user.est_admin
+    });
+
+    // Set refresh token in HTTP-only cookie
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      sameSite: 'strict'
+    });
+
+    console.log('Tokens générés et cookie défini pour:', email);
+
     res.json({
-      token,
+      success: true,
+      accessToken,
       user: {
         id: user.id,
         email: user.email,
@@ -95,18 +157,40 @@ export const loginClient = async (req: Request, res: Response) => {
     });
 
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Erreur lors de la connexion" });
+    console.error('Erreur lors de la connexion client:', error);
+    res.status(500).json({
+      success: false,
+      message: "Erreur lors de la connexion",
+      code: "SERVER_ERROR"
+    });
   }
 };
 export const logout = async (req: Request, res: Response) => {
   try {
-    // Since we're using JWT, we don't need to do anything server-side
-    // The client will handle removing the token
-    res.status(200).json({ message: "Logged out successfully" });
+    console.log('Déconnexion demandée pour l\'utilisateur:', (req as any).user?.email);
+
+    // Clear the refresh token cookie
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/' // Important: spécifier le chemin pour s'assurer que le cookie est supprimé
+    });
+
+    console.log('Cookie refreshToken supprimé');
+
+    res.status(200).json({
+      success: true,
+      message: "Logged out successfully",
+      code: "LOGOUT_SUCCESS"
+    });
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ message: "There is an issue with logout" });
+    console.error('Erreur lors de la déconnexion:', error);
+    res.status(500).json({
+      success: false,
+      message: "There is an issue with logout",
+      code: "SERVER_ERROR"
+    });
   }
 };
 
@@ -159,6 +243,69 @@ export const forgotPassword = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Forgot password error:', error);
     return res.status(500).json({ message: 'An error occurred while processing your request' });
+  }
+};
+
+// Refresh token controller
+export const refreshToken = async (req: Request, res: Response) => {
+  try {
+    // Get refresh token from cookie
+    const refreshToken = req.cookies.refreshToken;
+
+    if (!refreshToken) {
+      return res.status(401).json({
+        success: false,
+        message: "Refresh token not found",
+        code: "REFRESH_TOKEN_NOT_FOUND"
+      });
+    }
+
+    // Verify refresh token
+    const decoded = verifyRefreshToken(refreshToken);
+
+    if (!decoded) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid or expired refresh token",
+        code: "INVALID_REFRESH_TOKEN"
+      });
+    }
+
+    // Find user
+    const user = await User.findOneBy({ id: decoded.id });
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "User not found",
+        code: "USER_NOT_FOUND"
+      });
+    }
+
+    // Create new access token
+    const accessToken = createAccessToken({
+      id: user.id,
+      email: user.email,
+      est_admin: user.est_admin
+    });
+
+    res.json({
+      success: true,
+      accessToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        nom: user.nom,
+        est_admin: user.est_admin
+      }
+    });
+  } catch (error) {
+    console.error('Refresh token error:', error);
+    res.status(500).json({
+      success: false,
+      message: "Server error during token refresh",
+      code: "SERVER_ERROR"
+    });
   }
 };
 

@@ -7,13 +7,27 @@ import { emailTransporter, formatDateFr, formatEuro } from '../../utils/emailCon
 // Get all requests
 export const getRequests = async (req: Request, res: Response) => {
   try {
+    console.log('Fetching all request-solde entries');
+
+    // Vérifier l'authentification
+    console.log('User authenticated:', (req as any).user?.id);
+    console.log('User is admin:', (req as any).user?.est_admin);
+
     const requests = await RequestSolde.find({
-      relations: ['client']
+      relations: ['client'],
+      order: { date: 'DESC' }
     });
+
+    console.log(`Found ${requests.length} request-solde entries`);
+
     res.json(requests);
   } catch (error) {
     console.error('Failed to fetch requests:', error);
-    res.status(500).json({ message: 'Failed to fetch requests' });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch requests',
+      error: (error as any).message
+    });
   }
 };
 
@@ -24,11 +38,11 @@ export const getRequestById = async (req: Request, res: Response) => {
       where: { id: req.params.id },
       relations: ['client']
     });
-    
+
     if (!request) {
       return res.status(404).json({ message: 'Request not found' });
     }
-    
+
     res.json(request);
   } catch (error) {
     console.error('Failed to fetch request:', error);
@@ -44,7 +58,7 @@ export const getRequestsByClientId = async (req: Request, res: Response) => {
       relations: ['client'],
       order: { date: 'DESC' }
     });
-    
+
     res.json(requests);
   } catch (error) {
     console.error('Failed to fetch client requests:', error);
@@ -56,20 +70,20 @@ export const getRequestsByClientId = async (req: Request, res: Response) => {
 export const createRequest = async (req: Request, res: Response) => {
   try {
     const { client_id, montant, description, imageUrl } = req.body;
-    
+
     // Check if client exists
     const client = await User.findOneBy({ id: client_id });
     if (!client) {
       return res.status(404).json({ message: 'Client not found' });
     }
-    
+
     const request = new RequestSolde();
     request.client = client;
     request.montant = montant;
     request.description = description;
     request.imageUrl = imageUrl;
     request.status = RequestStatus.PENDING;
-    
+
     await request.save();
     res.status(201).json(request);
   } catch (error) {
@@ -82,37 +96,37 @@ export const createRequest = async (req: Request, res: Response) => {
 export const updateRequestStatus = async (req: Request, res: Response) => {
   try {
     const { status } = req.body;
-    
+
     if (!Object.values(RequestStatus).includes(status)) {
       return res.status(400).json({ message: 'Invalid status' });
     }
-    
+
     const request = await RequestSolde.findOne({
       where: { id: req.params.id },
       relations: ['client']
     });
-    
+
     if (!request) {
       return res.status(404).json({ message: 'Request not found' });
     }
-    
+
     // If approving the request, add the amount to the client's account
     if (status === RequestStatus.APPROVED && request.status !== RequestStatus.APPROVED) {
       const compte = await Compte.findOne({
         where: { user: { id: request.client.id } }
       });
-      
+
       if (!compte) {
         return res.status(404).json({ message: 'Client account not found' });
       }
-      
+
       compte.solde += Number(request.montant);
       await compte.save();
     }
-    
+
     request.status = status;
     await request.save();
-    
+
     res.json(request);
   } catch (error) {
     console.error('Failed to update request status:', error);
@@ -124,11 +138,11 @@ export const updateRequestStatus = async (req: Request, res: Response) => {
 export const deleteRequest = async (req: Request, res: Response) => {
   try {
     const request = await RequestSolde.findOneBy({ id: req.params.id });
-    
+
     if (!request) {
       return res.status(404).json({ message: 'Request not found' });
     }
-    
+
     await request.remove();
     res.status(200).json({ message: 'Request deleted successfully' });
   } catch (error) {
@@ -141,39 +155,39 @@ export const deleteRequest = async (req: Request, res: Response) => {
 export const approveRequest = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    
+
     const request = await RequestSolde.findOne({
       where: { id },
       relations: ['client']
     });
-    
+
     if (!request) {
       return res.status(404).json({ message: 'Request not found' });
     }
-    
+
     if (request.status !== RequestStatus.PENDING) {
       return res.status(400).json({ message: 'This request has already been processed' });
     }
-    
+
     // Update request status to approved
     request.status = RequestStatus.APPROVED;
     await request.save();
-    
+
     // Find the client's account
     const compte = await Compte.findOne({
       where: { user: { id: request.client.id } }
     });
-    
+
     if (!compte) {
       return res.status(404).json({ message: 'Client account not found' });
     }
-    
+
     // Add the requested amount to the client's account
     const currentSolde = parseFloat(compte.solde.toString());
     const amountToAdd = parseFloat(request.montant.toString());
     compte.solde = currentSolde + amountToAdd;
     await compte.save();
-    
+
     // Send email notification
     try {
       // Make sure we have a valid email address
@@ -184,9 +198,9 @@ export const approveRequest = async (req: Request, res: Response) => {
         const requestDate = formatDateFr(request.date);
         const approvalDate = formatDateFr(new Date());
         const montantFormatted = formatEuro(parseFloat(request.montant.toString()));
-        
+
         console.log(`Preparing to send approval email to: ${request.client.email}`);
-        
+
         const htmlContent = `
           <!DOCTYPE html>
           <html>
@@ -211,7 +225,7 @@ export const approveRequest = async (req: Request, res: Response) => {
                 <h2>Notification de Demande de Solde</h2>
                 <p>Bonjour ${clientName},</p>
                 <p>Nous vous informons que votre demande de solde a été <span class="success">approuvée</span>.</p>
-                
+
                 <div class="details">
                   <h3>Détails de la demande:</h3>
                   <p><strong>Montant:</strong> ${montantFormatted}</p>
@@ -219,7 +233,7 @@ export const approveRequest = async (req: Request, res: Response) => {
                   <p><strong>Date d'approbation:</strong> ${approvalDate}</p>
                   <p><strong>Statut:</strong> <span class="success">Approuvée</span></p>
                 </div>
-                
+
                 <p>Le montant a été ajouté à votre compte. Votre nouveau solde est de ${formatEuro(parseFloat(compte.solde.toString()))}.</p>
                 <p>Merci de votre confiance.</p>
                 <p>Cordialement,<br>L'équipe Tunisair B2B</p>
@@ -231,22 +245,22 @@ export const approveRequest = async (req: Request, res: Response) => {
           </body>
           </html>
         `;
-        
+
         const mailResult = await emailTransporter.sendMail({
           from: process.env.EMAIL_USER || 'noreply@tunisairb2b.com',
           to: request.client.email,
           subject: 'Tunisair B2B - Votre demande de solde a été approuvée',
           html: htmlContent
         });
-        
+
         console.log('Approval email sent successfully:', mailResult.messageId);
       }
     } catch (emailError) {
       console.error('Failed to send approval email:', emailError);
       // Continue with the process even if email fails
     }
-    
-    res.status(200).json({ 
+
+    res.status(200).json({
       message: 'Request approved successfully',
       request,
       compte: {
@@ -256,9 +270,9 @@ export const approveRequest = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('Error approving request:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Failed to approve request',
-      error: error.message 
+      error: error.message
     });
   }
 };
@@ -267,24 +281,24 @@ export const approveRequest = async (req: Request, res: Response) => {
 export const rejectRequest = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    
+
     const request = await RequestSolde.findOne({
       where: { id },
       relations: ['client']
     });
-    
+
     if (!request) {
       return res.status(404).json({ message: 'Request not found' });
     }
-    
+
     if (request.status !== RequestStatus.PENDING) {
       return res.status(400).json({ message: 'This request has already been processed' });
     }
-    
+
     // Update request status to rejected
     request.status = RequestStatus.REJECTED;
     await request.save();
-    
+
     // Send email notification
     try {
       // Make sure we have a valid email address
@@ -295,9 +309,9 @@ export const rejectRequest = async (req: Request, res: Response) => {
         const requestDate = formatDateFr(request.date);
         const rejectionDate = formatDateFr(new Date());
         const montantFormatted = formatEuro(parseFloat(request.montant.toString()));
-        
+
         console.log(`Preparing to send rejection email to: ${request.client.email}`);
-        
+
         const htmlContent = `
           <!DOCTYPE html>
           <html>
@@ -322,7 +336,7 @@ export const rejectRequest = async (req: Request, res: Response) => {
                 <h2>Notification de Demande de Solde</h2>
                 <p>Bonjour ${clientName},</p>
                 <p>Nous vous informons que votre demande de solde a été <span class="rejected">rejetée</span>.</p>
-                
+
                 <div class="details">
                   <h3>Détails de la demande:</h3>
                   <p><strong>Montant:</strong> ${montantFormatted}</p>
@@ -330,7 +344,7 @@ export const rejectRequest = async (req: Request, res: Response) => {
                   <p><strong>Date de rejet:</strong> ${rejectionDate}</p>
                   <p><strong>Statut:</strong> <span class="rejected">Rejetée</span></p>
                 </div>
-                
+
                 <p>Pour plus d'informations, veuillez contacter notre service client.</p>
                 <p>Cordialement,<br>L'équipe Tunisair B2B</p>
               </div>
@@ -341,30 +355,30 @@ export const rejectRequest = async (req: Request, res: Response) => {
           </body>
           </html>
         `;
-        
+
         const mailResult = await emailTransporter.sendMail({
           from: process.env.EMAIL_USER || 'noreply@tunisairb2b.com',
           to: request.client.email,
           subject: 'Tunisair B2B - Votre demande de solde a été rejetée',
           html: htmlContent
         });
-        
+
         console.log('Rejection email sent successfully:', mailResult.messageId);
       }
     } catch (emailError) {
       console.error('Failed to send rejection email:', emailError);
       // Continue with the process even if email fails
     }
-    
-    res.status(200).json({ 
+
+    res.status(200).json({
       message: 'Request rejected successfully',
       request
     });
   } catch (error: any) {
     console.error('Error rejecting request:', error);
-    res.status(500).json({ 
-      message: 'Failed to reject request', 
-      error: error.message 
+    res.status(500).json({
+      message: 'Failed to reject request',
+      error: error.message
     });
   }
 };

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:my_test_api/widgets/MainScaffold.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -24,14 +25,29 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final response = await _dio.post(
-        'http://localhost:5000/api/auth/loginClient',
+        'http://localhost:5000/api/auth/login-client',
         data: {'email': email, 'mot_de_passe': password},
+        options: Options(
+          // Enable cookies
+          receiveDataWhenStatusError: true,
+          followRedirects: false,
+          validateStatus: (status) {
+            return status! < 500;
+          },
+        ),
       );
 
       if (response.statusCode == 200) {
         final userId = response.data['user']['id'];
+        final accessToken = response.data['accessToken'];
+
+        // Store both userId and accessToken
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('userId', userId);
+        await prefs.setString('accessToken', accessToken);
+
+        // Configure Dio with the token for future requests
+        _dio.options.headers['Authorization'] = 'Bearer $accessToken';
 
         if (mounted) {
           Navigator.pushReplacement(
@@ -43,6 +59,9 @@ class _LoginScreenState extends State<LoginScreen> {
         _showError("Identifiants incorrects");
       }
     } catch (e) {
+      if (kDebugMode) {
+        print("Login error: $e");
+      }
       _showError("Erreur de connexion");
     } finally {
       setState(() => _isLoading = false);

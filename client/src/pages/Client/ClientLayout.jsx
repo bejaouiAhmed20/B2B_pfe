@@ -23,7 +23,7 @@ import logo from '../../assets/Tunisair-Logo.png';
 
 const ClientLayout = () => {
   const navigate = useNavigate();
-  const isLoggedIn = localStorage.getItem('token') && localStorage.getItem('user');
+  const isLoggedIn = localStorage.getItem('accessToken') && localStorage.getItem('user');
   const user = isLoggedIn ? JSON.parse(localStorage.getItem('user')) : null;
   const [anchorEl, setAnchorEl] = useState(null);
   const [userAnchorEl, setUserAnchorEl] = useState(null);
@@ -59,10 +59,27 @@ const ClientLayout = () => {
     { label: 'Demande Solde', path: '/client/request-solde' },
     {
       label: 'Déconnexion',
-      action: () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.href = '/login-client';
+      action: async () => {
+        try {
+          // Appeler l'API de déconnexion avec withCredentials pour supprimer le cookie
+          await fetch('http://localhost:5000/api/auth/logout', {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+              'Content-Type': 'application/json'
+            }
+          });
+        } catch (error) {
+          console.error('Logout error:', error);
+        } finally {
+          // Supprimer les données d'authentification du localStorage
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('user');
+
+          // Rediriger vers la page de connexion
+          window.location.href = '/login-client';
+        }
       }
     }
   ];

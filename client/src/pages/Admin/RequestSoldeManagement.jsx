@@ -31,7 +31,7 @@ import {
   Visibility,
   HourglassEmpty
 } from '@mui/icons-material';
-import axios from 'axios';
+import api from '../../services/api';
 
 const RequestSoldeManagement = () => {
   const [requests, setRequests] = useState([]);
@@ -50,8 +50,8 @@ const RequestSoldeManagement = () => {
   const fetchRequests = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      
+      const token = localStorage.getItem('accessToken');
+
       if (!token) {
         setError('Authentication required');
         setSnackbar({
@@ -63,11 +63,11 @@ const RequestSoldeManagement = () => {
         return;
       }
 
-      // Use the correct endpoint that matches your server routes
-      const response = await axios.get('http://localhost:5000/api/request-solde', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
+      console.log('Fetching requests with token:', token.substring(0, 20) + '...');
+
+      // Utiliser le service API qui gère automatiquement les headers d'authentification
+      const response = await api.get('/request-solde');
+
       setRequests(response.data);
       setLoading(false);
     } catch (error) {
@@ -77,7 +77,7 @@ const RequestSoldeManagement = () => {
         console.error('Response data:', error.response.data);
         console.error('Response status:', error.response.status);
       }
-      
+
       setError('Erreur lors du chargement des demandes');
       setSnackbar({
         open: true,
@@ -123,13 +123,16 @@ const RequestSoldeManagement = () => {
 
   const handleApproveRequest = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       const request = confirmDialog.request;
-      
-      const response = await axios.put(`http://localhost:5000/api/request-solde/${request.id}/approve`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
+
+      if (!token) {
+        showSnackbar('Authentification requise', 'error');
+        return;
+      }
+
+      const response = await api.put(`/request-solde/${request.id}/approve`, {});
+
       showSnackbar(`Demande approuvée avec succès. ${parseFloat(request.montant).toFixed(2)} € ajoutés au compte client.`);
       handleConfirmDialogClose();
       fetchRequests();
@@ -142,13 +145,16 @@ const RequestSoldeManagement = () => {
 
   const handleRejectRequest = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       const request = confirmDialog.request;
-      
-      const response = await axios.put(`http://localhost:5000/api/request-solde/${request.id}/reject`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
+
+      if (!token) {
+        showSnackbar('Authentification requise', 'error');
+        return;
+      }
+
+      const response = await api.put(`/request-solde/${request.id}/reject`, {});
+
       showSnackbar('Demande rejetée avec succès');
       handleConfirmDialogClose();
       fetchRequests();
@@ -182,7 +188,7 @@ const RequestSoldeManagement = () => {
       <Typography variant="h4" gutterBottom>
         Gestion des Demandes de Solde
       </Typography>
-      
+
       <TableContainer component={Paper} sx={{ mt: 3 }}>
         <Table>
           <TableHead>
@@ -216,25 +222,25 @@ const RequestSoldeManagement = () => {
                     <TableCell>{getStatusChip(request.status)}</TableCell>
                     <TableCell>
                       <Box sx={{ display: 'flex', gap: 1 }}>
-                        <IconButton 
-                          color="primary" 
+                        <IconButton
+                          color="primary"
                           onClick={() => handleViewRequest(request)}
                           size="small"
                         >
                           <Visibility />
                         </IconButton>
-                        
+
                         {request.status === 'pending' && (
                           <>
-                            <IconButton 
-                              color="success" 
+                            <IconButton
+                              color="success"
                               onClick={() => handleConfirmDialogOpen('approve', request)}
                               size="small"
                             >
                               <CheckCircle />
                             </IconButton>
-                            <IconButton 
-                              color="error" 
+                            <IconButton
+                              color="error"
                               onClick={() => handleConfirmDialogOpen('reject', request)}
                               size="small"
                             >
@@ -259,7 +265,7 @@ const RequestSoldeManagement = () => {
           onRowsPerPageChange={handleChangeRowsPerPage}
         />
       </TableContainer>
-      
+
       {/* View Request Dialog */}
       <Dialog open={viewDialog.open} onClose={handleCloseViewDialog} maxWidth="md">
         <DialogTitle>Détails de la Demande</DialogTitle>
@@ -288,22 +294,22 @@ const RequestSoldeManagement = () => {
                     <Typography><strong>Téléphone:</strong> {viewDialog.request.client?.numero_telephone || 'Non disponible'}</Typography>
                   </CardContent>
                 </Card>
-                
+
                 {viewDialog.request.imageUrl && (
                   <Card sx={{ mt: 2 }}>
                     <CardContent>
                       <Typography variant="h6" gutterBottom>Justificatif</Typography>
                       <Box sx={{ textAlign: 'center', mt: 2 }}>
-                        <img 
-                          src={`http://localhost:5000${viewDialog.request.imageUrl}`} 
-                          alt="Justificatif" 
-                          style={{ maxWidth: '100%', maxHeight: '300px' }} 
+                        <img
+                          src={`http://localhost:5000${viewDialog.request.imageUrl}`}
+                          alt="Justificatif"
+                          style={{ maxWidth: '100%', maxHeight: '300px' }}
                         />
                       </Box>
                     </CardContent>
                     <CardActions>
-                      <Button 
-                        size="small" 
+                      <Button
+                        size="small"
                         onClick={() => window.open(`http://localhost:5000${viewDialog.request.imageUrl}`, '_blank')}
                       >
                         Voir en plein écran
@@ -318,20 +324,20 @@ const RequestSoldeManagement = () => {
         <DialogActions>
           {viewDialog.request && viewDialog.request.status === 'pending' && (
             <>
-              <Button 
+              <Button
                 onClick={() => {
                   handleCloseViewDialog();
                   handleConfirmDialogOpen('approve', viewDialog.request);
-                }} 
+                }}
                 color="success"
               >
                 Approuver
               </Button>
-              <Button 
+              <Button
                 onClick={() => {
                   handleCloseViewDialog();
                   handleConfirmDialogOpen('reject', viewDialog.request);
-                }} 
+                }}
                 color="error"
               >
                 Rejeter
@@ -341,7 +347,7 @@ const RequestSoldeManagement = () => {
           <Button onClick={handleCloseViewDialog}>Fermer</Button>
         </DialogActions>
       </Dialog>
-      
+
       {/* Confirm Dialog */}
       <Dialog open={confirmDialog.open} onClose={handleConfirmDialogClose}>
         <DialogTitle>
@@ -349,7 +355,7 @@ const RequestSoldeManagement = () => {
         </DialogTitle>
         <DialogContent>
           <Typography>
-            {confirmDialog.type === 'approve' 
+            {confirmDialog.type === 'approve'
               ? `Êtes-vous sûr de vouloir approuver cette demande de ${confirmDialog.request?.montant} € ? Le montant sera ajouté au solde du client.`
               : 'Êtes-vous sûr de vouloir rejeter cette demande ?'
             }
@@ -357,7 +363,7 @@ const RequestSoldeManagement = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleConfirmDialogClose}>Annuler</Button>
-          <Button 
+          <Button
             onClick={confirmDialog.type === 'approve' ? handleApproveRequest : handleRejectRequest}
             color={confirmDialog.type === 'approve' ? 'success' : 'error'}
             variant="contained"
@@ -366,14 +372,14 @@ const RequestSoldeManagement = () => {
           </Button>
         </DialogActions>
       </Dialog>
-      
+
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
       >
-        <Alert 
-          onClose={handleCloseSnackbar} 
+        <Alert
+          onClose={handleCloseSnackbar}
           severity={snackbar.severity}
           sx={{ width: '100%' }}
         >

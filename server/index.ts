@@ -7,6 +7,7 @@ import express from 'express';
 import { DataSource } from 'typeorm';
 import cors from 'cors';
 import path from 'path';
+import cookieParser from 'cookie-parser';
 import userRoutes from './routes/UserRoutes/userRoutes';
 import flightRoutes from './routes/FlightRoutes/flightRoutes';
 import locationRoutes from './routes/LocationRoutes/locationRoutes';
@@ -52,6 +53,7 @@ app.use(cors({
 
 // Parse JSON request bodies
 app.use(express.json());
+app.use(cookieParser());
 
 // Serve static files from uploads directory
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
@@ -93,19 +95,19 @@ const AppDataSource = new DataSource({
   password: "",
   database: "b2b_db4",
   entities: [
-    User, 
-    Flight, 
-    Location, 
-    Airport, 
-    News, 
-    Coupon, 
-    Reservation, 
-    Compte, 
-    RequestSolde, 
-    Contract, 
-    Reclamation, 
-    Plane, 
-    Seat, 
+    User,
+    Flight,
+    Location,
+    Airport,
+    News,
+    Coupon,
+    Reservation,
+    Compte,
+    RequestSolde,
+    Contract,
+    Reclamation,
+    Plane,
+    Seat,
     SeatReservation,
     FlightSeatReservation
   ],
