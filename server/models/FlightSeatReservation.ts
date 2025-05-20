@@ -16,13 +16,13 @@ export class FlightSeatReservation extends BaseEntity {
   @JoinColumn({ name: 'seat_id' })
   seat!: Seat;
 
-  @ManyToOne(() => Reservation, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Reservation, { onDelete: 'CASCADE', nullable: true })
   @JoinColumn({ name: 'reservation_id' })
-  reservation!: Reservation;
+  reservation!: Reservation | null;
 
   @Column({ default: false })
   isReserved!: boolean;
-  
+
   @Column('timestamp', { default: () => 'CURRENT_TIMESTAMP' })
   date!: Date;
 }

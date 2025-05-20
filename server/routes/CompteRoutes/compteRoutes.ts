@@ -1,16 +1,18 @@
 import express from 'express';
-import { 
-  getComptes, 
-  getCompteById, 
+import {
+  getComptes,
+  getCompteById,
   getCompteByUserId,
-  addCompte, 
-  updateCompte, 
+  addCompte,
+  updateCompte,
   deleteCompte,
   addFunds,
   withdrawFunds,
   addFundsByUserId,
-  updateBalance
+  updateBalance,
+  refundReservation
 } from '../../controllers/CompteController/compteController';
+import { auth } from '../../middlewares/authMiddleware';
 
 const router = express.Router();
 
@@ -34,6 +36,9 @@ router.post('/:id/add-funds', addFunds as express.RequestHandler);
 
 // Add funds to account by user ID
 router.post('/deposit', addFundsByUserId as express.RequestHandler);
+
+// Process refund for cancelled reservation
+router.post('/refund', auth as express.RequestHandler, refundReservation as express.RequestHandler);
 
 // Withdraw funds from account
 router.post('/:id/withdraw-funds', withdrawFunds as express.RequestHandler );

@@ -126,13 +126,111 @@ const Reservations = () => {
       }
 
       // Use the cancelReservation endpoint with the API service
-      await api.put(`/reservations/${reservation.id}/cancel`, {
-        isRefundEligible:
-          (reservation.class_type === 'economy' && reservation.fare_type === 'light') ||
-          (reservation.class_type === 'Affaires')
+      // Règles de remboursement:
+      // - Classe Affaires: toujours remboursable
+      // - Classe Economy: remboursable seulement avec tarif FLEX (pas LIGHT ou CLASSIC)
+      const isRefundEligible =
+        (reservation.class_type === 'Affaires') ||
+        (reservation.class_type === 'economy' && reservation.fare_type === 'flex');
+
+      console.log(`Annulation réservation: classe ${reservation.class_type}, tarif ${reservation.fare_type}, remboursable: ${isRefundEligible}`);
+
+      // Assurons-nous que isRefundEligible est bien un booléen
+      // Forcer la valeur à true ou false explicitement
+      const refundEligible = isRefundEligible === true;
+      console.log(`Envoi de la requête d'annulation avec isRefundEligible=${refundEligible} (type: ${typeof refundEligible})`);
+
+      // Utiliser une requête directe pour éviter toute transformation par le service API
+      const response = await fetch(`http://localhost:5000/api/reservations/${reservation.id}/cancel`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        },
+        body: JSON.stringify({
+          isRefundEligible: refundEligible
+        })
       });
 
-      setSuccessMessage('Réservation annulée avec succès! Votre compte a été remboursé.');
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Erreur lors de l\'annulation:', errorText);
+        throw new Error(`Erreur lors de l'annulation: ${response.status} - ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log('Réponse du serveur après annulation:', result);
+
+      // Utiliser le message retourné par le serveur
+      const message = result.message || (refundEligible
+        ? 'Réservation annulée avec succès! Le montant a été remboursé sur votre compte.'
+        : 'Réservation annulée avec succès! Aucun remboursement n\'est applicable selon les conditions tarifaires.');
+
+      setSuccessMessage(message);
+
+      // Si le remboursement a réussi et que le nouveau solde est disponible, mettre à jour le localStorage
+      if (result.refundSuccess && result.newBalance !== null && result.newBalance !== undefined) {
+        try {
+          const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+          if (currentUser && currentUser.id) {
+            // S'assurer que l'objet compte existe
+            if (!currentUser.compte) {
+              currentUser.compte = {};
+            }
+
+            // Mettre à jour le solde
+            currentUser.compte.solde = result.newBalance;
+            localStorage.setItem('user', JSON.stringify(currentUser));
+            console.log('Solde mis à jour directement depuis la réponse du serveur:', result.newBalance);
+          }
+        } catch (error) {
+          console.error('Erreur lors de la mise à jour du localStorage:', error);
+        }
+      }
+
+      // Si le remboursement n'a pas été confirmé par le serveur ou si le nouveau solde n'est pas disponible,
+      // essayer de récupérer le solde à jour
+      if (!result.refundSuccess && refundEligible) {
+        try {
+          // Attendre un court instant pour s'assurer que le serveur a eu le temps de traiter le remboursement
+          await new Promise(resolve => setTimeout(resolve, 1000));
+
+          // Récupérer le compte de l'utilisateur pour obtenir le solde à jour
+          const userId = JSON.parse(localStorage.getItem('user')).id;
+          console.log(`Récupération du compte pour l'utilisateur ${userId}`);
+
+          const compteResponse = await fetch(`http://localhost:5000/api/comptes/user/${userId}`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+            }
+          });
+
+          if (compteResponse.ok) {
+            const compteData = await compteResponse.json();
+            console.log('Données du compte mises à jour:', compteData);
+
+            // Mettre à jour les données utilisateur dans le localStorage
+            if (compteData && compteData.solde !== undefined) {
+              console.log('Nouveau solde après annulation:', compteData.solde);
+
+              // Mettre à jour le solde dans les données utilisateur stockées
+              const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+              if (currentUser && currentUser.id) {
+                // S'assurer que l'objet compte existe
+                if (!currentUser.compte) {
+                  currentUser.compte = {};
+                }
+
+                currentUser.compte.solde = compteData.solde;
+                localStorage.setItem('user', JSON.stringify(currentUser));
+                console.log('Données utilisateur mises à jour dans le localStorage');
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Erreur lors de la récupération des données utilisateur:', error);
+        }
+      }
 
       // Refresh the reservations list
       fetchUserReservations();
@@ -522,20 +620,40 @@ const Reservations = () => {
             Êtes-vous sûr de vouloir annuler cette réservation ? Cette action ne peut pas être annulée.
           </DialogContentText>
           {cancelDialog.reservationId && (
-            <DialogContentText sx={{ mt: 2 }}>
-              {(() => {
-                const reservation = reservations.find(r => r.id === cancelDialog.reservationId);
-                if (!reservation) return '';
+            <>
+              <DialogContentText sx={{ mt: 2 }}>
+                {(() => {
+                  const reservation = reservations.find(r => r.id === cancelDialog.reservationId);
+                  if (!reservation) return '';
 
-                const isRefundEligible =
-                  (reservation.class_type === 'economy' && reservation.fare_type === 'light') ||
-                  (reservation.class_type === 'Affaires');
+                  // Règles de remboursement:
+                  // - Classe Affaires: toujours remboursable
+                  // - Classe Economy: remboursable seulement avec tarif FLEX (pas LIGHT ou CLASSIC)
+                  const isRefundEligible =
+                    (reservation.class_type === 'Affaires') ||
+                    (reservation.class_type === 'economy' && reservation.fare_type === 'flex');
 
-                return isRefundEligible
-                  ? "Vous êtes éligible à un remboursement pour cette annulation."
-                  : "Cette annulation ne donne pas droit à un remboursement selon nos conditions.";
-              })()}
-            </DialogContentText>
+                  return isRefundEligible
+                    ? "Vous êtes éligible à un remboursement pour cette annulation. Le montant sera crédité sur votre compte."
+                    : "Cette annulation ne donne pas droit à un remboursement selon nos conditions tarifaires.";
+                })()}
+              </DialogContentText>
+
+              <Box sx={{ mt: 2, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+                <Typography variant="subtitle2" gutterBottom>
+                  Conditions de remboursement:
+                </Typography>
+                <Typography variant="body2">
+                  • Classe Affaires: Remboursement intégral pour toute annulation
+                </Typography>
+                <Typography variant="body2">
+                  • Classe Économique avec tarif FLEX: Remboursement intégral
+                </Typography>
+                <Typography variant="body2">
+                  • Classe Économique avec tarif LIGHT ou CLASSIC: Non remboursable
+                </Typography>
+              </Box>
+            </>
           )}
         </DialogContent>
         <DialogActions>
