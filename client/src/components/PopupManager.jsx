@@ -30,49 +30,75 @@ function PopupManager() {
   const [open, setOpen] = useState(false);
   const [hasShownPopups, setHasShownPopups] = useState(false);
 
-  // Show popup when triggered or automatically if not shown before
+  // Check if we're on a login page to prevent showing popups there
+  const location = window.location.pathname;
+  const isLoginPage = location === '/login' || location === '/login-client';
+
+  // Show popup ONLY when explicitly triggered (after login)
   useEffect(() => {
-    // If popups are explicitly triggered (after login)
+    // Don't show popups on login pages
+    if (isLoginPage) {
+      console.log('On login page, not showing popups');
+      return;
+    }
+
+    // Only show popups when explicitly triggered (after login)
     if (showPopups && popups.length > 0 && !loading) {
+      console.log('Showing popups after login trigger');
       showNextPopup();
       setHasShownPopups(true);
     }
-    // If popups haven't been shown yet and we're not waiting for a trigger
-    else if (!hasShownPopups && popups.length > 0 && !loading && !showPopups) {
-      showNextPopup();
-      setHasShownPopups(true);
-    }
-  }, [popups, loading, showPopups, hasShownPopups]);
+    // Remove the automatic display without trigger
+  }, [popups, loading, showPopups, isLoginPage]);
 
   // Function to show the next available popup
   const showNextPopup = () => {
-    // Find the first popup that hasn't been seen yet
-    let nextIndex = currentPopupIndex;
-    let foundUnseen = false;
+    console.log('showNextPopup called, current index:', currentPopupIndex);
 
-    while (nextIndex < popups.length && !foundUnseen) {
-      const popupId = popups[nextIndex].id;
+    // Create an array of popup indices that haven't been seen yet
+    const unseenPopups = [];
+
+    // Check all popups to find unseen ones
+    for (let i = 0; i < popups.length; i++) {
+      const popupId = popups[i].id;
       const lastSeen = localStorage.getItem(`popup_${popupId}_lastSeen`);
 
       if (!lastSeen) {
-        foundUnseen = true;
-        setCurrentPopupIndex(nextIndex);
-        setOpen(true);
-        break;
+        unseenPopups.push(i);
       }
-
-      nextIndex++;
     }
 
-    // If we've gone through all popups and they've all been seen
-    if (!foundUnseen && showPopups) {
-      // If triggered after login, show the first popup anyway
+    console.log('Unseen popups:', unseenPopups);
+
+    // If we have unseen popups, show the first one
+    if (unseenPopups.length > 0) {
+      const nextIndex = unseenPopups[0];
+      console.log('Showing unseen popup at index:', nextIndex);
+      setCurrentPopupIndex(nextIndex);
+      setOpen(true);
+    }
+    // If all popups have been seen but we're triggered after login
+    else if (showPopups && !hasShownPopups) {
+      console.log('All popups seen, but showing first one after login');
+      // Reset all "seen" statuses in localStorage
+      popups.forEach(popup => {
+        localStorage.removeItem(`popup_${popup.id}_lastSeen`);
+      });
+
+      // Show the first popup
       setCurrentPopupIndex(0);
       setOpen(true);
+    }
+    // If all popups have been seen and we've already shown popups in this session
+    else {
+      console.log('All popups seen and already shown in this session, resetting trigger');
+      resetTrigger();
     }
   };
 
   const handleClose = () => {
+    console.log('handleClose called for popup index:', currentPopupIndex);
+
     // Record that we've seen this popup
     if (popups.length > 0) {
       const popupId = popups[currentPopupIndex].id;
@@ -81,20 +107,41 @@ function PopupManager() {
 
     setOpen(false);
 
-    // Check if there are more popups to show
-    if (currentPopupIndex < popups.length - 1) {
-      setTimeout(() => {
-        setCurrentPopupIndex(currentPopupIndex + 1);
-        showNextPopup();
-      }, 500);
-    } else {
-      // Reset the trigger when all popups have been shown
-      resetTrigger();
+    // Find all unseen popups
+    const unseenPopups = [];
+    for (let i = 0; i < popups.length; i++) {
+      // Skip the current popup we just closed
+      if (i === currentPopupIndex) continue;
+
+      const popupId = popups[i].id;
+      const lastSeen = localStorage.getItem(`popup_${popupId}_lastSeen`);
+      if (!lastSeen) {
+        unseenPopups.push(i);
+      }
     }
+
+    console.log('Remaining unseen popups:', unseenPopups);
+
+    // If there are no more unseen popups, reset the trigger
+    if (unseenPopups.length === 0) {
+      console.log('No more unseen popups, resetting trigger');
+      resetTrigger();
+      return;
+    }
+
+    // Show the next unseen popup
+    const nextIndex = unseenPopups[0];
+    console.log('Showing next unseen popup at index:', nextIndex);
+
+    // Use setTimeout to avoid immediate reopening
+    setTimeout(() => {
+      setCurrentPopupIndex(nextIndex);
+      setOpen(true);
+    }, 500);
   };
 
-  // If no popups or still loading, don't render anything
-  if (popups.length === 0 || loading || currentPopupIndex >= popups.length) {
+  // If no popups, still loading, on login page, or invalid index, don't render anything
+  if (popups.length === 0 || loading || isLoginPage || currentPopupIndex >= popups.length) {
     return null;
   }
 
@@ -183,13 +230,17 @@ function PopupManager() {
               <img
                 src={currentPopup.image_url.startsWith('http')
                   ? currentPopup.image_url
-                  : `http://localhost:5000${currentPopup.image_url}`}
+                  : `http://localhost:5000${currentPopup.image_url.startsWith('/') ? '' : '/'}${currentPopup.image_url}`}
                 alt={currentPopup.title}
                 style={{
                   maxWidth: '100%',
                   maxHeight: '200px',
                   objectFit: 'contain',
                   borderRadius: '4px'
+                }}
+                onError={(e) => {
+                  console.error('Image loading error:', currentPopup.image_url);
+                  e.target.style.display = 'none';
                 }}
               />
             </Box>

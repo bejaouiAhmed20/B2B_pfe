@@ -20,6 +20,17 @@ export const PopupProvider = ({ children }) => {
 
   // Function to trigger popup display
   const triggerPopups = () => {
+    console.log('Triggering popups after login');
+
+    // Clear any previously seen popups from localStorage
+    // This ensures popups are shown again after login
+    popups.forEach(popup => {
+      localStorage.removeItem(`popup_${popup.id}_lastSeen`);
+    });
+
+    // Set a flag in localStorage to indicate this is a login trigger
+    localStorage.setItem('popup_login_trigger', 'true');
+
     setShowPopups(true);
   };
 
@@ -30,7 +41,20 @@ export const PopupProvider = ({ children }) => {
       const response = await fetch('http://localhost:5000/api/popups/active');
       if (response.ok) {
         const data = await response.json();
-        setPopups(data);
+
+        // Log the received popups for debugging
+        console.log('Fetched popups:', data);
+
+        // Filter out popups with invalid image URLs
+        const validPopups = data.map(popup => {
+          // Ensure image_url is properly formatted
+          if (popup.image_url && !popup.image_url.startsWith('http') && !popup.image_url.startsWith('/')) {
+            popup.image_url = '/' + popup.image_url;
+          }
+          return popup;
+        });
+
+        setPopups(validPopups);
       }
     } catch (error) {
       console.error('Error fetching popups:', error);
@@ -46,6 +70,11 @@ export const PopupProvider = ({ children }) => {
 
   // Reset the trigger when popups are closed
   const resetTrigger = () => {
+    console.log('Resetting popup trigger');
+
+    // Remove the login trigger flag
+    localStorage.removeItem('popup_login_trigger');
+
     setShowPopups(false);
   };
 
