@@ -235,7 +235,7 @@ class _ReservationBottomSheetState extends State<ReservationBottomSheet> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  'Coupon applied with ${(_originalPrice - _totalPrice).toStringAsFixed(2)}€ discount',
+                  'Coupon applied with ${(_originalPrice - _totalPrice).toStringAsFixed(2)} TND discount',
                 ),
                 backgroundColor: Colors.green.shade800,
               ),
@@ -599,7 +599,7 @@ class _ReservationBottomSheetState extends State<ReservationBottomSheet> {
                           Expanded(
                             child: Text(
                               'Coupon applied: ${_appliedCoupon!['code'] ?? _couponController.text}'
-                              '${_originalPrice > _totalPrice ? ' (${(_originalPrice - _totalPrice).toStringAsFixed(2)}€ discount)' : ' (no discount available)'}',
+                              '${_originalPrice > _totalPrice ? ' (${(_originalPrice - _totalPrice).toStringAsFixed(2)} TND discount)' : ' (no discount available)'}',
                               style: TextStyle(color: Colors.green[700]),
                             ),
                           ),

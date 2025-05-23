@@ -5,8 +5,12 @@ import { auth, adminAuth } from '../../middlewares/authMiddleware';
 
 const router = express.Router();
 
-// Route for general file upload
-router.post('/', upload.single('file'), uploadFile as express.RequestHandler);
+// Route for general file upload (authenticated users only)
+router.post('/',
+  auth as express.RequestHandler,
+  upload.single('file'),
+  uploadFile as express.RequestHandler
+);
 
 // Route for popup image upload (admin only)
 router.post('/popup-image',

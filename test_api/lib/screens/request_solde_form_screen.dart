@@ -1,8 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:my_test_api/services/api_service.dart';
-import 'package:my_test_api/screens/request_solde_list_screen.dart';
+import 'package:my_test_api/screens/request_solde_list_screen_fixed.dart';
+import 'package:my_test_api/screens/login_screen.dart';
 
 class RequestSoldeFormScreen extends StatefulWidget {
   final String userId;
@@ -29,6 +32,36 @@ class _RequestSoldeFormScreenState extends State<RequestSoldeFormScreen> {
 
     setState(() => _isSubmitting = true);
     try {
+      // Vérifier si le token est présent
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('accessToken');
+
+      if (token == null) {
+        if (kDebugMode) {
+          print('No access token found when submitting request');
+        }
+
+        // Rediriger vers l'écran de connexion
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Session expirée, veuillez vous reconnecter'),
+              backgroundColor: Colors.red,
+            ),
+          );
+
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const LoginScreen()),
+            (route) => false,
+          );
+        }
+        return;
+      }
+
+      if (kDebugMode) {
+        print('Submitting request with token: ${token.substring(0, 10)}...');
+      }
+
       await ApiService().submitRequestSolde(
         clientId: widget.userId,
         montant: double.parse(_montantController.text),
@@ -56,14 +89,42 @@ class _RequestSoldeFormScreenState extends State<RequestSoldeFormScreen> {
         );
       }
     } catch (e) {
+      if (kDebugMode) {
+        print('Error submitting request: $e');
+      }
+
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur: ${e.toString()}'),
-            backgroundColor: Colors.red.shade800,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        // Vérifier si c'est une erreur d'authentification
+        if (e.toString().contains('401') ||
+            e.toString().contains('Authentication required') ||
+            e.toString().contains('token')) {
+          // Effacer les tokens et rediriger vers la connexion
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.remove('accessToken');
+          await prefs.remove('userId');
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Session expirée, veuillez vous reconnecter'),
+                backgroundColor: Colors.red,
+              ),
+            );
+
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (context) => const LoginScreen()),
+              (route) => false,
+            );
+          }
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Erreur: ${e.toString()}'),
+              backgroundColor: Colors.red.shade800,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
       }
     }
     setState(() => _isSubmitting = false);
@@ -171,14 +232,14 @@ class _RequestSoldeFormScreenState extends State<RequestSoldeFormScreen> {
                     border: Border.all(
                       color:
                           _selectedImage == null
-                              ? primaryColor.withOpacity(0.3)
+                              ? primaryColor.withAlpha(76) // 0.3 * 255 = 76
                               : Colors.transparent,
                       width: 2,
                       style: BorderStyle.solid,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withAlpha(13), // 0.05 * 255 = 13
                         blurRadius: 10,
                         offset: const Offset(0, 5),
                       ),
@@ -257,7 +318,9 @@ class _RequestSoldeFormScreenState extends State<RequestSoldeFormScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   elevation: 2,
-                  disabledBackgroundColor: primaryColor.withOpacity(0.6),
+                  disabledBackgroundColor: primaryColor.withAlpha(
+                    153,
+                  ), // 0.6 * 255 = 153
                 ),
                 child:
                     _isSubmitting

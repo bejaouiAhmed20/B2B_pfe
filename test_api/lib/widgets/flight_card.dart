@@ -8,11 +8,11 @@ class FlightCard extends StatelessWidget {
   final VoidCallback? onTap;
 
   const FlightCard({
-    Key? key,
+    super.key,
     required this.flight,
     required this.userId,
     this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
