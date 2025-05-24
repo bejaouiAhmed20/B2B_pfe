@@ -17,9 +17,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Visibility, VisibilityOff, Email, Lock } from '@mui/icons-material';
 import logo from '../../assets/Tunisair-Logo.png';
+import { usePopup } from '../../contexts/PopupContext';
 
 const LoginClient = () => {
   const navigate = useNavigate();
+  const { triggerPopups } = usePopup();
   const [formData, setFormData] = useState({
     email: '',
     mot_de_passe: ''
@@ -47,7 +49,8 @@ const LoginClient = () => {
       // Créer une instance axios séparée pour éviter les redirections automatiques
       const axiosInstance = axios.create({
         baseURL: 'http://localhost:5000/api',
-        withCredentials: true // Important pour les cookies
+        withCredentials: true, // Important pour les cookies
+        timeout: 10000 // Augmenter le timeout à 10 secondes
       });
 
       const response = await axiosInstance.post('/auth/login-client', {
@@ -79,6 +82,9 @@ const LoginClient = () => {
         navigate('/admin');
         return;
       }
+
+      // Déclencher l'affichage des popups après la connexion
+      triggerPopups();
 
       // Vérifier s'il y a un chemin de redirection stocké
       const redirectPath = localStorage.getItem('redirectAfterLogin');

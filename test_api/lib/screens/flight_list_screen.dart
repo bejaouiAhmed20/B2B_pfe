@@ -7,7 +7,9 @@ import '../widgets/flight_card.dart';
 import 'flight_detail_screen.dart';
 
 class FlightListScreen extends StatefulWidget {
-  const FlightListScreen({super.key});
+  final String? userId;
+
+  const FlightListScreen({super.key, this.userId});
 
   @override
   State<FlightListScreen> createState() => _FlightListScreenState();
@@ -28,8 +30,13 @@ class _FlightListScreenState extends State<FlightListScreen> {
   @override
   void initState() {
     super.initState();
+    // Utiliser l'ID utilisateur passé en paramètre s'il est disponible
+    if (widget.userId != null) {
+      _userId = widget.userId;
+    } else {
+      _loadUserId();
+    }
     fetchFlights(); // Fetch initial data
-    _loadUserId();
   }
 
   Future<void> _loadUserId() async {
@@ -61,7 +68,7 @@ class _FlightListScreenState extends State<FlightListScreen> {
         });
       }
     } catch (e) {
-      print("Error fetching flights: $e");
+      // Utiliser ScaffoldMessenger au lieu de print pour les erreurs
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Erreur lors du chargement des vols: $e")),

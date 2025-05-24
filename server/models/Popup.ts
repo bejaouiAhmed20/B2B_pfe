@@ -29,9 +29,6 @@ export class Popup extends BaseEntity {
   @Column({ default: 0 })
   display_order!: number;
 
-  @Column({ default: 7 })
-  duration_days!: number;
-
   @CreateDateColumn()
   created_at!: Date;
 
@@ -40,7 +37,7 @@ export class Popup extends BaseEntity {
 
   @Column({ type: "varchar", nullable: true })
   start_date!: string;
-  
+
   @Column({ type: "varchar", nullable: true })
   end_date!: string;
 }

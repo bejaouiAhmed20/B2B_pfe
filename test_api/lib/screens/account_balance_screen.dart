@@ -26,7 +26,7 @@ class _AccountBalanceScreenState extends State<AccountBalanceScreen> {
 
   String formatCurrency(double value) {
     return NumberFormat.currency(
-      symbol: "€",
+      symbol: "TND",
       decimalDigits: 2,
       locale: "fr_FR",
     ).format(value);

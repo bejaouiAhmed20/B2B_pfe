@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/compte_model.dart';
 import '../models/request_solde_model.dart';
 import '../services/api_service.dart';
+import 'login_screen.dart';
 import 'request_solde_form_screen.dart';
-import 'request_solde_list_screen.dart';
+import 'request_solde_list_screen_fixed.dart';
+import 'solde_request_detail.dart';
 
 class AccountScreen extends StatefulWidget {
   final String userId;
 
-  const AccountScreen({Key? key, required this.userId}) : super(key: key);
+  const AccountScreen({super.key, required this.userId});
 
   @override
   State<AccountScreen> createState() => _AccountScreenState();
@@ -34,6 +38,29 @@ class _AccountScreenState extends State<AccountScreen> {
     });
 
     try {
+      // Vérifier si le token est présent
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('accessToken');
+
+      if (token == null) {
+        if (kDebugMode) {
+          print('No access token found in account screen');
+        }
+
+        // Rediriger vers l'écran de connexion
+        if (mounted) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const LoginScreen()),
+            (route) => false,
+          );
+        }
+        return;
+      }
+
+      if (kDebugMode) {
+        print('Fetching account data with token: ${token.substring(0, 10)}...');
+      }
+
       // Récupérer le compte de l'utilisateur
       final compte = await ApiService().getCompteByUserId(widget.userId);
 
@@ -48,11 +75,39 @@ class _AccountScreenState extends State<AccountScreen> {
         });
       }
     } catch (e) {
+      if (kDebugMode) {
+        print('Error in account screen: $e');
+      }
+
       if (mounted) {
-        setState(() {
-          _error = e.toString();
-          _isLoading = false;
-        });
+        // Vérifier si c'est une erreur d'authentification
+        if (e.toString().contains('401') ||
+            e.toString().contains('Authentication required') ||
+            e.toString().contains('token')) {
+          // Effacer les tokens et rediriger vers la connexion
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.remove('accessToken');
+          await prefs.remove('userId');
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Session expirée, veuillez vous reconnecter'),
+                backgroundColor: Colors.red,
+              ),
+            );
+
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (context) => const LoginScreen()),
+              (route) => false,
+            );
+          }
+        } else {
+          setState(() {
+            _error = e.toString();
+            _isLoading = false;
+          });
+        }
       }
     }
   }
@@ -68,19 +123,19 @@ class _AccountScreenState extends State<AccountScreen> {
       case 'pending':
         return {
           'color': Colors.orange,
-          'text': 'PENDING',
+          'text': 'En attente',
           'icon': Icons.hourglass_empty,
         };
       case 'approved':
         return {
           'color': Colors.green,
-          'text': 'APPROVED',
+          'text': 'Approuvée',
           'icon': Icons.check_circle,
         };
       case 'rejected':
-        return {'color': Colors.red, 'text': 'REJECTED', 'icon': Icons.cancel};
+        return {'color': Colors.red, 'text': 'Rejetée', 'icon': Icons.cancel};
       default:
-        return {'color': Colors.grey, 'text': 'UNKNOWN', 'icon': Icons.help};
+        return {'color': Colors.grey, 'text': 'Inconnu', 'icon': Icons.help};
     }
   }
 
@@ -232,7 +287,7 @@ class _AccountScreenState extends State<AccountScreen> {
                                   ),
                                   const SizedBox(height: 16),
                                   Text(
-                                    '${_compte!.solde.toStringAsFixed(2)} €',
+                                    '${_compte!.solde.toStringAsFixed(2)} TND',
                                     style: const TextStyle(
                                       fontSize: 32,
                                       fontWeight: FontWeight.bold,
@@ -332,9 +387,11 @@ class _AccountScreenState extends State<AccountScreen> {
                                       context,
                                       MaterialPageRoute(
                                         builder:
-                                            (context) => RequestSoldeListScreen(
-                                              userId: widget.userId,
-                                            ),
+                                            (context) =>
+                                                SoldeRequestDetailScreen(
+                                                  userId: widget.userId,
+                                                  requestId: request.id,
+                                                ),
                                       ),
                                     );
                                   },
@@ -360,7 +417,11 @@ class _AccountScreenState extends State<AccountScreen> {
                                               borderRadius:
                                                   BorderRadius.circular(8),
                                               child: Image.network(
-                                                'http://localhost:5000${request.imageUrl}',
+                                                request.imageUrl!.startsWith(
+                                                      'http',
+                                                    )
+                                                    ? request.imageUrl!
+                                                    : 'http://localhost:5000${request.imageUrl!.startsWith('/') ? '' : '/'}${request.imageUrl}',
                                                 fit: BoxFit.cover,
                                                 width: 60,
                                                 height: 60,
@@ -369,6 +430,11 @@ class _AccountScreenState extends State<AccountScreen> {
                                                   error,
                                                   stackTrace,
                                                 ) {
+                                                  if (kDebugMode) {
+                                                    print(
+                                                      'Erreur de chargement d\'image: $error',
+                                                    );
+                                                  }
                                                   return const Center(
                                                     child: Icon(
                                                       Icons.image_not_supported,
@@ -423,7 +489,7 @@ class _AccountScreenState extends State<AccountScreen> {
                                                 CrossAxisAlignment.start,
                                             children: [
                                               Text(
-                                                '${request.montant.toStringAsFixed(2)} €',
+                                                '${request.montant.toStringAsFixed(2)} TND',
                                                 style: const TextStyle(
                                                   fontSize: 18,
                                                   fontWeight: FontWeight.bold,

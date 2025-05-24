@@ -3,7 +3,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/flight_model.dart';
 import '../models/fare_model.dart';
 import '../services/flight_service.dart';
-import 'package:intl/intl.dart';
 
 class ReservationBottomSheet extends StatefulWidget {
   final Flight flight;
@@ -207,7 +206,7 @@ class _ReservationBottomSheetState extends State<ReservationBottomSheet> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  'Coupon applied with ${(_originalPrice - _totalPrice).toStringAsFixed(2)}€ discount',
+                  'Coupon applied with ${(_originalPrice - _totalPrice).toStringAsFixed(2)} TND discount',
                 ),
                 backgroundColor: Colors.green.shade800,
               ),

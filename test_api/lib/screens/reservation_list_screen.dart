@@ -164,7 +164,7 @@ class _ReservationListScreenState extends State<ReservationListScreen> {
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.grey.withOpacity(0.1),
+                          color: Colors.grey.withAlpha(26), // 0.1 * 255 = 26
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -196,7 +196,7 @@ class _ReservationListScreenState extends State<ReservationListScreen> {
                                 decoration: BoxDecoration(
                                   color: _getStatusColor(
                                     r['statut'],
-                                  ).withOpacity(0.1),
+                                  ).withAlpha(26), // 0.1 * 255 = 26
                                   borderRadius: BorderRadius.circular(20),
                                   border: Border.all(
                                     color: _getStatusColor(r['statut']),
@@ -217,7 +217,10 @@ class _ReservationListScreenState extends State<ReservationListScreen> {
                           const SizedBox(height: 16),
                           _buildDetailRow(
                             Icons.calendar_today,
-                            formatDate(flight['date_depart'] ?? DateTime.now().toIso8601String()),
+                            formatDate(
+                              flight['date_depart'] ??
+                                  DateTime.now().toIso8601String(),
+                            ),
                           ),
                           _buildDetailRow(
                             Icons.people,
@@ -227,7 +230,7 @@ class _ReservationListScreenState extends State<ReservationListScreen> {
                             Icons.airline_seat_recline_normal,
                             r['class_type'] ?? 'Classe inconnue',
                           ),
-                          
+
                           // Display discount badge if applicable
                           if (hasDiscount) ...[
                             const SizedBox(height: 10),
@@ -265,14 +268,14 @@ class _ReservationListScreenState extends State<ReservationListScreen> {
                               ],
                             ),
                           ],
-                          
+
                           const SizedBox(height: 16),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               if (r['original_price'] != null && hasDiscount)
                                 Text(
-                                  '${r['original_price']} €',
+                                  '${r['original_price']} TND',
                                   style: TextStyle(
                                     decoration: TextDecoration.lineThrough,
                                     color: Colors.grey.shade600,
@@ -282,7 +285,7 @@ class _ReservationListScreenState extends State<ReservationListScreen> {
                               else
                                 const SizedBox(),
                               Text(
-                                '${r['prix_total']} €',
+                                '${r['prix_total']} TND',
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
@@ -312,10 +315,7 @@ class _ReservationListScreenState extends State<ReservationListScreen> {
           Icon(icon, size: 16, color: Colors.grey.shade600),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(
-              text,
-              style: TextStyle(color: Colors.grey.shade700),
-            ),
+            child: Text(text, style: TextStyle(color: Colors.grey.shade700)),
           ),
         ],
       ),

@@ -7,7 +7,8 @@ class ReservationDetailScreen extends StatefulWidget {
   const ReservationDetailScreen({super.key, required this.reservationId});
 
   @override
-  State<ReservationDetailScreen> createState() => _ReservationDetailScreenState();
+  State<ReservationDetailScreen> createState() =>
+      _ReservationDetailScreenState();
 }
 
 class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
@@ -65,7 +66,10 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
                 children: [
                   const Text("Erreur de chargement"),
                   TextButton(
-                    onPressed: () => setState(() => _reservationFuture = fetchReservationDetail()),
+                    onPressed:
+                        () => setState(
+                          () => _reservationFuture = fetchReservationDetail(),
+                        ),
                     child: const Text("Réessayer"),
                   ),
                 ],
@@ -88,11 +92,18 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
               children: [
                 // Reservation status
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
-                    color: _getStatusColor(r['statut'] ?? '').withOpacity(0.1),
+                    color: _getStatusColor(
+                      r['statut'] ?? '',
+                    ).withAlpha(25), // 0.1 * 255 = 25
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: _getStatusColor(r['statut'] ?? '')),
+                    border: Border.all(
+                      color: _getStatusColor(r['statut'] ?? ''),
+                    ),
                   ),
                   child: Text(
                     r['statut'] ?? 'Unknown',
@@ -102,9 +113,9 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Flight information
                 _buildSectionTitle("Informations du vol"),
                 _buildInfoCard(
@@ -112,7 +123,7 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        flight['titre'] ?? 'Unknown Flight',
+                        flight['titre'] ?? 'Vol non disponible',
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -134,14 +145,16 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  "${flight['airport_depart']?['ville'] ?? 'Unknown'} (${flight['airport_depart']?['code'] ?? 'Unknown'})",
-                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                  "${flight['airport_depart']?['ville'] ?? 'Non disponible'} (${flight['airport_depart']?['code'] ?? '--'})",
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
                                   flight['date_depart'] != null
                                       ? formatDate(flight['date_depart'])
-                                      : 'Unknown',
+                                      : 'Non disponible',
                                 ),
                               ],
                             ),
@@ -160,14 +173,16 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  "${flight['airport_arrivee']?['ville'] ?? 'Unknown'} (${flight['airport_arrivee']?['code'] ?? 'Unknown'})",
-                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                  "${flight['airport_arrivee']?['ville'] ?? 'Non disponible'} (${flight['airport_arrivee']?['code'] ?? '--'})",
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
                                   flight['date_arrivee'] != null
                                       ? formatDate(flight['date_arrivee'])
-                                      : 'Unknown',
+                                      : 'Non disponible',
                                 ),
                               ],
                             ),
@@ -177,25 +192,40 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Reservation details
                 _buildSectionTitle("Détails de la réservation"),
                 _buildInfoCard(
                   child: Column(
                     children: [
-                      _buildDetailRow("Numéro de réservation", r['id'] ?? 'Unknown'),
-                      _buildDetailRow("Date de réservation", r['date_reservation'] != null
-                          ? formatDate(r['date_reservation'])
-                          : 'Unknown'),
-                      _buildDetailRow("Nombre de passagers", "${r['nombre_passagers'] ?? 'Unknown'}"),
-                      _buildDetailRow("Classe", "${r['class_type']?.toUpperCase() ?? 'Unknown'}"),
-                      _buildDetailRow("Type de tarif", "${r['fare_type']?.toUpperCase() ?? 'Unknown'}"),
+                      _buildDetailRow(
+                        "Numéro de réservation",
+                        r['id'] ?? 'Non disponible',
+                      ),
+                      _buildDetailRow(
+                        "Date de réservation",
+                        r['date_reservation'] != null
+                            ? formatDate(r['date_reservation'])
+                            : 'Non disponible',
+                      ),
+                      _buildDetailRow(
+                        "Nombre de passagers",
+                        "${r['nombre_passagers'] ?? 'Non disponible'}",
+                      ),
+                      _buildDetailRow(
+                        "Classe",
+                        "${r['class_type']?.toUpperCase() ?? 'Non disponible'}",
+                      ),
+                      _buildDetailRow(
+                        "Type de tarif",
+                        "${r['fare_type']?.toUpperCase() ?? 'Non disponible'}",
+                      ),
                     ],
                   ),
                 ),
-                
+
                 // Seat information if available
                 if (seats != null && seats.isNotEmpty) ...[
                   const SizedBox(height: 24),
@@ -204,25 +234,31 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
                     child: Wrap(
                       spacing: 8,
                       runSpacing: 8,
-                      children: seats.map<Widget>((seat) {
-                        return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade200,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            seat['seat_number'] ?? 'Unknown',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        );
-                      }).toList(),
+                      children:
+                          seats.map<Widget>((seat) {
+                            return Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade200,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                seat['seat_number'] ?? 'N/A',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            );
+                          }).toList(),
                     ),
                   ),
                 ],
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Price information
                 _buildSectionTitle("Informations de prix"),
                 _buildInfoCard(
@@ -251,7 +287,7 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
                             ],
                           ),
                         ),
-                      
+
                       // Show coupon information if available
                       if (coupon != null)
                         Container(
@@ -264,7 +300,11 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
                           ),
                           child: Row(
                             children: [
-                              Icon(Icons.local_offer, color: Colors.green.shade700, size: 16),
+                              Icon(
+                                Icons.local_offer,
+                                color: Colors.green.shade700,
+                                size: 16,
+                              ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Column(
@@ -279,10 +319,10 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
                                     ),
                                     if (discountAmount > 0)
                                       Text(
-                                        "Réduction: ${discountAmount is String 
-                                            ? discountAmount 
-                                            : discountAmount.toStringAsFixed(2)} €",
-                                        style: TextStyle(color: Colors.green.shade700),
+                                        "Réduction: ${discountAmount is String ? discountAmount : discountAmount.toStringAsFixed(2)} TND",
+                                        style: TextStyle(
+                                          color: Colors.green.shade700,
+                                        ),
                                       ),
                                   ],
                                 ),
@@ -290,34 +330,43 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
                             ],
                           ),
                         ),
-                      
+
                       // Price details
-                      _buildDetailRow("Prix total", r['prix_total'] != null 
-                          ? (r['prix_total'] is String 
-                              ? "${r['prix_total']} €" 
-                              : "${r['prix_total'].toStringAsFixed(2)} €")
-                          : "Unknown €"),
+                      _buildDetailRow(
+                        "Prix total",
+                        r['prix_total'] != null
+                            ? (r['prix_total'] is String
+                                ? "${r['prix_total']} TND"
+                                : "${r['prix_total'].toStringAsFixed(2)} TND")
+                            : "Non disponible TND",
+                      ),
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Passenger information
                 _buildSectionTitle("Informations du passager"),
                 _buildInfoCard(
                   child: Column(
                     children: [
-                      _buildDetailRow("Nom", "${user['nom'] ?? 'Unknown'} ${user['prenom'] ?? ''}"),
-                      _buildDetailRow("Email", user['email'] ?? 'Unknown'),
+                      _buildDetailRow(
+                        "Nom",
+                        "${user['nom'] ?? 'Non disponible'} ${user['prenom'] ?? ''}",
+                      ),
+                      _buildDetailRow(
+                        "Email",
+                        user['email'] ?? 'Non disponible',
+                      ),
                       if (user['telephone'] != null)
                         _buildDetailRow("Téléphone", user['telephone']),
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 32),
-                
+
                 // Cancel button if reservation is not cancelled
                 if ((r['statut'] ?? '').toLowerCase() != 'annulée')
                   SizedBox(
@@ -327,39 +376,59 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
                         // Show confirmation dialog
                         showDialog(
                           context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text("Annuler la réservation"),
-                            content: const Text(
-                              "Êtes-vous sûr de vouloir annuler cette réservation ? Cette action ne peut pas être annulée.",
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.of(context).pop(),
-                                child: const Text("Non"),
+                          builder:
+                              (context) => AlertDialog(
+                                title: const Text("Annuler la réservation"),
+                                content: const Text(
+                                  "Êtes-vous sûr de vouloir annuler cette réservation ? Cette action ne peut pas être annulée.",
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed:
+                                        () => Navigator.of(context).pop(),
+                                    child: const Text("Non"),
+                                  ),
+                                  TextButton(
+                                    onPressed: () async {
+                                      Navigator.of(context).pop();
+                                      try {
+                                        await Dio().put(
+                                          'http://localhost:5000/api/reservations/${widget.reservationId}/cancel',
+                                        );
+                                        setState(() {
+                                          _reservationFuture =
+                                              fetchReservationDetail();
+                                        });
+
+                                        if (mounted) {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                "Réservation annulée avec succès",
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                      } catch (e) {
+                                        if (mounted) {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                "Erreur lors de l'annulation",
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    },
+                                    child: const Text("Oui, annuler"),
+                                  ),
+                                ],
                               ),
-                              TextButton(
-                                onPressed: () async {
-                                  Navigator.of(context).pop();
-                                  try {
-                                    await Dio().put(
-                                      'http://localhost:5000/api/reservations/${widget.reservationId}/cancel',
-                                    );
-                                    setState(() {
-                                      _reservationFuture = fetchReservationDetail();
-                                    });
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text("Réservation annulée avec succès")),
-                                    );
-                                  } catch (e) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text("Erreur lors de l'annulation")),
-                                    );
-                                  }
-                                },
-                                child: const Text("Oui, annuler"),
-                              ),
-                            ],
-                          ),
                         );
                       },
                       style: ElevatedButton.styleFrom(
@@ -377,7 +446,7 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
       ),
     );
   }
-  
+
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -391,7 +460,7 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
       ),
     );
   }
-  
+
   Widget _buildInfoCard({required Widget child}) {
     return Container(
       width: double.infinity,
@@ -402,7 +471,7 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha(13), // 0.05 * 255 = 13
             blurRadius: 10,
             spreadRadius: 0,
             offset: const Offset(0, 2),
@@ -412,29 +481,35 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
       child: child,
     );
   }
-  
+
   Widget _buildDetailRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: const TextStyle(color: Colors.grey),
+          Expanded(
+            flex: 2,
+            child: Text(label, style: const TextStyle(color: Colors.grey)),
           ),
-          Text(
-            value,
-            style: const TextStyle(fontWeight: FontWeight.bold),
+          Expanded(
+            flex: 3,
+            child: Text(
+              value,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+              textAlign: TextAlign.right,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 2,
+            ),
           ),
         ],
       ),
     );
   }
-  
+
   // Add this helper method to your class
   String formatPrice(dynamic price) {
-    if (price == null) return "Unknown";
+    if (price == null) return "Non disponible";
     if (price is String) {
       // Try to parse the string to a double first
       try {

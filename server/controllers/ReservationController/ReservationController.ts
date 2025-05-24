@@ -7,7 +7,7 @@ import { Compte } from '../../models/Compte';
 import { Seat } from '../../models/Seat';
 import nodemailer from 'nodemailer';
 import { Contract } from '../../models/Contract';
-import { Not, IsNull } from 'typeorm'; // Add this import line
+import { Not, IsNull, EntityManager } from 'typeorm'; // Add this import line
 
 // Helper functions for email formatting
 const formatDateFr = (date: Date): string => {
@@ -412,8 +412,9 @@ export const cancelReservation = async (req: Request, res: Response) => {
     const { isRefundEligible } = req.body;
 
     console.log(`Cancelling reservation ${reservationId}, refund eligible: ${isRefundEligible}`);
+    console.log(`isRefundEligible type: ${typeof isRefundEligible}, value: ${isRefundEligible}`);
 
-    // Find the reservation
+    // Find the reservation with user relation
     const reservation = await Reservation.findOne({
       where: { id: reservationId },
       relations: ['user', 'flight']
@@ -423,29 +424,219 @@ export const cancelReservation = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Réservation non trouvée" });
     }
 
-    // Update the reservation status to cancelled
-    reservation.statut = 'Annulée';
-
-    // Process refund if eligible
-    if (isRefundEligible) {
-      console.log(`Processing refund for reservation ${reservationId}`);
-      // Here you would typically integrate with a payment gateway
-      // For now, we'll just log it
+    // Vérifier si la réservation est déjà annulée
+    if (reservation.statut === 'Annulée') {
+      return res.status(400).json({ message: "Cette réservation est déjà annulée" });
     }
 
-    await reservation.save();
+    // Process refund if eligible - convert to boolean to handle string values
+    const shouldRefund = isRefundEligible === true || isRefundEligible === 'true';
+    console.log(`Should refund? ${shouldRefund}`);
 
-    // Release the reserved seats
-    await FlightSeatReservation.update(
-      { reservation: { id: reservationId } },
-      { isReserved: false }
-    );
+    let refundSuccess = false;
+    let newBalance = 0;
+
+    if (shouldRefund) {
+      console.log(`Processing refund for reservation ${reservationId}`);
+
+      try {
+        // Utiliser l'endpoint dédié pour le remboursement
+        const refundAmount = parseFloat(reservation.prix_total.toString());
+        const userId = reservation.user.id;
+
+        console.log(`Appel de l'endpoint de remboursement: userId=${userId}, amount=${refundAmount}`);
+
+        // Appeler directement la fonction de remboursement au lieu de passer par l'API
+        // pour éviter les problèmes de réseau interne
+        const compteController = require('../../controllers/CompteController/compteController');
+
+        // Créer une requête et une réponse simulées
+        const mockReq = {
+          body: {
+            userId: userId,
+            amount: refundAmount
+          },
+          headers: {
+            authorization: req.headers.authorization
+          }
+        };
+
+        let refundResult: any = null;
+        const mockRes = {
+          json: (data: any) => {
+            refundResult = data;
+            return mockRes;
+          },
+          status: (code: number) => mockRes
+        };
+
+        // Appeler directement la fonction de remboursement
+        await compteController.refundReservation(mockReq, mockRes);
+
+        console.log('Réponse du service de remboursement:', refundResult);
+
+        if (refundResult && refundResult.success) {
+          // Le remboursement a réussi
+          refundSuccess = true;
+          newBalance = parseFloat(refundResult.compte.solde.toString());
+          console.log(`Remboursement réussi via l'appel direct. Nouveau solde: ${newBalance}`);
+
+          // Mettre à jour le statut de la réservation
+          reservation.statut = 'Annulée';
+          await reservation.save();
+
+          // Libérer les sièges
+          const seatReservations = await FlightSeatReservation.find({
+            where: { reservation: { id: reservationId } },
+            relations: ['seat']
+          });
+
+          for (const seatRes of seatReservations) {
+            seatRes.isReserved = false;
+            seatRes.reservation = null;
+            await seatRes.save();
+          }
+        } else {
+          throw new Error('Le service de remboursement a échoué');
+        }
+      } catch (refundError) {
+        console.error('Erreur lors du remboursement via l\'API:', refundError);
+
+        // Méthode de secours: utiliser une transaction directe
+        try {
+          console.log('Tentative de remboursement via transaction directe...');
+
+          // Utiliser getRepository pour accéder au manager
+          await Reservation.getRepository().manager.transaction(async (transactionalEntityManager: EntityManager) => {
+            // Récupérer le compte de l'utilisateur dans la transaction
+            const compte = await transactionalEntityManager.findOne(Compte, {
+              where: { user: { id: reservation.user.id } }
+            });
+
+            if (!compte) {
+              throw new Error(`Compte non trouvé pour l'utilisateur ${reservation.user.id}`);
+            }
+
+            // Convertir les valeurs en nombres pour éviter les problèmes de type
+            const refundAmount = parseFloat(reservation.prix_total.toString());
+            const currentBalance = parseFloat(compte.solde.toString());
+
+            console.log(`Montant du remboursement: ${refundAmount}, Solde actuel: ${currentBalance}`);
+
+            // Mettre à jour le solde directement
+            newBalance = currentBalance + refundAmount;
+            compte.solde = newBalance;
+
+            // Sauvegarder les modifications dans la transaction
+            await transactionalEntityManager.save(compte);
+
+            // Mettre à jour le statut de la réservation dans la transaction
+            reservation.statut = 'Annulée';
+            await transactionalEntityManager.save(reservation);
+
+            // Libérer les sièges dans la transaction
+            const seatReservations = await transactionalEntityManager.find(FlightSeatReservation, {
+              where: { reservation: { id: reservationId } },
+              relations: ['seat']
+            });
+
+            for (const seatRes of seatReservations) {
+              seatRes.isReserved = false;
+              seatRes.reservation = null;
+              await transactionalEntityManager.save(seatRes);
+            }
+          });
+
+          // Vérifier que le remboursement a bien été effectué
+          const updatedCompte = await Compte.findOne({
+            where: { user: { id: reservation.user.id } }
+          });
+
+          if (updatedCompte) {
+            console.log(`Vérification du nouveau solde après transaction: ${updatedCompte.solde}`);
+            newBalance = parseFloat(updatedCompte.solde.toString());
+            refundSuccess = true;
+          }
+        } catch (transactionError) {
+          console.error('Échec de la transaction directe:', transactionError);
+
+          // Dernière tentative: mise à jour directe via SQL
+          try {
+            console.log('Dernière tentative: mise à jour directe via SQL...');
+
+            const refundAmount = parseFloat(reservation.prix_total.toString());
+            await Compte.query(`
+              UPDATE compte
+              SET solde = solde + ${refundAmount}
+              WHERE user_id = '${reservation.user.id}'
+            `);
+
+            // Mettre à jour le statut de la réservation
+            reservation.statut = 'Annulée';
+            await reservation.save();
+
+            // Libérer les sièges
+            const seatReservations = await FlightSeatReservation.find({
+              where: { reservation: { id: reservationId } },
+              relations: ['seat']
+            });
+
+            for (const seatRes of seatReservations) {
+              seatRes.isReserved = false;
+              seatRes.reservation = null;
+              await seatRes.save();
+            }
+
+            // Vérifier le nouveau solde
+            const updatedCompte = await Compte.findOne({
+              where: { user: { id: reservation.user.id } }
+            });
+
+            if (updatedCompte) {
+              console.log(`Vérification du nouveau solde après SQL direct: ${updatedCompte.solde}`);
+              newBalance = parseFloat(updatedCompte.solde.toString());
+              refundSuccess = true;
+            }
+          } catch (sqlError) {
+            console.error('Échec de toutes les tentatives de remboursement:', sqlError);
+            // Continuer avec l'annulation même si le remboursement échoue
+            reservation.statut = 'Annulée';
+            await reservation.save();
+          }
+        }
+      }
+    } else {
+      console.log(`No refund processed for reservation ${reservationId} (not eligible)`);
+
+      // Mettre à jour le statut de la réservation
+      reservation.statut = 'Annulée';
+      await reservation.save();
+
+      // Libérer les sièges
+      const seatReservations = await FlightSeatReservation.find({
+        where: { reservation: { id: reservationId } },
+        relations: ['seat']
+      });
+
+      for (const seatRes of seatReservations) {
+        seatRes.isReserved = false;
+        seatRes.reservation = null;
+        await seatRes.save();
+      }
+    }
+
+    // Préparer la réponse
+    const responseMessage = shouldRefund
+      ? refundSuccess
+        ? `Réservation annulée avec succès. Un remboursement de ${reservation.prix_total} DT a été effectué sur votre compte. Nouveau solde: ${newBalance} DT.`
+        : "Réservation annulée avec succès, mais le remboursement n'a pas pu être effectué. Veuillez contacter le service client."
+      : "Réservation annulée avec succès. Aucun remboursement n'est applicable selon les conditions tarifaires.";
 
     res.json({
       ...reservation,
-      message: isRefundEligible
-        ? "Réservation annulée avec succès. Un remboursement sera effectué."
-        : "Réservation annulée avec succès. Aucun remboursement n'est applicable."
+      message: responseMessage,
+      refundSuccess: shouldRefund ? refundSuccess : null,
+      newBalance: refundSuccess ? newBalance : null
     });
   } catch (error) {
     console.error('Error cancelling reservation:', error);

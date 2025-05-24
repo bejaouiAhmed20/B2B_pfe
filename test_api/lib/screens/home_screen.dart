@@ -6,7 +6,6 @@ import '../services/flight_service.dart';
 import 'news_list_screen.dart';
 import 'news_detail_screen.dart';
 import 'flight_list_screen.dart';
-import 'flight_detail_screen.dart';
 import 'dart:async';
 
 class HomeScreen extends StatefulWidget {

@@ -1,70 +1,26 @@
 import express from 'express';
-import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
-import { 
-  getAllPopups, 
-  getActivePopups, 
-  createPopup, 
-  getPopupById, 
-  updatePopup, 
+import {
+  getPopups,
+  getActivePopups,
+  getPopupById,
+  createPopup,
+  updatePopup,
   deletePopup,
-  uploadPopupImage
-} from '../../controllers/PopupController/PopupController';
-
-// Create uploads directory for popups if it doesn't exist
-const popupsUploadsDir = path.join(__dirname, '../../../uploads/popups');
-if (!fs.existsSync(popupsUploadsDir)) {
-  fs.mkdirSync(popupsUploadsDir, { recursive: true });
-}
-
-// Configure multer storage for popup images
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, popupsUploadsDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname);
-    cb(null, 'popup-' + uniqueSuffix + ext);
-  }
-});
-
-// File filter to accept only images
-const fileFilter = (req: Express.Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  if (file.mimetype.startsWith('image/')) {
-    cb(null, true);
-  } else {
-    cb(null, false);
-  }
-};
-
-const upload = multer({ 
-  storage: storage,
-  fileFilter: fileFilter,
-  limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
-  }
-});
+  togglePopupStatus
+} from '../../controllers/PopupController/popupController';
+import { auth, adminAuth } from '../../middlewares/authMiddleware';
 
 const router = express.Router();
 
-// Get all popups (admin only)
-router.get('/', getAllPopups);
-
-// Get active popups for client
+// Public routes
 router.get('/active', getActivePopups);
 
-// Create new popup (admin only)
-router.post('/', upload.single('image'), createPopup);
-
-// Get popup by ID
-router.get('/:id', getPopupById as express.RequestHandler<{ id: string }>);
-
-// Update popup (admin only)
-router.put('/:id', upload.single('image'), updatePopup as express.RequestHandler<{ id: string }>);
-
-// Delete popup (admin only)
-router.delete('/:id', deletePopup as express.RequestHandler<{ id: string }>);
+// Admin routes (protected)
+router.get('/', auth as express.RequestHandler, adminAuth as express.RequestHandler, getPopups);
+router.get('/:id', auth as express.RequestHandler, adminAuth as express.RequestHandler, getPopupById as express.RequestHandler);
+router.post('/', auth as express.RequestHandler, adminAuth as express.RequestHandler, createPopup as express.RequestHandler);
+router.put('/:id', auth as express.RequestHandler, adminAuth as express.RequestHandler, updatePopup as express.RequestHandler);
+router.delete('/:id', auth as express.RequestHandler, adminAuth as express.RequestHandler, deletePopup as express.RequestHandler);
+router.put('/:id/toggle', auth as express.RequestHandler, adminAuth as express.RequestHandler, togglePopupStatus as express.RequestHandler);
 
 export default router;

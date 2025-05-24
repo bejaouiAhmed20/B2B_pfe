@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:my_test_api/screens/account_screen.dart';
 import 'package:my_test_api/screens/flight_list_screen.dart';
 import 'package:my_test_api/screens/news_list_screen.dart';
 import 'package:my_test_api/screens/reclamation_screen.dart';
 import 'package:my_test_api/screens/request_solde_form_screen.dart';
-import 'package:my_test_api/screens/request_solde_list_screen.dart';
+import 'package:my_test_api/screens/request_solde_list_screen_fixed.dart';
 import '../screens/home_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/reservation_list_screen.dart';
+import '../screens/contract_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 import '../services/api_service.dart';
@@ -28,18 +30,30 @@ class _MainScaffoldState extends State<MainScaffold> {
   UserModel? _user;
   bool _isLoading = true;
 
-  late final List<Widget> _pages;
+  // Nous n'utilisons plus une liste statique de pages
+  // car nous avons besoin de reconstruire les pages à chaque build
+  // pour s'assurer que l'ID utilisateur est correctement passé
 
   @override
   void initState() {
     super.initState();
-    _pages = [
-      const HomeScreen(),
-      const FlightListScreen(),
-      ReservationListScreen(userId: widget.userId),
-      ProfileScreen(userId: widget.userId),
-    ];
     _loadUserData();
+  }
+
+  // Méthode pour obtenir la page actuelle en fonction de l'index sélectionné
+  Widget _getCurrentPage() {
+    switch (_selectedIndex) {
+      case 0:
+        return const HomeScreen();
+      case 1:
+        return FlightListScreen(userId: widget.userId);
+      case 2:
+        return ReservationListScreen(userId: widget.userId);
+      case 3:
+        return ProfileScreen(userId: widget.userId);
+      default:
+        return const HomeScreen();
+    }
   }
 
   Future<void> _loadUserData() async {
@@ -106,9 +120,31 @@ class _MainScaffoldState extends State<MainScaffold> {
             UserAccountsDrawerHeader(
               accountName: Text(
                 _user?.nom ?? "Chargement...",
-                style: const TextStyle(fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  shadows: [
+                    Shadow(
+                      offset: Offset(0, 1),
+                      blurRadius: 3.0,
+                      color: Color.fromARGB(150, 0, 0, 0),
+                    ),
+                  ],
+                ),
               ),
-              accountEmail: Text(_user?.email ?? ""),
+              accountEmail: Text(
+                _user?.email ?? "",
+                style: const TextStyle(
+                  color: Colors.white,
+                  shadows: [
+                    Shadow(
+                      offset: Offset(0, 1),
+                      blurRadius: 2.0,
+                      color: Color.fromARGB(150, 0, 0, 0),
+                    ),
+                  ],
+                ),
+              ),
               currentAccountPicture: CircleAvatar(
                 backgroundColor: Colors.white,
                 child: Icon(Icons.person, color: primaryColor, size: 40),
@@ -145,39 +181,14 @@ class _MainScaffoldState extends State<MainScaffold> {
                     selected: _selectedIndex == 0,
                     selectedTileColor: Theme.of(
                       context,
-                    ).colorScheme.primary.withOpacity(0.1),
+                    ).colorScheme.primary.withAlpha(25),
                     selectedColor: Theme.of(context).colorScheme.primary,
                     onTap: () {
                       _onItemTapped(0);
                       Navigator.pop(context);
                     },
                   ),
-                  ListTile(
-                    leading: const Icon(Icons.flight_takeoff_rounded),
-                    title: const Text("Vols"),
-                    selected: _selectedIndex == 1,
-                    selectedTileColor: Theme.of(
-                      context,
-                    ).colorScheme.primary.withOpacity(0.1),
-                    selectedColor: Theme.of(context).colorScheme.primary,
-                    onTap: () {
-                      _onItemTapped(1);
-                      Navigator.pop(context);
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.book_online_rounded),
-                    title: const Text("Mes Réservations"),
-                    selected: _selectedIndex == 2,
-                    selectedTileColor: Theme.of(
-                      context,
-                    ).colorScheme.primary.withOpacity(0.1),
-                    selectedColor: Theme.of(context).colorScheme.primary,
-                    onTap: () {
-                      _onItemTapped(2);
-                      Navigator.pop(context);
-                    },
-                  ),
+                
 
                   // Section Compte
                   const Padding(
@@ -197,13 +208,21 @@ class _MainScaffoldState extends State<MainScaffold> {
                     selected: _selectedIndex == 3,
                     selectedTileColor: Theme.of(
                       context,
-                    ).colorScheme.primary.withOpacity(0.1),
+                    ).colorScheme.primary.withAlpha(25),
                     selectedColor: Theme.of(context).colorScheme.primary,
                     onTap: () {
-                      _onItemTapped(3);
-                      Navigator.pop(context);
+                      Navigator.pop(context); // Fermer le drawer d'abord
+                      // Utiliser push au lieu de changer l'index
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) => ProfileScreen(userId: widget.userId),
+                        ),
+                      );
                     },
                   ),
+
                   ListTile(
                     leading: const Icon(Icons.account_balance_wallet_rounded),
                     title: const Text("Mon Compte"),
@@ -218,9 +237,22 @@ class _MainScaffoldState extends State<MainScaffold> {
                       );
                     },
                   ),
+
+                  // Section Demandes de Solde
+                  const Padding(
+                    padding: EdgeInsets.only(left: 16, top: 16, bottom: 8),
+                    child: Text(
+                      "DEMANDES DE SOLDE",
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ),
                   ListTile(
                     leading: const Icon(Icons.history_rounded),
-                    title: const Text("Mes Demandes de Solde"),
+                    title: const Text("Historique des demandes"),
                     onTap: () {
                       Navigator.pop(context); // Fermer le drawer d'abord
                       Navigator.push(
@@ -235,7 +267,7 @@ class _MainScaffoldState extends State<MainScaffold> {
                   ),
                   ListTile(
                     leading: const Icon(Icons.add_card_rounded),
-                    title: const Text("Nouvelle Demande de Solde"),
+                    title: const Text("Nouvelle demande"),
                     onTap: () {
                       Navigator.pop(context); // Fermer le drawer d'abord
                       Navigator.push(
@@ -309,7 +341,7 @@ class _MainScaffoldState extends State<MainScaffold> {
           ],
         ),
       ),
-      body: _pages[_selectedIndex],
+      body: _getCurrentPage(),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,

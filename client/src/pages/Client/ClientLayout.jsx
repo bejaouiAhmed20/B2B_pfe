@@ -19,6 +19,7 @@ import FeedbackIcon from '@mui/icons-material/Feedback';
 import NewspaperIcon from '@mui/icons-material/Newspaper';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ChatBot from '../../components/ChatBot';
+import PopupManager from '../../components/PopupManager';
 import logo from '../../assets/Tunisair-Logo.png';
 
 const ClientLayout = () => {
@@ -287,6 +288,9 @@ const ClientLayout = () => {
       >
         <ChatBot />
       </Box>
+
+      {/* Popup Manager */}
+      <PopupManager />
     </>
   );
 };

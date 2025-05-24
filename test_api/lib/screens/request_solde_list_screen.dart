@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/request_solde_model.dart';
 import '../services/api_service.dart';
 import '../models/compte_model.dart';
+import 'login_screen.dart';
+import 'request_solde_form_screen.dart';
+import 'solde_request_detail.dart';
 
 class RequestSoldeListScreen extends StatefulWidget {
   final String userId;
 
-  const RequestSoldeListScreen({Key? key, required this.userId})
-    : super(key: key);
+  const RequestSoldeListScreen({super.key, required this.userId});
 
   @override
   State<RequestSoldeListScreen> createState() => _RequestSoldeListScreenState();
@@ -33,6 +37,31 @@ class _RequestSoldeListScreenState extends State<RequestSoldeListScreen> {
     });
 
     try {
+      // Vérifier si le token est présent
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('accessToken');
+
+      if (token == null) {
+        if (kDebugMode) {
+          print('No access token found in request solde list screen');
+        }
+
+        // Rediriger vers l'écran de connexion
+        if (mounted) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const LoginScreen()),
+            (route) => false,
+          );
+        }
+        return;
+      }
+
+      if (kDebugMode) {
+        print(
+          'Fetching request solde list with token: ${token.substring(0, 10)}...',
+        );
+      }
+
       // Récupérer le compte de l'utilisateur
       final compte = await ApiService().getCompteByUserId(widget.userId);
 
@@ -47,11 +76,39 @@ class _RequestSoldeListScreenState extends State<RequestSoldeListScreen> {
         });
       }
     } catch (e) {
+      if (kDebugMode) {
+        print('Error in request solde list screen: $e');
+      }
+
       if (mounted) {
-        setState(() {
-          _error = e.toString();
-          _isLoading = false;
-        });
+        // Vérifier si c'est une erreur d'authentification
+        if (e.toString().contains('401') ||
+            e.toString().contains('Authentication required') ||
+            e.toString().contains('token')) {
+          // Effacer les tokens et rediriger vers la connexion
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.remove('accessToken');
+          await prefs.remove('userId');
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Session expirée, veuillez vous reconnecter'),
+                backgroundColor: Colors.red,
+              ),
+            );
+
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (context) => const LoginScreen()),
+              (route) => false,
+            );
+          }
+        } else {
+          setState(() {
+            _error = e.toString();
+            _isLoading = false;
+          });
+        }
       }
     }
   }
@@ -150,7 +207,9 @@ class _RequestSoldeListScreenState extends State<RequestSoldeListScreen> {
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
+                              color: Colors.black.withAlpha(
+                                26,
+                              ), // 0.1 * 255 = 26
                               blurRadius: 10,
                               offset: const Offset(0, 5),
                             ),
@@ -174,6 +233,13 @@ class _RequestSoldeListScreenState extends State<RequestSoldeListScreen> {
                                 color: Colors.white,
                                 fontSize: 28,
                                 fontWeight: FontWeight.bold,
+                                shadows: [
+                                  Shadow(
+                                    offset: Offset(0, 1),
+                                    blurRadius: 3.0,
+                                    color: Color.fromARGB(100, 0, 0, 0),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
@@ -219,45 +285,59 @@ class _RequestSoldeListScreenState extends State<RequestSoldeListScreen> {
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(16),
                                     ),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(16),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              Text(
-                                                '${request.montant.toStringAsFixed(2)} TND',
-                                                style: const TextStyle(
-                                                  fontSize: 20,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: secondaryColor,
-                                                ),
-                                              ),
-                                              Chip(
-                                                label: Text(
-                                                  statusInfo['text'],
+                                    child: InkWell(
+                                      onTap: () {
+                                        // Naviguer vers les détails de la demande
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => SoldeRequestDetailScreen(
+                                              userId: widget.userId,
+                                              requestId: request.id,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      borderRadius: BorderRadius.circular(16),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(16),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Text(
+                                                  '${request.montant.toStringAsFixed(2)} TND',
                                                   style: const TextStyle(
-                                                    color: Colors.white,
+                                                    fontSize: 20,
                                                     fontWeight: FontWeight.bold,
+                                                    color: secondaryColor,
                                                   ),
                                                 ),
-                                                avatar: Icon(
-                                                  statusInfo['icon'],
-                                                  color: Colors.white,
-                                                  size: 16,
-                                                ),
-                                                backgroundColor:
-                                                    statusInfo['color'],
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 8,
-                                                      vertical: 0,
+                                                Chip(
+                                                  label: Text(
+                                                    statusInfo['text'],
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontWeight: FontWeight.bold,
                                                     ),
-                                              ),
+                                                  ),
+                                                  avatar: Icon(
+                                                    statusInfo['icon'],
+                                                    color: Colors.white,
+                                                    size: 16,
+                                                  ),
+                                                  backgroundColor:
+                                                      statusInfo['color'],
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 8,
+                                                        vertical: 0,
+                                                      ),
+                                                ),
                                             ],
                                           ),
                                           const SizedBox(height: 12),
@@ -341,15 +421,22 @@ class _RequestSoldeListScreenState extends State<RequestSoldeListScreen> {
                                                               minScale: 0.5,
                                                               maxScale: 4,
                                                               child: Image.network(
-                                                                'http://localhost:5000${request.imageUrl}',
+                                                                request.imageUrl!
+                                                                        .startsWith(
+                                                                          'http',
+                                                                        )
+                                                                    ? request
+                                                                        .imageUrl!
+                                                                    : 'http://localhost:5000${request.imageUrl!.startsWith('/') ? '' : '/'}${request.imageUrl}',
                                                                 loadingBuilder: (
                                                                   context,
                                                                   child,
                                                                   loadingProgress,
                                                                 ) {
                                                                   if (loadingProgress ==
-                                                                      null)
+                                                                      null) {
                                                                     return child;
+                                                                  }
                                                                   return Center(
                                                                     child: CircularProgressIndicator(
                                                                       value:
@@ -412,7 +499,9 @@ class _RequestSoldeListScreenState extends State<RequestSoldeListScreen> {
                                                   boxShadow: [
                                                     BoxShadow(
                                                       color: Colors.black
-                                                          .withOpacity(0.05),
+                                                          .withAlpha(
+                                                            13,
+                                                          ), // 0.05 * 255 = 13
                                                       blurRadius: 5,
                                                       offset: const Offset(
                                                         0,
@@ -428,7 +517,12 @@ class _RequestSoldeListScreenState extends State<RequestSoldeListScreen> {
                                                     children: [
                                                       // Image
                                                       Image.network(
-                                                        'http://localhost:5000${request.imageUrl}',
+                                                        request.imageUrl!
+                                                                .startsWith(
+                                                                  'http',
+                                                                )
+                                                            ? request.imageUrl!
+                                                            : 'http://localhost:5000${request.imageUrl!.startsWith('/') ? '' : '/'}${request.imageUrl}',
                                                         fit: BoxFit.cover,
                                                         width: double.infinity,
                                                         height: double.infinity,
@@ -438,8 +532,9 @@ class _RequestSoldeListScreenState extends State<RequestSoldeListScreen> {
                                                           loadingProgress,
                                                         ) {
                                                           if (loadingProgress ==
-                                                              null)
+                                                              null) {
                                                             return child;
+                                                          }
                                                           return Center(
                                                             child: CircularProgressIndicator(
                                                               value:
@@ -503,8 +598,8 @@ class _RequestSoldeListScreenState extends State<RequestSoldeListScreen> {
                                                               ),
                                                           decoration: BoxDecoration(
                                                             color: Colors.black
-                                                                .withOpacity(
-                                                                  0.6,
+                                                                .withAlpha(
+                                                                  153, // 0.6 * 255 = 153
                                                                 ),
                                                             borderRadius:
                                                                 BorderRadius.circular(
@@ -548,7 +643,7 @@ class _RequestSoldeListScreenState extends State<RequestSoldeListScreen> {
                                         ],
                                       ),
                                     ),
-                                  );
+                                  ));
                                 },
                               ),
                     ),
@@ -558,7 +653,13 @@ class _RequestSoldeListScreenState extends State<RequestSoldeListScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           // Naviguer vers l'écran de création de demande
-          Navigator.pushNamed(context, '/request-solde-form');
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder:
+                  (context) => RequestSoldeFormScreen(userId: widget.userId),
+            ),
+          );
         },
         backgroundColor: primaryColor,
         child: const Icon(Icons.add),
