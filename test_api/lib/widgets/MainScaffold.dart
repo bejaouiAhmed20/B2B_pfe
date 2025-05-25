@@ -188,7 +188,7 @@ class _MainScaffoldState extends State<MainScaffold> {
                       Navigator.pop(context);
                     },
                   ),
-                
+              
 
                   // Section Compte
                   const Padding(

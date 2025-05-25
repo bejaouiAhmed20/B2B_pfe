@@ -145,7 +145,7 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  "${flight['airport_depart']?['ville'] ?? 'Non disponible'} (${flight['airport_depart']?['code'] ?? '--'})",
+                                  "${flight['airport_depart']?['location']?['ville'] ?? 'Non disponible'} (${flight['airport_depart']?['code'] ?? '--'})",
                                   style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -173,15 +173,15 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  "${flight['airport_arrivee']?['ville'] ?? 'Non disponible'} (${flight['airport_arrivee']?['code'] ?? '--'})",
+                                  "${flight['arrival_airport']?['location']?['ville'] ?? 'Non disponible'} (${flight['arrival_airport']?['code'] ?? '--'})",
                                   style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  flight['date_arrivee'] != null
-                                      ? formatDate(flight['date_arrivee'])
+                                  flight['date_retour'] != null
+                                      ? formatDate(flight['date_retour'])
                                       : 'Non disponible',
                                 ),
                               ],
