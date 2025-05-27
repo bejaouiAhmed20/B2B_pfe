@@ -1,0 +1,159 @@
+@startuml Diagramme_Deploiement_Production_Tunisair_B2B
+
+title Diagramme de Déploiement Production - Tunisair Partner Hub
+
+' Définition des couleurs
+skinparam node {
+    BackgroundColor LightBlue
+    BorderColor DarkBlue
+}
+
+skinparam component {
+    BackgroundColor LightGreen
+    BorderColor DarkGreen
+}
+
+skinparam database {
+    BackgroundColor LightYellow
+    BorderColor Orange
+}
+
+skinparam cloud {
+    BackgroundColor LightPink
+    BorderColor Red
+}
+
+' ===== ENVIRONNEMENT PRODUCTION =====
+
+package "DMZ (Zone Démilitarisée)" {
+    node "Load Balancer" as LoadBalancer {
+        component "Nginx/HAProxy" as Proxy
+        note right : • SSL Termination\n• Load Balancing\n• Rate Limiting\n• HTTPS Redirect
+    }
+    
+    node "Web Server" as WebServer {
+        component "Nginx Static" as NginxStatic
+        component "React Build" as ReactBuild
+        note right : • Fichiers statiques\n• Compression Gzip\n• Cache Headers\n• CDN Ready
+    }
+}
+
+package "Application Tier" {
+    node "App Server 1" as AppServer1 {
+        component "Node.js Instance 1" as Node1
+        component "PM2 Process Manager" as PM2_1
+        note right : • Port 5000\n• Auto-restart\n• Cluster Mode\n• Health Monitoring
+    }
+    
+    node "App Server 2" as AppServer2 {
+        component "Node.js Instance 2" as Node2
+        component "PM2 Process Manager" as PM2_2
+        note right : • Port 5001\n• Load Balanced\n• Failover Ready\n• Log Rotation
+    }
+}
+
+package "Data Tier" {
+    node "Database Master" as DBMaster {
+        database "MySQL Master" as MySQLMaster
+        component "Backup Service" as BackupService
+        note right : • Read/Write\n• Auto Backup\n• Binary Logs\n• Performance Tuning
+    }
+    
+    node "Database Slave" as DBSlave {
+        database "MySQL Slave" as MySQLSlave
+        component "Replication Service" as ReplicationService
+        note right : • Read Only\n• Real-time Sync\n• Failover Ready\n• Query Optimization
+    }
+}
+
+package "Cache Layer" {
+    node "Redis Cache" as RedisServer {
+        database "Redis Instance" as Redis
+        note right : • Session Storage\n• API Cache\n• Rate Limiting\n• Pub/Sub
+    }
+}
+
+package "Monitoring & Logs" {
+    node "Monitoring Server" as MonitoringServer {
+        component "Prometheus" as Prometheus
+        component "Grafana" as Grafana
+        component "ELK Stack" as ELKStack
+        note right : • Metrics Collection\n• Dashboards\n• Log Analysis\n• Alerting
+    }
+}
+
+' ===== SERVICES EXTERNES =====
+
+cloud "Google Cloud Platform" as GCP {
+    component "Gemini AI API" as GeminiAPI
+    component "Cloud Storage" as CloudStorage
+    note right : • IA Conversationnelle\n• Stockage Fichiers\n• CDN Global\n• Auto-scaling
+}
+
+cloud "Email Service" as EmailCloud {
+    component "SendGrid/Gmail" as EmailService
+    note right : • SMTP Relay\n• Email Templates\n• Delivery Analytics\n• Anti-spam
+}
+
+cloud "Mobile Distribution" as MobileCloud {
+    component "Google Play Store" as PlayStore
+    component "Apple App Store" as AppStore
+    note right : • App Distribution\n• Auto-updates\n• Analytics\n• Crash Reporting
+}
+
+' ===== CLIENTS =====
+
+actor "Utilisateurs Web" as WebUsers
+actor "Utilisateurs Mobile" as MobileUsers
+actor "Administrateurs" as Admins
+
+' ===== CONNEXIONS RÉSEAU =====
+
+' Connexions utilisateurs
+WebUsers --> LoadBalancer : "HTTPS (443)\nHTTP (80 → 443)"
+MobileUsers --> LoadBalancer : "HTTPS API\nMobile App"
+Admins --> LoadBalancer : "HTTPS Admin\nSecure Access"
+
+' Load Balancer vers services
+LoadBalancer --> WebServer : "HTTP (80)\nStatic Files"
+LoadBalancer --> AppServer1 : "HTTP (5000)\nAPI Requests"
+LoadBalancer --> AppServer2 : "HTTP (5001)\nAPI Requests"
+
+' Application vers données
+AppServer1 --> DBMaster : "MySQL (3306)\nRead/Write"
+AppServer1 --> DBSlave : "MySQL (3307)\nRead Only"
+AppServer1 --> RedisServer : "Redis (6379)\nCache/Session"
+
+AppServer2 --> DBMaster : "MySQL (3306)\nRead/Write"
+AppServer2 --> DBSlave : "MySQL (3307)\nRead Only"
+AppServer2 --> RedisServer : "Redis (6379)\nCache/Session"
+
+' Réplication base de données
+DBMaster --> DBSlave : "MySQL Replication\nBinary Logs"
+
+' Services externes
+AppServer1 --> GCP : "HTTPS API\nGemini AI"
+AppServer1 --> EmailCloud : "SMTP (587)\nEmail Service"
+AppServer2 --> GCP : "HTTPS API\nGemini AI"
+AppServer2 --> EmailCloud : "SMTP (587)\nEmail Service"
+
+' Monitoring
+MonitoringServer --> AppServer1 : "Metrics Collection\nHealth Checks"
+MonitoringServer --> AppServer2 : "Metrics Collection\nHealth Checks"
+MonitoringServer --> DBMaster : "Database Metrics\nPerformance"
+MonitoringServer --> RedisServer : "Cache Metrics\nMemory Usage"
+
+' Mobile distribution
+MobileCloud --> MobileUsers : "App Updates\nPush Notifications"
+
+' ===== SÉCURITÉ =====
+
+note top of LoadBalancer : **Sécurité Réseau**\n• Firewall WAF\n• DDoS Protection\n• SSL/TLS 1.3\n• Rate Limiting
+
+note bottom of DBMaster : **Sécurité Données**\n• Encryption at Rest\n• Encrypted Connections\n• Access Control\n• Audit Logs
+
+' ===== CONFIGURATION PRODUCTION =====
+
+note right : **Configuration Production**\n\n**Domaines:**\n• Web: https://partner.tunisair.com\n• API: https://api.tunisair.com\n• Admin: https://admin.tunisair.com\n\n**Certificats SSL:**\n• Let's Encrypt/Commercial\n• Auto-renewal\n• HSTS Headers\n\n**Backup Strategy:**\n• Daily DB Backups\n• File System Snapshots\n• Off-site Storage\n• Recovery Testing\n\n**Scaling:**\n• Horizontal App Scaling\n• Database Read Replicas\n• CDN for Static Assets\n• Auto-scaling Groups
+
+@enduml

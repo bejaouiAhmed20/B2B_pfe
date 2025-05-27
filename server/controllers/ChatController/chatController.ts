@@ -56,7 +56,7 @@ const PROJECT_KNOWLEDGE = {
 // Enhanced function to detect user intent and provide specific help
 function detectIntent(message: string): string {
   const msg = message.toLowerCase();
-
+ 
   // Login/Authentication
   if (msg.includes('connexion') || msg.includes('login') || msg.includes('connecter')) {
     return 'login';

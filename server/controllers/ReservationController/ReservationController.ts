@@ -8,6 +8,7 @@ import { Seat } from '../../models/Seat';
 import nodemailer from 'nodemailer';
 import { Contract } from '../../models/Contract';
 import { Not, IsNull, EntityManager } from 'typeorm'; // Add this import line
+import { sendReservationConfirmationEmail } from '../../services/emailService';
 
 // Helper functions for email formatting
 const formatDateFr = (date: Date): string => {
@@ -229,6 +230,43 @@ export const addReservation = async (req: Request, res: Response) => {
       console.log(`Reserved ${createdSeatReservations.length} seats for reservation ${reservation.id}`);
     }
 
+    // Send confirmation email
+    try {
+      // Get flight details with airport information
+      const flightWithAirports = await Flight.findOne({
+        where: { id: flight_id },
+        relations: ['airport_depart', 'arrival_airport']
+      });
+
+      if (flightWithAirports && user.email) {
+        const emailData = {
+          userEmail: user.email,
+          userName: user.nom,
+          flightTitle: flightWithAirports.titre,
+          departureAirport: flightWithAirports.airport_depart?.nom || 'N/A',
+          arrivalAirport: flightWithAirports.arrival_airport?.nom || 'N/A',
+          departureDate: new Date(flightWithAirports.date_depart).toLocaleDateString('fr-FR'),
+          returnDate: new Date(flightWithAirports.date_retour).toLocaleDateString('fr-FR'),
+          passengers: nombre_passagers,
+          classType: class_type || 'economy',
+          totalPrice: finalPrice,
+          reservationId: reservation.id,
+          status: statut || 'confirmée'
+        };
+
+        const emailSent = await sendReservationConfirmationEmail(emailData);
+
+        if (emailSent) {
+          console.log(`Email de confirmation de réservation envoyé à ${user.email}`);
+        } else {
+          console.log(`Échec de l'envoi de l'email de confirmation à ${user.email}`);
+        }
+      }
+    } catch (emailError) {
+      console.error('Erreur lors de l\'envoi de l\'email de confirmation:', emailError);
+      // Ne pas faire échouer la réservation si l'email échoue
+    }
+
     // Return the reservation with allocated seats info
     res.status(201).json({
       ...reservation,
@@ -237,7 +275,8 @@ export const addReservation = async (req: Request, res: Response) => {
           id: sr.seat.idSeat,
           seatNumber: sr.seat.seatNumber,
           classType: sr.seat.classType
-        })) : []
+        })) : [],
+      message: 'Réservation créée avec succès. Un email de confirmation a été envoyé.'
     });
   } catch (error) {
     console.log(error);
@@ -777,6 +816,43 @@ export const createReservation = async (req: Request, res: Response) => {
       console.log(`Reserved ${createdSeatReservations.length} seats for reservation ${reservation.id}`);
     }
 
+    // Send confirmation email
+    try {
+      // Get flight details with airport information
+      const flightWithAirports = await Flight.findOne({
+        where: { id: flight_id },
+        relations: ['airport_depart', 'arrival_airport']
+      });
+
+      if (flightWithAirports && user.email) {
+        const emailData = {
+          userEmail: user.email,
+          userName: user.nom,
+          flightTitle: flightWithAirports.titre,
+          departureAirport: flightWithAirports.airport_depart?.nom || 'N/A',
+          arrivalAirport: flightWithAirports.arrival_airport?.nom || 'N/A',
+          departureDate: new Date(flightWithAirports.date_depart).toLocaleDateString('fr-FR'),
+          returnDate: new Date(flightWithAirports.date_retour).toLocaleDateString('fr-FR'),
+          passengers: nombre_passagers,
+          classType: class_type || 'economy',
+          totalPrice: finalPrice,
+          reservationId: reservation.id,
+          status: req.body.statut || 'confirmée'
+        };
+
+        const emailSent = await sendReservationConfirmationEmail(emailData);
+
+        if (emailSent) {
+          console.log(`Email de confirmation de réservation envoyé à ${user.email}`);
+        } else {
+          console.log(`Échec de l'envoi de l'email de confirmation à ${user.email}`);
+        }
+      }
+    } catch (emailError) {
+      console.error('Erreur lors de l\'envoi de l\'email de confirmation:', emailError);
+      // Ne pas faire échouer la réservation si l'email échoue
+    }
+
     // Return the reservation with allocated seats info
     res.status(201).json({
       ...reservation,
@@ -785,7 +861,8 @@ export const createReservation = async (req: Request, res: Response) => {
           id: sr.seat.idSeat,
           seatNumber: sr.seat.seatNumber,
           classType: sr.seat.classType
-        })) : []
+        })) : [],
+      message: 'Réservation créée avec succès. Un email de confirmation a été envoyé.'
     });
   } catch (error) {
     console.error('Error creating reservation:', error);
