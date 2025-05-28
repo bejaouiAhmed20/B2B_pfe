@@ -55,6 +55,7 @@ const ClientLayout = () => {
 
   const userMenuItems = [
     { label: 'Mon Profil', path: '/client/profile' },
+    { label: 'Mon Contrat', path: '/client/contract' },
     { label: 'Demande Solde', path: '/client/request-solde' },
     { label: 'Réclamations', path: '/client/reclamations' },
     {

@@ -188,7 +188,6 @@ class _MainScaffoldState extends State<MainScaffold> {
                       Navigator.pop(context);
                     },
                   ),
-              
 
                   // Section Compte
                   const Padding(
@@ -233,6 +232,20 @@ class _MainScaffoldState extends State<MainScaffold> {
                         MaterialPageRoute(
                           builder:
                               (context) => AccountScreen(userId: widget.userId),
+                        ),
+                      );
+                    },
+                  ),
+
+                  ListTile(
+                    leading: const Icon(Icons.description_rounded),
+                    title: const Text("Mon Contrat"),
+                    onTap: () {
+                      Navigator.pop(context); // Fermer le drawer d'abord
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ContractScreen(),
                         ),
                       );
                     },

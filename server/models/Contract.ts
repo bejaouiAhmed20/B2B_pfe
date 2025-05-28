@@ -38,11 +38,7 @@ export class Contract extends BaseEntity {
   @Column('decimal', { precision: 10, scale: 2, nullable: true })
   modifiedFeeAmount!: number | null; // Modifier le Montant des Frais (Optionnel)
 
-  @Column('boolean', { default: false })
-  payLater!: boolean; // Payer Plus Tard
 
-  @Column('integer', { nullable: true })
-  payLaterTimeLimit!: number | null; // Limite de Temps pour Payer Plus Tard (in hours)
 
   @Column('integer', { nullable: true })
   minTimeBeforeBalanceFlight!: number | null; // Temps Minimum Avant Vol Balance (in hours)

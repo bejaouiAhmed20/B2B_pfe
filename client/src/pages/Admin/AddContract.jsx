@@ -31,8 +31,6 @@ const AddContract = () => {
     travelEndDate: '',
     isActive: true,
     modifiedFeeAmount: '',
-    payLater: false,
-    payLaterTimeLimit: '',
     minTimeBeforeBalanceFlight: '',
     invoiceStamp: '',
     finalClientAdditionalFees: '',
@@ -49,25 +47,25 @@ const AddContract = () => {
     try {
       const response = await axios.get('http://localhost:5000/api/users');
       setClients(response.data);
-      
+
       // Fetch all contracts to check which clients already have active contracts
       const contractsResponse = await axios.get('http://localhost:5000/api/contracts');
       const contracts = contractsResponse.data;
-      
+
       // Get current date
       const currentDate = new Date();
-      
+
       // Filter out clients with active contracts that haven't ended yet
       const clientsWithActiveContracts = contracts
         .filter(contract => contract.isActive && new Date(contract.contractEndDate) >= currentDate)
         .map(contract => contract.client.id);
-      
+
       // Filter the clients list to only include those without active contracts
       // and exclude admin users
       const filteredClients = response.data.filter(
         client => !clientsWithActiveContracts.includes(client.id) && client.role !== 'admin'
       );
-      
+
       setAvailableClients(filteredClients);
     } catch (error) {
       showSnackbar('Erreur lors du chargement des clients', 'error');
@@ -85,18 +83,18 @@ const AddContract = () => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    
+
     // Create updated form data
     const updatedFormData = {
       ...formData,
       [name]: type === 'checkbox' ? checked : value
     };
-    
+
     // If turning off payLater, clear the time limit
     if (name === 'payLater' && !checked) {
       updatedFormData.payLaterTimeLimit = '';
     }
-    
+
     setFormData(updatedFormData);
   };
 
@@ -113,7 +111,7 @@ const AddContract = () => {
         const existingContract = error.response.data.existingContract;
         const clientName = clients.find(c => c.id === existingContract.client.id)?.nom || 'Client';
         const endDate = new Date(existingContract.contractEndDate).toLocaleDateString('fr-FR');
-        
+
         showSnackbar(
           `Ce client a déjà un contrat actif (${existingContract.label}) qui se termine le ${endDate}. Veuillez désactiver ce contrat avant d'en créer un nouveau.`,
           'error'
@@ -146,7 +144,7 @@ const AddContract = () => {
       <Typography variant="h4" gutterBottom>
         Ajouter un Contrat
       </Typography>
-      
+
       <form onSubmit={handleSubmit}>
         <Grid container spacing={2}>
           <Grid item xs={12} md={6}>
@@ -169,7 +167,7 @@ const AddContract = () => {
               ))}
             </TextField>
           </Grid>
-          
+
           <Grid item xs={12} md={6}>
             <Typography variant="subtitle2" gutterBottom>
               Client
@@ -195,7 +193,7 @@ const AddContract = () => {
               </Typography>
             )}
           </Grid>
-          
+
           <Grid item xs={12}>
             <Typography variant="subtitle2" gutterBottom>
               Libellé
@@ -209,7 +207,7 @@ const AddContract = () => {
               margin="normal"
             />
           </Grid>
-          
+
           <Grid item xs={12} md={6}>
             <Typography variant="subtitle2" gutterBottom>
               Date Début du Contrat
@@ -225,7 +223,7 @@ const AddContract = () => {
               InputLabelProps={{ shrink: true }}
             />
           </Grid>
-          
+
           <Grid item xs={12} md={6}>
             <Typography variant="subtitle2" gutterBottom>
               Date Fin du Contrat
@@ -241,7 +239,7 @@ const AddContract = () => {
               InputLabelProps={{ shrink: true }}
             />
           </Grid>
-          
+
           <Grid item xs={12} md={6}>
             <Typography variant="subtitle2" gutterBottom>
               Minimum Garanti (€)
@@ -257,7 +255,7 @@ const AddContract = () => {
               inputProps={{ step: "0.01" }}
             />
           </Grid>
-          
+
           <Grid item xs={12} md={6}>
             <Typography variant="subtitle2" gutterBottom>
               Date Début de Voyage
@@ -273,7 +271,7 @@ const AddContract = () => {
               InputLabelProps={{ shrink: true }}
             />
           </Grid>
-          
+
           <Grid item xs={12} md={6}>
             <Typography variant="subtitle2" gutterBottom>
               Date Fin de Voyage
@@ -289,7 +287,7 @@ const AddContract = () => {
               InputLabelProps={{ shrink: true }}
             />
           </Grid>
-          
+
           <Grid item xs={12} md={6}>
             <FormControlLabel
               control={
@@ -304,13 +302,13 @@ const AddContract = () => {
               sx={{ mt: 2 }}
             />
           </Grid>
-          
+
           <Grid item xs={12}>
             <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
               Paramètres de Paiement
             </Typography>
           </Grid>
-          
+
           <Grid item xs={12} md={6}>
             <Typography variant="subtitle2" gutterBottom>
               Montant des Frais Modifié (€)
@@ -325,7 +323,7 @@ const AddContract = () => {
               inputProps={{ step: "0.01" }}
             />
           </Grid>
-          
+
           <Grid item xs={12} md={6}>
             <Typography variant="subtitle2" gutterBottom>
               Prix Fixe des Billets (€)
@@ -341,36 +339,9 @@ const AddContract = () => {
               helperText="Laisser vide si pas de prix fixe"
             />
           </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={formData.payLater}
-                  onChange={handleChange}
-                  name="payLater"
-                  color="primary"
-                />
-              }
-              label="Payer Plus Tard"
-            />
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <Typography variant="subtitle2" gutterBottom>
-              Limite de Temps pour Payer Plus Tard (heures)
-            </Typography>
-            <TextField
-              name="payLaterTimeLimit"
-              type="number"
-              value={formData.payLaterTimeLimit}
-              onChange={handleChange}
-              fullWidth
-              margin="normal"
-              disabled={!formData.payLater}
-            />
-          </Grid>
-          
+
+
+
           <Grid item xs={12} md={6}>
             <Typography variant="subtitle2" gutterBottom>
               Coupons Associés
@@ -391,7 +362,7 @@ const AddContract = () => {
               ))}
             </TextField>
           </Grid>
-          
+
           <Grid item xs={12} md={6}>
             <Typography variant="subtitle2" gutterBottom>
               Temps Minimum Avant Vol Balance (heures)
@@ -405,7 +376,7 @@ const AddContract = () => {
               margin="normal"
             />
           </Grid>
-          
+
           <Grid item xs={12} md={6}>
             <Typography variant="subtitle2" gutterBottom>
               Timbre de Facture (€)
@@ -420,7 +391,7 @@ const AddContract = () => {
               inputProps={{ step: "0.01" }}
             />
           </Grid>
-          
+
           <Grid item xs={12} md={6}>
             <Typography variant="subtitle2" gutterBottom>
               Frais Supplémentaires Client Final (€)
@@ -435,21 +406,21 @@ const AddContract = () => {
               inputProps={{ step: "0.01" }}
             />
           </Grid>
-          
+
           {/* Remove the duplicate coupon selection field that was here */}
-          
+
           <Grid item xs={12} sx={{ mt: 3 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Button 
-                variant="outlined" 
-                color="secondary" 
+              <Button
+                variant="outlined"
+                color="secondary"
                 onClick={() => navigate('/admin/contracts')}
               >
                 Annuler
               </Button>
-              <Button 
-                type="submit" 
-                variant="contained" 
+              <Button
+                type="submit"
+                variant="contained"
                 color="primary"
               >
                 Créer le Contrat

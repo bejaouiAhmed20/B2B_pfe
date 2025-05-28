@@ -1,11 +1,12 @@
 import express from 'express';
-import { 
-  getContracts, 
-  getContractById, 
-  getContractsByClientId, 
-  createContract, 
-  updateContract, 
-  deleteContract 
+import {
+  getContracts,
+  getContractById,
+  getContractsByClientId,
+  createContract,
+  updateContract,
+  deleteContract,
+  generateContractPDF
 } from '../../controllers/ContractController/contractController';
 
 const router = express.Router();
@@ -27,6 +28,9 @@ router.put('/:id', updateContract as express.RequestHandler);
 
 // Delete contract
 router.delete('/:id', deleteContract as express.RequestHandler);
+
+// Generate contract PDF data
+router.get('/:id/pdf', generateContractPDF as express.RequestHandler);
 
 export default router;
 
