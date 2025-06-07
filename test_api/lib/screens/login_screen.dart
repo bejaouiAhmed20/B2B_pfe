@@ -80,14 +80,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Couleurs Tunisair
+    // Couleurs 
     const primaryColor = Color(0xFFCC0A2B);
     const secondaryColor = Color(0xFF1A2B4A);
 
     return Scaffold(
       body: Stack(
         children: [
-          // Arrière-plan avec dégradé
+          // Arrière-plan 
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(

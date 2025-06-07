@@ -6,7 +6,6 @@ function ChatBotComponent() {
     const [inputText, setInputText] = useState('');
     const [loading, setLoading] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
-    const [language] = useState('fr'); // Default to French
     const [showQuickActions, setShowQuickActions] = useState(true);
 
     const chatContainerRef = useRef(null);
@@ -61,8 +60,7 @@ function ChatBotComponent() {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    message: text,
-                    language: language
+                    message: text
                 })
             });
 
@@ -139,9 +137,21 @@ function ChatBotComponent() {
                                     </button>
                                     <button
                                         className="quick-btn"
-                                        onClick={() => sendPredefinedMessage('admin')}
+                                        onClick={() => sendPredefinedMessage('contrat')}
                                     >
-                                        Fonctions admin
+                                        Mon contrat
+                                    </button>
+                                    <button
+                                        className="quick-btn"
+                                        onClick={() => sendPredefinedMessage('solde')}
+                                    >
+                                        Demande solde
+                                    </button>
+                                    <button
+                                        className="quick-btn"
+                                        onClick={() => sendPredefinedMessage('réclamation')}
+                                    >
+                                        Réclamations
                                     </button>
                                     <button
                                         className="quick-btn"

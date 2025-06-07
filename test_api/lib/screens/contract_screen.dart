@@ -4,6 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 
 class ContractScreen extends StatefulWidget {
+  const ContractScreen({super.key});
+
   @override
   _ContractScreenState createState() => _ContractScreenState();
 }

@@ -26,16 +26,9 @@ const PROJECT_KNOWLEDGE = {
     booking: "Pour réserver un vol : 1) Recherchez des vols, 2) Sélectionnez votre vol, 3) Choisissez vos sièges, 4) Confirmez la réservation",
     profile: "Pour modifier votre profil : 1) Allez dans 'Mon Profil', 2) Modifiez vos informations, 3) Sauvegardez",
     claims: "Pour faire une réclamation : 1) Allez dans 'Réclamations', 2) Cliquez sur 'Nouvelle réclamation', 3) Remplissez le formulaire",
-    dashboard: "Le tableau de bord affiche : statistiques des vols, revenus, réservations par classe, destinations populaires"
-  },
-
-  adminGuides: {
-    flights: "Gestion des vols : Créer, modifier, supprimer des vols depuis l'interface admin",
-    users: "Gestion des utilisateurs : Voir tous les utilisateurs, modifier leurs rôles et statuts",
-    reservations: "Gestion des réservations : Voir toutes les réservations, les modifier ou les annuler",
-    dashboard: "Tableau de bord admin : Voir les statistiques en temps réel avec graphiques dynamiques",
-    news: "Gestion des actualités : Créer et publier des actualités pour les clients",
-    popups: "Gestion des popups : Créer des popups informatifs qui s'affichent aux clients"
+    dashboard: "Le tableau de bord affiche : statistiques des vols, revenus, réservations par classe, destinations populaires",
+    contract: "Pour consulter votre contrat : 1) Allez dans 'Mon Contrat', 2) Consultez les détails, 3) Téléchargez le PDF si nécessaire",
+    solde: "Pour demander un solde : 1) Allez dans 'Demande Solde', 2) Remplissez le formulaire, 3) Attendez l'approbation"
   },
 
   technicalInfo: {
@@ -56,14 +49,15 @@ const PROJECT_KNOWLEDGE = {
 // Enhanced function to detect user intent and provide specific help
 function detectIntent(message: string): string {
   const msg = message.toLowerCase();
- 
+
   // Login/Authentication
   if (msg.includes('connexion') || msg.includes('login') || msg.includes('connecter')) {
     return 'login';
   }
 
-  // Booking/Reservation
-  if (msg.includes('réserver') || msg.includes('réservation') || msg.includes('vol') || msg.includes('booking')) {
+  // Booking/Reservation (more specific to avoid conflict with "vols")
+  if (msg.includes('réserver') || msg.includes('réservation') || msg.includes('booking') ||
+      msg.includes('comment réserver') || msg.includes('guide réservation')) {
     return 'booking';
   }
 
@@ -82,9 +76,14 @@ function detectIntent(message: string): string {
     return 'dashboard';
   }
 
-  // Admin functions
-  if (msg.includes('admin') || msg.includes('gestion') || msg.includes('gérer')) {
-    return 'admin';
+  // Contract
+  if (msg.includes('contrat') || msg.includes('contract')) {
+    return 'contract';
+  }
+
+  // Solde/Balance
+  if (msg.includes('solde') || msg.includes('balance') || msg.includes('crédit')) {
+    return 'solde';
   }
 
   // Technical help
@@ -101,42 +100,38 @@ function detectIntent(message: string): string {
 }
 
 // Function to get specific help based on intent
-function getSpecificHelp(intent: string, language: string = 'fr'): string {
+function getSpecificHelp(intent: string): string {
   const guides = PROJECT_KNOWLEDGE.userGuides;
-  const adminGuides = PROJECT_KNOWLEDGE.adminGuides;
   const tech = PROJECT_KNOWLEDGE.technicalInfo;
   const project = PROJECT_KNOWLEDGE.projectInfo;
 
   switch (intent) {
     case 'login':
-      return language === 'fr' ? guides.login : "To log in: 1) Go to login page, 2) Enter email and password, 3) Click 'Login'";
+      return guides.login;
 
     case 'booking':
-      return language === 'fr' ? guides.booking : "To book a flight: 1) Search flights, 2) Select your flight, 3) Choose seats, 4) Confirm booking";
+      return guides.booking;
 
     case 'profile':
-      return language === 'fr' ? guides.profile : "To edit profile: 1) Go to 'My Profile', 2) Edit information, 3) Save changes";
+      return guides.profile;
 
     case 'claims':
-      return language === 'fr' ? guides.claims : "To make a claim: 1) Go to 'Claims', 2) Click 'New Claim', 3) Fill the form";
+      return guides.claims;
 
     case 'dashboard':
-      return language === 'fr' ? guides.dashboard : "Dashboard shows: flight statistics, revenue, bookings by class, popular destinations";
+      return guides.dashboard;
 
-    case 'admin':
-      return language === 'fr' ?
-        `Fonctions admin disponibles :\n- ${adminGuides.flights}\n- ${adminGuides.users}\n- ${adminGuides.reservations}\n- ${adminGuides.dashboard}\n- ${adminGuides.news}\n- ${adminGuides.popups}` :
-        "Admin functions: Flight management, User management, Reservation management, Dashboard, News, Popups";
+    case 'contract':
+      return guides.contract;
+
+    case 'solde':
+      return guides.solde;
 
     case 'technical':
-      return language === 'fr' ?
-        `Architecture technique :\n- ${tech.architecture}\n- ${tech.authentication}\n- ${tech.database}\n- ${tech.api}\n- ${tech.deployment}` :
-        "Technical architecture: 3-tier with React frontend, Node.js backend, MySQL database";
+      return `Architecture technique :\n- ${tech.architecture}\n- ${tech.authentication}\n- ${tech.database}\n- ${tech.api}\n- ${tech.deployment}`;
 
     case 'project':
-      return language === 'fr' ?
-        `${project.name} : ${project.description}\nTechnologies : ${project.technologies.join(', ')}\nFonctionnalités : ${project.features.join(', ')}` :
-        `${project.name}: ${project.description}\nTechnologies: ${project.technologies.join(', ')}\nFeatures: ${project.features.join(', ')}`;
+      return `${project.name} : ${project.description}\nTechnologies : ${project.technologies.join(', ')}\nFonctionnalités : ${project.features.join(', ')}`;
 
     default:
       return '';
@@ -148,30 +143,40 @@ async function getRealTimeData(dataType: string): Promise<any> {
   try {
     switch (dataType) {
       case 'flights':
-        const flights = await Flight.find({
-          relations: ['airport_depart', 'arrival_airport'],
-          take: 5,
-          order: { date_depart: 'ASC' }
-        });
-        return flights;
+        const currentDate = new Date();
+        const flights = await Flight.createQueryBuilder('flight')
+          .leftJoinAndSelect('flight.airport_depart', 'airport_depart')
+          .leftJoinAndSelect('flight.arrival_airport', 'arrival_airport')
+          .where('flight.date_depart >= :currentDate', { currentDate })
+          .orderBy('flight.date_depart', 'ASC')
+          .take(5)
+          .getMany();
+
+        // Ensure we have valid data
+        const validFlights = flights.filter(flight =>
+          flight && flight.date_depart &&
+          (flight.airport_depart || flight.arrival_airport)
+        );
+
+        return validFlights;
 
       case 'reservations':
         const reservations = await Reservation.find({
           take: 5,
           order: { id: 'DESC' }
         });
-        return reservations;
+        return reservations || [];
 
       case 'users':
         const userCount = await User.count();
-        return { count: userCount };
+        return { count: userCount || 0 };
 
       case 'news':
         const news = await News.find({
           take: 3,
           order: { id: 'DESC' }
         });
-        return news;
+        return news || [];
 
       default:
         return null;
@@ -183,136 +188,159 @@ async function getRealTimeData(dataType: string): Promise<any> {
 }
 
 // Function to format flight data for chat response
-function formatFlightData(flights: any[], language: string = 'fr'): string {
+function formatFlightData(flights: any[]): string {
   if (!flights || flights.length === 0) {
-    return language === 'fr' ?
-      "Aucun vol disponible pour le moment." :
-      "No flights available at the moment.";
+    return "Aucun vol disponible pour le moment. Veuillez vérifier plus tard ou contacter notre service client.";
   }
 
-  const flightList = flights.map(flight => {
-    const departure = flight.airport_depart?.nom || flight.airport_depart?.code || 'N/A';
-    const arrival = flight.arrival_airport?.nom || flight.arrival_airport?.code || 'N/A';
-    const date = new Date(flight.date_depart).toLocaleDateString();
-    const price = flight.prix || 'N/A';
+  try {
+    const flightList = flights.map((flight) => {
+      // Safe data extraction with fallbacks
+      const departure = flight.airport_depart?.nom ||
+                       flight.airport_depart?.code ||
+                       flight.airport_depart_id ||
+                       'Aéroport de départ';
 
-    return language === 'fr' ?
-      `Vol: ${departure} → ${arrival}\nDate: ${date}\nPrix: ${price} TND\n` :
-      `Flight: ${departure} → ${arrival}\nDate: ${date}\nPrice: ${price} TND\n`;
-  }).join('\n');
+      const arrival = flight.arrival_airport?.nom ||
+                     flight.arrival_airport?.code ||
+                     flight.airport_arrivee_id ||
+                     'Aéroport d\'arrivée';
 
-  return language === 'fr' ?
-    `Voici les prochains vols disponibles :\n\n${flightList}` :
-    `Here are the next available flights:\n\n${flightList}`;
+      // Safe date formatting
+      let formattedDate = 'Date à confirmer';
+      if (flight.date_depart) {
+        try {
+          const date = new Date(flight.date_depart);
+          if (!isNaN(date.getTime())) {
+            formattedDate = date.toLocaleDateString('fr-FR', {
+              weekday: 'short',
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+          }
+        } catch (dateError) {
+          console.error('Date formatting error:', dateError);
+        }
+      }
+
+      // Safe price formatting
+      const price = flight.prix ? `${flight.prix} TND` : 'Prix à confirmer';
+
+      // Flight title if available
+      const title = flight.titre ? `\nVol: ${flight.titre}` : '';
+
+      return `🛫 ${departure} → ${arrival}${title}\n📅 ${formattedDate}\n💰 ${price}\n`;
+    }).join('\n');
+
+    return `✈️ Voici les prochains vols disponibles :\n\n${flightList}\n💡 Pour réserver, utilisez notre interface de réservation ou contactez notre service client.`;
+
+  } catch (error) {
+    console.error('Error formatting flight data:', error);
+    return "Erreur lors de l'affichage des vols. Veuillez réessayer ou contacter notre service client.";
+  }
 }
 
 // Enhanced function to provide contextual help
-async function getContextualHelp(message: string, language: string = 'fr'): Promise<string> {
+async function getContextualHelp(message: string): Promise<string> {
+  const msg = message.toLowerCase();
+
+  // Check for real-time data requests FIRST (before intent detection)
+  // This ensures "vols" shows available flights instead of booking guide
+  if (msg.includes('vols disponibles') || msg.includes('voir les vols') || msg === 'vols' || msg.includes('liste des vols')) {
+    const flights = await getRealTimeData('flights');
+    return formatFlightData(flights);
+  }
+
+  if (msg.includes('actualités') || msg.includes('news') || msg.includes('dernières actualités')) {
+    const news = await getRealTimeData('news');
+    if (news && news.length > 0) {
+      const newsList = news.map((item: any) => {
+        const title = item.titre || 'Actualité sans titre';
+        const date = item.createdAt ?
+          new Date(item.createdAt).toLocaleDateString('fr-FR') :
+          'Date non disponible';
+        return `📰 ${title}\n   📅 ${date}`;
+      }).join('\n\n');
+      return `📢 Dernières actualités :\n\n${newsList}\n\n💡 Pour plus de détails, consultez la section Actualités de notre plateforme.`;
+    } else {
+      return "📢 Aucune actualité disponible pour le moment. Veuillez vérifier plus tard.";
+    }
+  }
+
+  // Then check for specific intents
   const intent = detectIntent(message);
-  const specificHelp = getSpecificHelp(intent, language);
+  const specificHelp = getSpecificHelp(intent);
 
   if (specificHelp) {
     return specificHelp;
   }
 
-  // Check if user is asking for real-time data
-  if (message.toLowerCase().includes('vols') || message.toLowerCase().includes('flights')) {
-    const flights = await getRealTimeData('flights');
-    return formatFlightData(flights, language);
-  }
-
-  if (message.toLowerCase().includes('actualités') || message.toLowerCase().includes('news')) {
-    const news = await getRealTimeData('news');
-    if (news && news.length > 0) {
-      const newsList = news.map((item: any) => `• ${item.titre}`).join('\n');
-      return language === 'fr' ?
-        `Dernières actualités :\n${newsList}` :
-        `Latest news:\n${newsList}`;
-    }
-  }
-
   // Provide general help menu
-  return language === 'fr' ?
-    `Assistant Tunisair B2B - Comment puis-je vous aider ?\n\n` +
+  return `Assistant Tunisair B2B - Comment puis-je vous aider ?\n\n` +
     `Commandes disponibles :\n` +
     `• "connexion" - Aide pour se connecter\n` +
     `• "réservation" - Guide de réservation\n` +
     `• "profil" - Gestion du profil\n` +
     `• "réclamation" - Faire une réclamation\n` +
-    `• "admin" - Fonctions administrateur\n` +
+    `• "contrat" - Consulter votre contrat\n` +
+    `• "solde" - Demander un solde\n` +
     `• "vols" - Voir les vols disponibles\n` +
     `• "projet" - Informations sur la plateforme\n` +
     `• "technique" - Aide technique\n\n` +
-    `Astuce : Posez-moi n'importe quelle question sur l'utilisation de la plateforme !` :
-    `Tunisair B2B Assistant - How can I help you?\n\n` +
-    `Available commands:\n` +
-    `• "login" - Login help\n` +
-    `• "booking" - Booking guide\n` +
-    `• "profile" - Profile management\n` +
-    `• "claims" - Make a claim\n` +
-    `• "admin" - Admin functions\n` +
-    `• "flights" - View available flights\n` +
-    `• "project" - Platform information\n` +
-    `• "technical" - Technical help\n\n` +
-    `Tip: Ask me any question about using the platform!`;
+    `Astuce : Posez-moi n'importe quelle question sur l'utilisation de la plateforme !`;
 }
 
 // Enhanced function to call Gemini API with project context
-async function callGemini(userMessage: string, language: string = 'fr'): Promise<string> {
+async function callGemini(userMessage: string): Promise<string> {
   try {
     const model = genAI.getGenerativeModel({ model: MODEL_VERSION });
 
     const projectContext = `
-    Tu es l'assistant IA de la plateforme Tunisair B2B, une plateforme de réservation de vols d'affaires.
+    Tu es l'assistant IA officiel de Tunisair B2B, spécialisé dans l'aide aux clients de notre plateforme de réservation de vols d'affaires.
 
-    CONTEXTE DU PROJET:
-    - Nom: ${PROJECT_KNOWLEDGE.projectInfo.name}
-    - Description: ${PROJECT_KNOWLEDGE.projectInfo.description}
-    - Technologies: ${PROJECT_KNOWLEDGE.projectInfo.technologies.join(', ')}
-    - Fonctionnalités: ${PROJECT_KNOWLEDGE.projectInfo.features.join(', ')}
+    INFORMATIONS SUR LA PLATEFORME:
+    - Plateforme: ${PROJECT_KNOWLEDGE.projectInfo.name}
+    - Mission: Faciliter les réservations de vols d'affaires pour les entreprises partenaires de Tunisair
+    - Services: Réservations, gestion de profil, contrats, demandes de solde, réclamations, actualités
 
-    ARCHITECTURE TECHNIQUE:
-    - ${PROJECT_KNOWLEDGE.technicalInfo.architecture}
-    - ${PROJECT_KNOWLEDGE.technicalInfo.authentication}
-    - ${PROJECT_KNOWLEDGE.technicalInfo.database}
-    - ${PROJECT_KNOWLEDGE.technicalInfo.api}
+    TON RÔLE:
+    - Aider UNIQUEMENT les clients (pas les administrateurs)
+    - Fournir des informations précises et vérifiées
+    - Guider les utilisateurs dans l'utilisation de la plateforme
+    - Répondre aux questions sur les procédures et fonctionnalités
+    - Orienter vers le service client si nécessaire
 
-    Tu dois aider les utilisateurs avec:
-    1. L'utilisation de la plateforme (connexion, réservations, profil, réclamations)
-    2. Les fonctions administrateur (gestion des vols, utilisateurs, dashboard)
-    3. Les informations techniques sur le projet
-    4. Le dépannage et résolution de problèmes
+    RÈGLES IMPORTANTES:
+    1. Réponds TOUJOURS en français
+    2. Sois professionnel, courtois et précis
+    3. Si tu ne connais pas une information, dis-le clairement
+    4. Ne donne JAMAIS d'informations sur les fonctions administrateur
+    5. Encourage l'utilisation des fonctionnalités de la plateforme
+    6. En cas de problème technique, oriente vers le service client
 
-    Réponds toujours de manière professionnelle, concise et utile.
+    COMMANDES DISPONIBLES POUR LES CLIENTS:
+    - "vols" : Voir les vols disponibles
+    - "réservation" : Guide de réservation
+    - "contrat" : Consulter son contrat
+    - "solde" : Demander un solde
+    - "réclamation" : Faire une réclamation
+    - "profil" : Gérer son profil
+    - "actualités" : Voir les dernières nouvelles
+
+    Réponds de manière utile et précise à la question du client.
     `;
 
-    let prompt = '';
-    if (language === 'fr') {
-      prompt = `${projectContext}\n\nQuestion de l'utilisateur: ${userMessage}\n\nRéponds en français de manière professionnelle et utile:`;
-    } else {
-      prompt = `You are the AI assistant for Tunisair B2B platform, a business flight booking platform.
-
-      PROJECT CONTEXT:
-      - Name: ${PROJECT_KNOWLEDGE.projectInfo.name}
-      - Description: Business flight booking platform for Tunisair
-      - Technologies: ${PROJECT_KNOWLEDGE.projectInfo.technologies.join(', ')}
-      - Features: ${PROJECT_KNOWLEDGE.projectInfo.features.join(', ')}
-
-      Help users with platform usage, admin functions, technical info, and troubleshooting.
-
-      User question: ${userMessage}
-
-      Answer professionally and helpfully:`;
-    }
+    const prompt = `${projectContext}\n\nQuestion du client: ${userMessage}\n\nRéponds en français de manière professionnelle et utile:`;
 
     const result = await model.generateContent(prompt);
     const response = result.response;
     return response.text();
   } catch (error) {
     console.error('Error calling Gemini API:', error);
-    return language === 'fr'
-      ? 'Désolé, j\'ai rencontré une erreur lors du traitement de votre demande.'
-      : 'Sorry, I encountered an error while processing your request.';
+    return 'Désolé, j\'ai rencontré une erreur lors du traitement de votre demande.';
   }
 }
 
@@ -320,48 +348,58 @@ async function callGemini(userMessage: string, language: string = 'fr'): Promise
 export async function handleChat(req: Request, res: Response) {
   try {
     const userMessage: string = req.body.message || '';
-    const language: string = req.body.language || 'fr'; // Default to French
 
     if (!userMessage) {
+      console.log('❌ Aucun message fourni dans la requête');
       return res.status(400).json({
-        error: language === 'fr' ? 'Aucun message fourni.' : 'No message provided.'
+        error: 'Aucun message fourni.'
       });
     }
 
-    console.log('Message reçu:', userMessage);
+    console.log('📨 Message reçu:', userMessage);
 
     let reply = '';
+    let responseSource = '';
 
     // First, try to get contextual help (this includes real-time data and specific guides)
-    const contextualHelp = await getContextualHelp(userMessage, language);
+    const contextualHelp = await getContextualHelp(userMessage);
 
     // If we have specific contextual help, use it
-    if (contextualHelp && !contextualHelp.includes('Comment puis-je vous aider') && !contextualHelp.includes('How can I help')) {
+    if (contextualHelp && !contextualHelp.includes('Comment puis-je vous aider')) {
       reply = contextualHelp;
+      responseSource = 'contextual';
+      console.log('✅ Réponse contextuelle fournie');
     } else {
       // Otherwise, use Gemini AI with project context
-      reply = await callGemini(userMessage, language);
+      console.log('🤖 Utilisation de Gemini AI...');
+      reply = await callGemini(userMessage);
+      responseSource = 'gemini';
+      console.log('✅ Réponse Gemini fournie');
     }
 
     // Add helpful suggestions at the end for general queries
-    if (userMessage.toLowerCase().includes('aide') || userMessage.toLowerCase().includes('help') ||
-        userMessage.toLowerCase().includes('bonjour') || userMessage.toLowerCase().includes('hello')) {
-      const suggestions = language === 'fr' ?
-        '\n\nSuggestions :\n• Tapez "vols" pour voir les vols disponibles\n• Tapez "réservation" pour le guide de réservation\n• Tapez "admin" pour les fonctions administrateur' :
-        '\n\nSuggestions:\n• Type "flights" to see available flights\n• Type "booking" for booking guide\n• Type "admin" for admin functions';
+    if (userMessage.toLowerCase().includes('aide') || userMessage.toLowerCase().includes('bonjour')) {
+      const suggestions = '\n\n💡 Suggestions :\n• Tapez "vols" pour voir les vols disponibles\n• Tapez "réservation" pour le guide de réservation\n• Tapez "contrat" pour consulter votre contrat\n• Tapez "solde" pour les demandes de solde';
 
       if (!reply.includes('Suggestions')) {
         reply += suggestions;
       }
     }
 
+    // Ensure we have a valid reply
+    if (!reply || reply.trim() === '') {
+      reply = "Je suis désolé, je n'ai pas pu traiter votre demande. Veuillez réessayer ou contacter notre service client.";
+      console.log('⚠️ Réponse vide, utilisation du message par défaut');
+    }
+
+    console.log(`📤 Réponse envoyée (source: ${responseSource}):`, reply.substring(0, 100) + '...');
+
     return res.json({ reply });
   } catch (err) {
-    console.error('Erreur dans le gestionnaire de chat:', err);
-    const language = req.body.language || 'fr';
+    console.error('❌ Erreur dans le gestionnaire de chat:', err);
     return res.status(500).json({
-      error: language === 'fr' ? 'Erreur interne du serveur' : 'Internal server error',
-      details: String(err)
+      error: 'Erreur interne du serveur. Veuillez réessayer plus tard.',
+      details: process.env.NODE_ENV === 'development' ? String(err) : undefined
     });
   }
 }
