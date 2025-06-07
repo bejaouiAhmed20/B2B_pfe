@@ -178,7 +178,7 @@ const Profile = () => {
 
         <form onSubmit={handleSubmit}>
           <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
+          <Grid item xs={12}>
               <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
                 <Person sx={{ mr: 2, color: 'text.secondary', mt: 0.5 }} />
                 {editMode ? (
@@ -203,31 +203,7 @@ const Profile = () => {
               </Box>
             </Grid>
 
-            <Grid item xs={12} md={6}>
-              <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
-                <Person sx={{ mr: 2, color: 'text.secondary', mt: 0.5 }} />
-                {editMode ? (
-                  <TextField
-                    fullWidth
-                    label="Prénom"
-                    name="prenom"
-                    value={formData.prenom}
-                    onChange={handleChange}
-                    variant="outlined"
-                  />
-                ) : (
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Prénom
-                    </Typography>
-                    <Typography variant="body1">
-                      {user?.prenom || 'Non renseigné'}
-                    </Typography>
-                  </Box>
-                )}
-              </Box>
-            </Grid>
-
+            
             <Grid item xs={12}>
               <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
                 <Email sx={{ mr: 2, color: 'text.secondary', mt: 0.5 }} />

@@ -80,14 +80,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Couleurs 
+    // Couleurs
     const primaryColor = Color(0xFFCC0A2B);
     const secondaryColor = Color(0xFF1A2B4A);
 
     return Scaffold(
       body: Stack(
         children: [
-          // Arrière-plan 
+          // Arrière-plan
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -96,7 +96,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 end: Alignment.bottomCenter,
               ),
             ),
-            height: MediaQuery.of(context).size.height * 0.4,
+            height: MediaQuery.of(context).size.height * 1,
           ),
 
           // Logo et contenu
@@ -106,28 +106,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Logo et en-tête
-                  SizedBox(height: MediaQuery.of(context).size.height * 0.08),
-                  Center(
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 20,
-                            spreadRadius: 5,
-                          ),
-                        ],
-                      ),
-                      child: Image.network(
-                        'https://upload.wikimedia.org/wikipedia/commons/thumb/8/89/Tunisair_Logo.svg/1200px-Tunisair_Logo.svg.png',
-                        height: 80,
-                        width: 80,
-                      ),
-                    ),
-                  ),
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.10),
+
                   const SizedBox(height: 24),
 
                   // Carte de connexion
@@ -151,7 +131,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           const Text(
-                            'Bienvenue',
+                            'Bienvenue à Tunisair B2B',
                             style: TextStyle(
                               fontSize: 28,
                               fontWeight: FontWeight.bold,
@@ -252,23 +232,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 12),
 
-                          // Lien mot de passe oublié
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: TextButton(
-                              onPressed: () {},
-                              style: TextButton.styleFrom(
-                                foregroundColor: primaryColor,
-                                padding: EdgeInsets.zero,
-                                minimumSize: const Size(50, 30),
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              child: const Text(
-                                'Mot de passe oublié ?',
-                                style: TextStyle(fontWeight: FontWeight.w500),
-                              ),
-                            ),
-                          ),
                           const SizedBox(height: 24),
 
                           // Bouton de connexion
@@ -315,14 +278,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         ],
                       ),
                     ),
-                  ),
-
-                  // Pied de page
-                  const SizedBox(height: 24),
-                  const Text(
-                    '© 2023 Tunisair B2B',
-                    style: TextStyle(color: Colors.grey, fontSize: 12),
-                    textAlign: TextAlign.center,
                   ),
                 ],
               ),

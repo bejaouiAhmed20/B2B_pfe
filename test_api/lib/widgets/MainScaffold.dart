@@ -222,21 +222,6 @@ class _MainScaffoldState extends State<MainScaffold> {
                   ),
 
                   ListTile(
-                    leading: const Icon(Icons.account_balance_wallet_rounded),
-                    title: const Text("Mon Compte"),
-                    onTap: () {
-                      Navigator.pop(context); // Fermer le drawer d'abord
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) => AccountScreen(userId: widget.userId),
-                        ),
-                      );
-                    },
-                  ),
-
-                  ListTile(
                     leading: const Icon(Icons.description_rounded),
                     title: const Text("Mon Contrat"),
                     onTap: () {
