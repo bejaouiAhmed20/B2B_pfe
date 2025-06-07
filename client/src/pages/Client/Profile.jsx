@@ -21,7 +21,8 @@ import {
   Edit,
   Save
 } from '@mui/icons-material';
-import api from '../../services/api';
+import axios from 'axios';
+import { API_BASE_URL, getAuthToken, getAxiosConfig } from '../../utils/api';
 
 const Profile = () => {
   const [user, setUser] = useState(null);
@@ -48,7 +49,7 @@ const Profile = () => {
   const fetchUserData = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('accessToken');
+      const token = getAuthToken();
       const userData = JSON.parse(localStorage.getItem('user'));
 
       if (!token || !userData) {
@@ -57,8 +58,8 @@ const Profile = () => {
         return;
       }
 
-      // Utiliser le service API qui gère automatiquement les tokens
-      const response = await api.get(`/users/${userData.id}`);
+      // Utiliser axios directement avec la configuration appropriée
+      const response = await axios.get(`${API_BASE_URL}/users/${userData.id}`, getAxiosConfig());
 
       setUser(response.data);
       setFormData({
@@ -88,8 +89,8 @@ const Profile = () => {
     try {
       const userData = JSON.parse(localStorage.getItem('user'));
 
-      // Utiliser le service API qui gère automatiquement les tokens
-      await api.put(`/users/${userData.id}`, formData);
+      // Utiliser axios directement avec la configuration appropriée
+      await axios.put(`${API_BASE_URL}/users/${userData.id}`, formData, getAxiosConfig());
 
       // Update local storage with new user data
       const updatedUser = { ...userData, ...formData };

@@ -10,7 +10,8 @@ import {
   Breadcrumbs
 } from '@mui/material';
 import { ArrowBack, LocationOn } from '@mui/icons-material';
-import api from '../../services/api';
+import axios from 'axios';
+import { API_BASE_URL, getAxiosConfig } from '../../utils/api';
 import NotFoundImage from '../../assets/notfound.jpg';
 
 const LocationDetail = () => {
@@ -24,7 +25,7 @@ const LocationDetail = () => {
     const fetchLocationData = async () => {
       setLoading(true);
       try {
-        const response = await api.get(`/locations/${id}`);
+        const response = await axios.get(`${API_BASE_URL}/locations/${id}`, getAxiosConfig());
         setLocation(response.data);
       } catch (err) {
         console.error('Error fetching location:', err);

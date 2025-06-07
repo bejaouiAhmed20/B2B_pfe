@@ -93,11 +93,11 @@ app.use('/api/seats', seatRoutes);
 // Update the entities array in the DataSource configuration
 const AppDataSource = new DataSource({
   type: "mysql",
-  host: "localhost",
-  port: 3306,
-  username: "root",
-  password: "",
-  database: "b2b_db4",
+  host: process.env.DB_HOST || "localhost",
+  port: parseInt(process.env.DB_PORT || "3306"),
+  username: process.env.DB_USERNAME || "root",
+  password: process.env.DB_PASSWORD || "",
+  database: process.env.DB_NAME || "b2b_db4",
   entities: [
     User,
     Flight,

@@ -17,8 +17,8 @@ import FlightDetails from '../../components/flight/FlightDetails';
 import FareOptions from '../../components/flight/FareOptions';
 import ReservationForm from '../../components/flight/ReservationForm';
 
-// Import the API service instead of axios
-import api from '../../services/api';
+// Import axios and API utilities
+import { API_BASE_URL, getAxiosConfig } from '../../utils/api';
 
 const FlightDescription = () => {
   const { id } = useParams();
@@ -177,8 +177,8 @@ const FlightDescription = () => {
         return;
       }
 
-      // Use the api service instead of axios
-      const response = await api.get(`/comptes/user/${userData.id}`);
+      // Use axios directly with configuration
+      const response = await axios.get(`${API_BASE_URL}/comptes/user/${userData.id}`, getAxiosConfig());
 
       console.log('Account data from API:', response.data);
       setUserBalance(Number(response.data.solde) || 0);
@@ -194,8 +194,8 @@ const FlightDescription = () => {
     try {
       if (!id) return;
 
-      console.log('Récupération des sièges disponibles avec le service API');
-      const response = await api.get(`/flights/${id}/seats`);
+      console.log('Récupération des sièges disponibles avec axios');
+      const response = await axios.get(`${API_BASE_URL}/flights/${id}/seats`, getAxiosConfig());
 
       if (response.data) {
         setFlight(prevFlight => ({
@@ -216,9 +216,9 @@ const FlightDescription = () => {
 
       console.log('Fetching flight details for ID:', id);
 
-      // Utiliser le service API qui gère automatiquement les tokens
-      console.log('Récupération des détails du vol avec le service API');
-      const response = await api.get(`/flights/${id}`);
+      // Utiliser axios directement avec la configuration appropriée
+      console.log('Récupération des détails du vol avec axios');
+      const response = await axios.get(`${API_BASE_URL}/flights/${id}`, getAxiosConfig());
 
       console.log('Flight data received:', response.data);
 
@@ -409,7 +409,7 @@ const FlightDescription = () => {
         return;
       }
 
-      const response = await api.get(`/coupons/${couponCode}`);
+      const response = await axios.get(`${API_BASE_URL}/coupons/${couponCode}`, getAxiosConfig());
 
       if (response.data) {
         const coupon = response.data;
@@ -474,8 +474,8 @@ const FlightDescription = () => {
           // Fetch the user's contract to get the fixed price
           const userData = JSON.parse(localStorage.getItem('user'));
           if (userData) {
-            console.log('Récupération du contrat utilisateur avec le service API');
-            const response = await api.get(`/contracts/client/${userData.id}`);
+            console.log('Récupération du contrat utilisateur avec axios');
+            const response = await axios.get(`${API_BASE_URL}/contracts/client/${userData.id}`, getAxiosConfig());
             if (response.data && response.data.length > 0) {
               // Get the active contract
               const activeContract = response.data.find(contract => contract.isActive) || response.data[0];
@@ -622,18 +622,18 @@ const FlightDescription = () => {
 
       console.log("Sending reservation data:", reservationData);
 
-      // First create the reservation - utiliser le service API qui gère automatiquement les tokens
-      console.log('Envoi de la requête de réservation avec le service API');
-      const response = await api.post('/reservations', reservationData);
+      // First create the reservation - utiliser axios directement avec la configuration appropriée
+      console.log('Envoi de la requête de réservation avec axios');
+      const response = await axios.post(`${API_BASE_URL}/reservations`, reservationData, getAxiosConfig());
 
       console.log("Reservation response:", response.data);
 
       // Now that we have the reservation ID, allocate seats
       if (response.data && response.data.id) {
         try {
-          // Double-check seat availability before allocation - utiliser le service API
-          console.log('Vérification de la disponibilité des sièges avec le service API');
-          const availableSeatsResponse = await api.get(`/flights/${id}/seats`);
+          // Double-check seat availability before allocation - utiliser axios directement
+          console.log('Vérification de la disponibilité des sièges avec axios');
+          const availableSeatsResponse = await axios.get(`${API_BASE_URL}/flights/${id}/seats`, getAxiosConfig());
           const availableSeats = availableSeatsResponse.data;
 
           const maxAvailable = reservation.classType === 'economy'
@@ -646,13 +646,13 @@ const FlightDescription = () => {
             throw new Error(`Not enough ${reservation.classType} seats available. Only ${maxAvailable} seats left.`);
           }
 
-          // Request random seats from the server with the reservation ID - utiliser le service API
-          console.log('Allocation des sièges avec le service API');
-          const seatsResponse = await api.post(`/flights/${id}/allocate-seats`, {
+          // Request random seats from the server with the reservation ID - utiliser axios directement
+          console.log('Allocation des sièges avec axios');
+          const seatsResponse = await axios.post(`${API_BASE_URL}/flights/${id}/allocate-seats`, {
             numberOfSeats: reservation.nombre_passagers,
             classType: reservation.classType,
             reservationId: response.data.id
-          });
+          }, getAxiosConfig());
 
           console.log("Seats allocation response:", seatsResponse.data);
         } catch (error) {

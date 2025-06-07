@@ -31,7 +31,8 @@ import {
   Visibility,
   HourglassEmpty
 } from '@mui/icons-material';
-import api from '../../services/api';
+import axios from 'axios';
+import { API_BASE_URL, getAuthToken, getAxiosConfig } from '../../utils/api';
 
 const RequestSoldeManagement = () => {
   const [requests, setRequests] = useState([]);
@@ -50,7 +51,7 @@ const RequestSoldeManagement = () => {
   const fetchRequests = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('accessToken');
+      const token = getAuthToken();
 
       if (!token) {
         setError('Authentication required');
@@ -65,8 +66,8 @@ const RequestSoldeManagement = () => {
 
       console.log('Fetching requests with token:', token.substring(0, 20) + '...');
 
-      // Utiliser le service API qui gère automatiquement les headers d'authentification
-      const response = await api.get('/request-solde');
+      // Utiliser axios directement avec la configuration appropriée
+      const response = await axios.get(`${API_BASE_URL}/request-solde`, getAxiosConfig());
 
       setRequests(response.data);
       setLoading(false);
@@ -123,7 +124,7 @@ const RequestSoldeManagement = () => {
 
   const handleApproveRequest = async () => {
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = getAuthToken();
       const request = confirmDialog.request;
 
       if (!token) {
@@ -131,7 +132,7 @@ const RequestSoldeManagement = () => {
         return;
       }
 
-      const response = await api.put(`/request-solde/${request.id}/approve`, {});
+      const response = await axios.put(`${API_BASE_URL}/request-solde/${request.id}/approve`, {}, getAxiosConfig());
 
       showSnackbar(`Demande approuvée avec succès. ${parseFloat(request.montant).toFixed(2)} € ajoutés au compte client.`);
       handleConfirmDialogClose();
@@ -145,7 +146,7 @@ const RequestSoldeManagement = () => {
 
   const handleRejectRequest = async () => {
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = getAuthToken();
       const request = confirmDialog.request;
 
       if (!token) {
@@ -153,7 +154,7 @@ const RequestSoldeManagement = () => {
         return;
       }
 
-      const response = await api.put(`/request-solde/${request.id}/reject`, {});
+      const response = await axios.put(`${API_BASE_URL}/request-solde/${request.id}/reject`, {}, getAxiosConfig());
 
       showSnackbar('Demande rejetée avec succès');
       handleConfirmDialogClose();

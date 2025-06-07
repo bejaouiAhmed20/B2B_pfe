@@ -23,7 +23,8 @@ import {
 } from '@mui/icons-material';
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
-import api from '../../services/api';
+import axios from 'axios';
+import { API_BASE_URL, getAuthToken, getAxiosConfig } from '../../utils/api';
 
 const ReservationsTable = () => {
   const [reservations, setReservations] = useState([]);
@@ -38,7 +39,7 @@ const ReservationsTable = () => {
   const fetchReservations = async () => {
     try {
       setLoading(true);
-      const response = await api.get(`/reservations/user/${user.id}`);
+      const response = await axios.get(`${API_BASE_URL}/reservations/user/${user.id}`, getAxiosConfig());
       setReservations(response.data);
       setLoading(false);
     } catch (error) {

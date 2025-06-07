@@ -31,7 +31,8 @@ import {
   Cancel,
   HourglassEmpty
 } from '@mui/icons-material';
-import api from '../../services/api';
+import axios from 'axios';
+import { API_BASE_URL, getAuthToken, getAxiosConfig } from '../../utils/api';
 
 const RequestSolde = () => {
   const [loading, setLoading] = useState(false);
@@ -59,7 +60,7 @@ const RequestSolde = () => {
 
   const fetchUserAccount = async () => {
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = getAuthToken();
       const userData = JSON.parse(localStorage.getItem('user'));
 
       if (!token || !userData) {
@@ -67,8 +68,8 @@ const RequestSolde = () => {
         return;
       }
 
-      // Utiliser le service API qui gère automatiquement les tokens
-      const response = await api.get(`/comptes/user/${userData.id}`);
+      // Utiliser axios directement avec la configuration appropriée
+      const response = await axios.get(`${API_BASE_URL}/comptes/user/${userData.id}`, getAxiosConfig());
 
       setCompte(response.data);
     } catch (error) {
@@ -84,15 +85,15 @@ const RequestSolde = () => {
   const fetchRequestHistory = async () => {
     try {
       setHistoryLoading(true);
-      const token = localStorage.getItem('accessToken');
+      const token = getAuthToken();
       const userData = JSON.parse(localStorage.getItem('user'));
 
       if (!token || !userData) {
         return;
       }
 
-      // Utiliser le service API qui gère automatiquement les tokens
-      const response = await api.get(`/request-solde/client/${userData.id}`);
+      // Utiliser axios directement avec la configuration appropriée
+      const response = await axios.get(`${API_BASE_URL}/request-solde/client/${userData.id}`, getAxiosConfig());
 
       setRequestHistory(response.data);
       setHistoryLoading(false);
@@ -139,7 +140,7 @@ const RequestSolde = () => {
 
     try {
       setLoading(true);
-      const token = localStorage.getItem('accessToken');
+      const token = getAuthToken();
       const userData = JSON.parse(localStorage.getItem('user'));
 
       // First upload the image if there is one
@@ -149,9 +150,11 @@ const RequestSolde = () => {
           const formDataImage = new FormData();
           formDataImage.append('file', imageFile);
 
-          // Use the new dedicated upload endpoint with the API service
-          const uploadResponse = await api.post('/upload', formDataImage, {
+          // Use the new dedicated upload endpoint with axios
+          const uploadResponse = await axios.post(`${API_BASE_URL}/upload`, formDataImage, {
+            ...getAxiosConfig(),
             headers: {
+              ...getAxiosConfig().headers,
               'Content-Type': 'multipart/form-data'
             }
           });
@@ -177,8 +180,8 @@ const RequestSolde = () => {
         imageUrl: imageUrl
       };
 
-      // Utiliser le service API qui gère automatiquement les tokens
-      await api.post('/request-solde', requestData);
+      // Utiliser axios directement avec la configuration appropriée
+      await axios.post(`${API_BASE_URL}/request-solde`, requestData, getAxiosConfig());
 
       setSnackbar({
         open: true,

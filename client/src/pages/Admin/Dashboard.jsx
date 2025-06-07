@@ -53,7 +53,8 @@ import ExpandMore from '@mui/icons-material/ExpandMore';
 import FeedbackIcon from '@mui/icons-material/Feedback';
 import AirlinesIcon from '@mui/icons-material/Airlines';
 import EventSeatIcon from '@mui/icons-material/EventSeat';
-import api from '../../services/api';
+import axios from 'axios';
+import { API_BASE_URL, removeAuthToken } from '../../utils/api';
 import tunisairLogo from '../../assets/Tunisair-Logo.png';
 
 const drawerWidth = 260;
@@ -219,14 +220,15 @@ export default function DashboardLayout() {
     try {
       console.log('Déconnexion en cours...');
 
-      // Utiliser le service API qui gère automatiquement les headers et cookies
-      await api.post('/auth/logout', {});
+      // Utiliser axios directement avec les headers appropriés
+      await axios.post(`${API_BASE_URL}/auth/logout`, {}, {
+        withCredentials: true
+      });
 
       console.log('Réponse de déconnexion reçue, suppression des données locales');
 
       // Supprimer les données d'authentification du localStorage
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('user');
+      removeAuthToken();
 
       // Vider également sessionStorage par précaution
       sessionStorage.clear();
@@ -239,8 +241,7 @@ export default function DashboardLayout() {
       console.error('Échec de la déconnexion:', error);
 
       // Même en cas d'erreur, supprimer les données d'authentification
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('user');
+      removeAuthToken();
       sessionStorage.clear();
 
       // Rediriger vers la page de connexion

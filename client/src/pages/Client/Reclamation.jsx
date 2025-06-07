@@ -16,7 +16,8 @@ import {
   Grid
 } from '@mui/material';
 import { Send, Feedback, CheckCircle, HourglassEmpty, Cancel } from '@mui/icons-material';
-import api from '../../services/api';
+import axios from 'axios';
+import { API_BASE_URL, getAuthToken, getAxiosConfig } from '../../utils/api';
 
 const Reclamation = () => {
   const [formData, setFormData] = useState({
@@ -36,7 +37,7 @@ const Reclamation = () => {
   const fetchUserReclamations = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('accessToken');
+      const token = getAuthToken();
       const userData = JSON.parse(localStorage.getItem('user'));
 
       if (!token || !userData) {
@@ -45,8 +46,8 @@ const Reclamation = () => {
         return;
       }
 
-      // Utiliser le service API qui gère automatiquement les tokens
-      const response = await api.get(`/reclamations/user/${userData.id}`);
+      // Utiliser axios directement avec la configuration appropriée
+      const response = await axios.get(`${API_BASE_URL}/reclamations/user/${userData.id}`, getAxiosConfig());
 
       setReclamations(response.data);
       setLoading(false);
@@ -79,7 +80,7 @@ const Reclamation = () => {
 
     try {
       setSubmitting(true);
-      const token = localStorage.getItem('accessToken');
+      const token = getAuthToken();
       const userData = JSON.parse(localStorage.getItem('user'));
 
       if (!token || !userData) {
@@ -88,11 +89,11 @@ const Reclamation = () => {
         return;
       }
 
-      // Utiliser le service API qui gère automatiquement les tokens
-      await api.post('/reclamations', {
+      // Utiliser axios directement avec la configuration appropriée
+      await axios.post(`${API_BASE_URL}/reclamations`, {
         ...formData,
         user_id: userData.id
-      });
+      }, getAxiosConfig());
 
       setSuccess(true);
       setFormData({ sujet: '', description: '' });

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import api from '../../services/api';
+import axios from 'axios';
+import { API_BASE_URL, getAuthToken, getAxiosConfig } from '../../utils/api';
 import {
   Container,
   Typography,
@@ -77,8 +78,8 @@ const Reservations = () => {
         return;
       }
 
-      // Get all reservations with flight data in a single request using the API service
-      const response = await api.get(`/reservations/user/${userData.id}`);
+      // Get all reservations with flight data in a single request using axios
+      const response = await axios.get(`${API_BASE_URL}/reservations/user/${userData.id}`, getAxiosConfig());
 
       // No need for additional flight fetching as the backend now includes this data
       const allReservations = response.data || [];

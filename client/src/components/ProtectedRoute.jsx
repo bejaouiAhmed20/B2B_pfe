@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { CircularProgress, Box } from '@mui/material';
-import api from '../services/api';
+import axios from 'axios';
+import { API_BASE_URL, getAuthToken, removeAuthToken, handleAuthError } from '../utils/api';
 
 /**
  * Composant pour protéger les routes qui nécessitent une authentification
@@ -21,8 +22,8 @@ const ProtectedRoute = ({ children, requireAdmin = false }) => {
       try {
         console.log('Vérification de l\'authentification...');
 
-        // Vérifier si le token existe (vérifier les deux noms possibles)
-        const token = localStorage.getItem('accessToken');
+        // Vérifier si le token existe
+        const token = getAuthToken();
         const userStr = localStorage.getItem('user');
 
         console.log('Token existe:', !!token);
@@ -65,12 +66,13 @@ const ProtectedRoute = ({ children, requireAdmin = false }) => {
           const timeoutId = setTimeout(() => controller.abort(), 5000);
 
           try {
-            const response = await api.get('/users/me/verify', {
+            const response = await axios.get(`${API_BASE_URL}/users/me/verify`, {
               signal: controller.signal,
               headers: {
                 'Authorization': `Bearer ${token}`,
                 'Cache-Control': 'no-cache'
-              }
+              },
+              withCredentials: true
             });
 
             clearTimeout(timeoutId);
@@ -110,7 +112,9 @@ const ProtectedRoute = ({ children, requireAdmin = false }) => {
             console.log('Tentative de rafraîchissement du token...');
             try {
               // Essayer de rafraîchir le token
-              const refreshResponse = await api.post('/auth/refresh-token');
+              const refreshResponse = await axios.post(`${API_BASE_URL}/auth/refresh-token`, {}, {
+                withCredentials: true
+              });
 
               if (refreshResponse.data && refreshResponse.data.accessToken) {
                 console.log('Token rafraîchi avec succès');
@@ -133,16 +137,14 @@ const ProtectedRoute = ({ children, requireAdmin = false }) => {
           setIsAuthenticated(false);
 
           // Supprimer les tokens invalides
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('user');
+          removeAuthToken();
         }
       } catch (error) {
         console.error('Erreur générale de vérification d\'authentification:', error);
         setIsAuthenticated(false);
 
         // Supprimer les tokens invalides
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('user');
+        removeAuthToken();
       } finally {
         setIsLoading(false);
       }
