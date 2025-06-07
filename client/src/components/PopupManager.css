@@ -1,0 +1,70 @@
+/* Styles pour le gestionnaire de pop-ups */
+
+.popup-navigation {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.popup-navigation-button {
+  min-width: 32px !important;
+  height: 32px !important;
+  padding: 4px !important;
+}
+
+.popup-navigation-button:disabled {
+  opacity: 0.3;
+}
+
+.popup-counter {
+  font-size: 0.875rem;
+  color: #666;
+  min-width: 60px;
+  text-align: center;
+  font-weight: 500;
+}
+
+.popup-close-all-button {
+  background-color: #f44336 !important;
+  color: white !important;
+  border: 1px solid #f44336 !important;
+}
+
+.popup-close-all-button:hover {
+  background-color: #d32f2f !important;
+  border-color: #d32f2f !important;
+}
+
+.popup-header-counter {
+  font-size: 0.75rem;
+  color: #999;
+  margin: 0 8px;
+}
+
+/* Animation pour les transitions entre pop-ups */
+.popup-content-transition {
+  transition: opacity 0.2s ease-in-out;
+}
+
+/* Style pour les boutons de navigation dans le header */
+.popup-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Responsive design pour les petits écrans */
+@media (max-width: 600px) {
+  .popup-navigation {
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .popup-counter {
+    min-width: auto;
+  }
+  
+  .popup-header-counter {
+    display: none;
+  }
+}

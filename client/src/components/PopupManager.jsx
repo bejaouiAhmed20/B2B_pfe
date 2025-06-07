@@ -16,9 +16,13 @@ import {
   Info as InfoIcon,
   Warning as WarningIcon,
   CheckCircle as SuccessIcon,
-  Error as ErrorIcon
+  Error as ErrorIcon,
+  ArrowBackIos as ArrowBackIcon,
+  ArrowForwardIos as ArrowForwardIcon,
+  CloseFullscreen as CloseAllIcon
 } from '@mui/icons-material';
 import { usePopup } from '../contexts/PopupContext';
+import './PopupManager.css';
 
 const Transition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
@@ -29,6 +33,7 @@ function PopupManager() {
   const [currentPopupIndex, setCurrentPopupIndex] = useState(0);
   const [open, setOpen] = useState(false);
   const [hasShownPopups, setHasShownPopups] = useState(false);
+  const [availablePopups, setAvailablePopups] = useState([]);
 
   // Check if we're on a login page to prevent showing popups there
   const location = window.location.pathname;
@@ -45,107 +50,66 @@ function PopupManager() {
     // Only show popups when explicitly triggered (after login)
     if (showPopups && popups.length > 0 && !loading) {
       console.log('Showing popups after login trigger');
-      showNextPopup();
-      setHasShownPopups(true);
-    }
-    // Remove the automatic display without trigger
-  }, [popups, loading, showPopups, isLoginPage]);
-
-  // Function to show the next available popup
-  const showNextPopup = () => {
-    console.log('showNextPopup called, current index:', currentPopupIndex);
-
-    // Create an array of popup indices that haven't been seen yet
-    const unseenPopups = [];
-
-    // Check all popups to find unseen ones
-    for (let i = 0; i < popups.length; i++) {
-      const popupId = popups[i].id;
-      const lastSeen = localStorage.getItem(`popup_${popupId}_lastSeen`);
-
-      if (!lastSeen) {
-        unseenPopups.push(i);
-      }
-    }
-
-    console.log('Unseen popups:', unseenPopups);
-
-    // If we have unseen popups, show the first one
-    if (unseenPopups.length > 0) {
-      const nextIndex = unseenPopups[0];
-      console.log('Showing unseen popup at index:', nextIndex);
-      setCurrentPopupIndex(nextIndex);
-      setOpen(true);
-    }
-    // If all popups have been seen but we're triggered after login
-    else if (showPopups && !hasShownPopups) {
-      console.log('All popups seen, but showing first one after login');
-      // Reset all "seen" statuses in localStorage
-      popups.forEach(popup => {
-        localStorage.removeItem(`popup_${popup.id}_lastSeen`);
-      });
-
-      // Show the first popup
+      // Get all available popups (both seen and unseen)
+      setAvailablePopups(popups);
       setCurrentPopupIndex(0);
       setOpen(true);
+      setHasShownPopups(true);
     }
-    // If all popups have been seen and we've already shown popups in this session
-    else {
-      console.log('All popups seen and already shown in this session, resetting trigger');
-      resetTrigger();
+  }, [popups, loading, showPopups, isLoginPage]);
+
+  // Navigation functions
+  const goToPreviousPopup = () => {
+    if (currentPopupIndex > 0) {
+      setCurrentPopupIndex(currentPopupIndex - 1);
     }
   };
 
-  const handleClose = () => {
-    console.log('handleClose called for popup index:', currentPopupIndex);
-
-    // Record that we've seen this popup
-    if (popups.length > 0) {
-      const popupId = popups[currentPopupIndex].id;
-      localStorage.setItem(`popup_${popupId}_lastSeen`, new Date().toISOString());
+  const goToNextPopup = () => {
+    if (currentPopupIndex < availablePopups.length - 1) {
+      setCurrentPopupIndex(currentPopupIndex + 1);
     }
+  };
+
+  // Function to close current popup and show next
+  const closeCurrentAndShowNext = () => {
+    const currentPopup = availablePopups[currentPopupIndex];
+    if (currentPopup) {
+      // Mark current popup as seen
+      localStorage.setItem(`popup_${currentPopup.id}_lastSeen`, new Date().toISOString());
+    }
+
+    // If there are more popups, show the next one
+    if (currentPopupIndex < availablePopups.length - 1) {
+      setCurrentPopupIndex(currentPopupIndex + 1);
+    } else {
+      // No more popups, close the dialog
+      handleCloseAll();
+    }
+  };
+
+  // Function to close current popup only
+  const handleClose = () => {
+    closeCurrentAndShowNext();
+  };
+
+  // Function to close all popups
+  const handleCloseAll = () => {
+    // Mark all popups as seen
+    availablePopups.forEach(popup => {
+      localStorage.setItem(`popup_${popup.id}_lastSeen`, new Date().toISOString());
+    });
 
     setOpen(false);
-
-    // Find all unseen popups
-    const unseenPopups = [];
-    for (let i = 0; i < popups.length; i++) {
-      // Skip the current popup we just closed
-      if (i === currentPopupIndex) continue;
-
-      const popupId = popups[i].id;
-      const lastSeen = localStorage.getItem(`popup_${popupId}_lastSeen`);
-      if (!lastSeen) {
-        unseenPopups.push(i);
-      }
-    }
-
-    console.log('Remaining unseen popups:', unseenPopups);
-
-    // If there are no more unseen popups, reset the trigger
-    if (unseenPopups.length === 0) {
-      console.log('No more unseen popups, resetting trigger');
-      resetTrigger();
-      return;
-    }
-
-    // Show the next unseen popup
-    const nextIndex = unseenPopups[0];
-    console.log('Showing next unseen popup at index:', nextIndex);
-
-    // Use setTimeout to avoid immediate reopening
-    setTimeout(() => {
-      setCurrentPopupIndex(nextIndex);
-      setOpen(true);
-    }, 500);
+    resetTrigger();
   };
 
   // If no popups, still loading, on login page, or invalid index, don't render anything
-  if (popups.length === 0 || loading || isLoginPage || currentPopupIndex >= popups.length) {
+  if (availablePopups.length === 0 || loading || isLoginPage || currentPopupIndex >= availablePopups.length) {
     return null;
   }
 
-  const currentPopup = popups[currentPopupIndex];
+  const currentPopup = availablePopups[currentPopupIndex];
 
   // Get icon based on popup type
   const getTypeIcon = (type) => {
@@ -201,17 +165,32 @@ function PopupManager() {
           {getTypeIcon(currentPopup.type)}
           <Typography variant="h6">{currentPopup.title}</Typography>
         </Box>
-        <Box>
+        <Box className="popup-header-actions">
           <Chip
             label={currentPopup.type}
             color={getTypeColor(currentPopup.type)}
             size="small"
-            sx={{ mr: 1 }}
           />
+          {availablePopups.length > 1 && (
+            <Typography variant="caption" className="popup-header-counter">
+              {currentPopupIndex + 1} sur {availablePopups.length}
+            </Typography>
+          )}
+          <IconButton
+            aria-label="close all"
+            onClick={handleCloseAll}
+            size="small"
+            color="error"
+            title="Fermer tout"
+            className="popup-navigation-button"
+          >
+            <CloseAllIcon />
+          </IconButton>
           <IconButton
             aria-label="close"
             onClick={handleClose}
             size="small"
+            className="popup-navigation-button"
           >
             <CloseIcon />
           </IconButton>
@@ -262,22 +241,63 @@ function PopupManager() {
         pt: 1,
         pb: 1,
         px: 2,
-        justifyContent: currentPopup.button_text ? 'space-between' : 'flex-end'
+        justifyContent: 'space-between'
       }}>
-        {currentPopup.button_text && currentPopup.button_link && (
-          <Button
-            variant="contained"
-            color="primary"
-            href={currentPopup.button_link}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {currentPopup.button_text}
-          </Button>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {currentPopup.button_text && currentPopup.button_link && (
+            <Button
+              variant="contained"
+              color="primary"
+              href={currentPopup.button_link}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {currentPopup.button_text}
+            </Button>
+          )}
+        </Box>
+
+        {/* Navigation buttons (only show if more than 1 popup) */}
+        {availablePopups.length > 1 && (
+          <Box className="popup-navigation">
+            <IconButton
+              onClick={goToPreviousPopup}
+              disabled={currentPopupIndex === 0}
+              size="small"
+              title="Précédent"
+              className="popup-navigation-button"
+            >
+              <ArrowBackIcon />
+            </IconButton>
+            <Typography variant="body2" className="popup-counter">
+              {currentPopupIndex + 1} / {availablePopups.length}
+            </Typography>
+            <IconButton
+              onClick={goToNextPopup}
+              disabled={currentPopupIndex === availablePopups.length - 1}
+              size="small"
+              title="Suivant"
+              className="popup-navigation-button"
+            >
+              <ArrowForwardIcon />
+            </IconButton>
+          </Box>
         )}
-        <Button onClick={handleClose} color="primary">
-          Fermer
-        </Button>
+
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {availablePopups.length > 1 && (
+            <Button
+              onClick={handleCloseAll}
+              color="error"
+              variant="outlined"
+              size="small"
+              className="popup-close-all-button"
+            >
+              Fermer tout
+            </Button>
+          )}
+          
+        </Box>
       </DialogActions>
     </Dialog>
   );
