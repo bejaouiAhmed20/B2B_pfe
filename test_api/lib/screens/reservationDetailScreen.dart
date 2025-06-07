@@ -144,13 +144,7 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 4),
-                                Text(
-                                  "${flight['airport_depart']?['ville'] ?? 'Non disponible'} (${flight['airport_depart']?['code'] ?? '--'})",
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
+
                                 Text(
                                   flight['date_depart'] != null
                                       ? formatDate(flight['date_depart'])
@@ -171,17 +165,11 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
                                     fontSize: 12,
                                   ),
                                 ),
+
                                 const SizedBox(height: 4),
                                 Text(
-                                  "${flight['airport_arrivee']?['ville'] ?? 'Non disponible'} (${flight['airport_arrivee']?['code'] ?? '--'})",
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  flight['date_arrivee'] != null
-                                      ? formatDate(flight['date_arrivee'])
+                                  flight['date_retour'] != null
+                                      ? formatDate(flight['date_retour'])
                                       : 'Non disponible',
                                 ),
                               ],
@@ -365,80 +353,8 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 32),
 
-                // Cancel button if reservation is not cancelled
-                if ((r['statut'] ?? '').toLowerCase() != 'annulée')
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        // Show confirmation dialog
-                        showDialog(
-                          context: context,
-                          builder:
-                              (context) => AlertDialog(
-                                title: const Text("Annuler la réservation"),
-                                content: const Text(
-                                  "Êtes-vous sûr de vouloir annuler cette réservation ? Cette action ne peut pas être annulée.",
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed:
-                                        () => Navigator.of(context).pop(),
-                                    child: const Text("Non"),
-                                  ),
-                                  TextButton(
-                                    onPressed: () async {
-                                      Navigator.of(context).pop();
-                                      try {
-                                        await Dio().put(
-                                          'http://localhost:5000/api/reservations/${widget.reservationId}/cancel',
-                                        );
-                                        setState(() {
-                                          _reservationFuture =
-                                              fetchReservationDetail();
-                                        });
 
-                                        if (mounted) {
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                "Réservation annulée avec succès",
-                                              ),
-                                            ),
-                                          );
-                                        }
-                                      } catch (e) {
-                                        if (mounted) {
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                "Erreur lors de l'annulation",
-                                              ),
-                                            ),
-                                          );
-                                        }
-                                      }
-                                    },
-                                    child: const Text("Oui, annuler"),
-                                  ),
-                                ],
-                              ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      child: const Text("Annuler la réservation"),
-                    ),
-                  ),
               ],
             ),
           );

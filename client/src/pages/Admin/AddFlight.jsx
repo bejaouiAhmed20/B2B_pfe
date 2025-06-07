@@ -184,7 +184,7 @@ const AddFlight = () => {
           <Grid item xs={12} md={6}>
             <TextField
               name="date_retour"
-              label="Date et heure de retour"
+              label="Date et heure d’arrivée"
               type="datetime-local"
               value={formData.date_retour}
               onChange={handleChange}

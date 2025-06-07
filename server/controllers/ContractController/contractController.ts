@@ -24,11 +24,11 @@ export const getContractById = async (req: Request, res: Response) => {
       where: { id: req.params.id },
       relations: ['client', 'coupon']
     });
-    
+
     if (!contract) {
       return res.status(404).json({ message: 'Contract not found' });
     }
-    
+
     res.json(contract);
   } catch (error) {
     console.error('Failed to fetch contract:', error);
@@ -43,7 +43,7 @@ export const getContractsByClientId = async (req: Request, res: Response) => {
       where: { client: { id: req.params.clientId } },
       relations: ['client', 'coupon']
     });
-    
+
     res.json(contracts);
   } catch (error) {
     console.error('Failed to fetch client contracts:', error);
@@ -65,21 +65,19 @@ export const createContract = async (req: Request, res: Response) => {
       travelEndDate,
       isActive,
       modifiedFeeAmount,
-      payLater,
-      payLaterTimeLimit,
       minTimeBeforeBalanceFlight,
       invoiceStamp,
       finalClientAdditionalFees,
       fixedTicketPrice,
       coupon
     } = req.body;
-    
+
     // Check if client exists
     const client = await User.findOneBy({ id: client_id });
     if (!client) {
       return res.status(404).json({ message: 'Client not found' });
     }
-    
+
     // Check if client already has an active contract that hasn't ended
     const currentDate = new Date();
     const existingActiveContract = await Contract.findOne({
@@ -89,14 +87,14 @@ export const createContract = async (req: Request, res: Response) => {
         contractEndDate: MoreThanOrEqual(currentDate)
       }
     });
-    
+
     if (existingActiveContract) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         message: 'Client already has an active contract. Please end the current contract before creating a new one.',
         existingContract: existingActiveContract
       });
     }
-    
+
     const contract = new Contract();
     contract.client = client;
     contract.clientType = clientType;
@@ -108,13 +106,11 @@ export const createContract = async (req: Request, res: Response) => {
     contract.travelEndDate = new Date(travelEndDate);
     contract.isActive = isActive !== undefined ? isActive : true;
     contract.modifiedFeeAmount = modifiedFeeAmount || null;
-    contract.payLater = payLater || false;
-    contract.payLaterTimeLimit = payLater ? payLaterTimeLimit : null;
     contract.minTimeBeforeBalanceFlight = minTimeBeforeBalanceFlight || null;
     contract.invoiceStamp = invoiceStamp || null;
     contract.finalClientAdditionalFees = finalClientAdditionalFees || null;
     contract.fixedTicketPrice = fixedTicketPrice || null;
-    
+
     // Handle coupon if provided
     if (coupon) {
       const couponEntity = await Coupon.findOneBy({ id: coupon });
@@ -122,14 +118,14 @@ export const createContract = async (req: Request, res: Response) => {
         contract.coupon = couponEntity;
       }
     }
-    
+
     await contract.save();
     res.status(201).json(contract);
   } catch (error: any) {
     console.error('Failed to create contract:', error);
-    res.status(500).json({ 
-      message: 'Failed to create contract', 
-      error: error.message 
+    res.status(500).json({
+      message: 'Failed to create contract',
+      error: error.message
     });
   }
 };
@@ -138,11 +134,11 @@ export const createContract = async (req: Request, res: Response) => {
 export const updateContract = async (req: Request, res: Response) => {
   try {
     const contract = await Contract.findOneBy({ id: req.params.id });
-    
+
     if (!contract) {
       return res.status(404).json({ message: 'Contract not found' });
     }
-    
+
     const {
       clientType,
       client_id,
@@ -154,15 +150,13 @@ export const updateContract = async (req: Request, res: Response) => {
       travelEndDate,
       isActive,
       modifiedFeeAmount,
-      payLater,
-      payLaterTimeLimit,
       minTimeBeforeBalanceFlight,
       invoiceStamp,
       finalClientAdditionalFees,
       fixedTicketPrice,
       coupon
     } = req.body;
-    
+
     // If client is being changed, check for existing active contracts
     if (client_id && client_id !== contract.client.id) {
       const currentDate = new Date();
@@ -174,14 +168,14 @@ export const updateContract = async (req: Request, res: Response) => {
           id: Not(contract.id) // Fixed: Use Not() instead of $ne
         }
       });
-      
+
       if (existingActiveContract) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           message: 'Client already has an active contract. Please end the current contract before assigning a new one.',
           existingContract: existingActiveContract
         });
       }
-      
+
       // Update client if provided
       const client = await User.findOneBy({ id: client_id });
       if (!client) {
@@ -189,7 +183,7 @@ export const updateContract = async (req: Request, res: Response) => {
       }
       contract.client = client;
     }
-    
+
     // If activating a contract, check if client already has an active contract
     if (isActive && !contract.isActive) {
       const currentDate = new Date();
@@ -201,15 +195,15 @@ export const updateContract = async (req: Request, res: Response) => {
           id: Not(contract.id) // Fixed: Use Not() instead of $ne
         }
       });
-      
+
       if (existingActiveContract) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           message: 'Client already has an active contract. Please end the current contract before activating this one.',
           existingContract: existingActiveContract
         });
       }
     }
-    
+
     // Update other fields if provided
     if (clientType !== undefined) contract.clientType = clientType;
     if (label !== undefined) contract.label = label;
@@ -220,20 +214,11 @@ export const updateContract = async (req: Request, res: Response) => {
     if (travelEndDate !== undefined) contract.travelEndDate = new Date(travelEndDate);
     if (isActive !== undefined) contract.isActive = isActive;
     if (modifiedFeeAmount !== undefined) contract.modifiedFeeAmount = modifiedFeeAmount;
-    if (payLater !== undefined) contract.payLater = payLater;
-    
-    // Only set payLaterTimeLimit if payLater is true
-    if (payLater) {
-      if (payLaterTimeLimit !== undefined) contract.payLaterTimeLimit = payLaterTimeLimit;
-    } else {
-      contract.payLaterTimeLimit = null;
-    }
-    
     if (minTimeBeforeBalanceFlight !== undefined) contract.minTimeBeforeBalanceFlight = minTimeBeforeBalanceFlight;
     if (invoiceStamp !== undefined) contract.invoiceStamp = invoiceStamp;
     if (finalClientAdditionalFees !== undefined) contract.finalClientAdditionalFees = finalClientAdditionalFees;
     if (fixedTicketPrice !== undefined) contract.fixedTicketPrice = fixedTicketPrice;
-    
+
     // Handle coupon if provided
     if (coupon !== undefined) {
       if (coupon) {
@@ -243,12 +228,12 @@ export const updateContract = async (req: Request, res: Response) => {
         contract.coupon = null;
       }
     }
-    
+
     await contract.save();
     res.json(contract);
   } catch (error: any) {
     console.error('Failed to update contract:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Failed to update contract',
       error: error.message
     });
@@ -259,15 +244,74 @@ export const updateContract = async (req: Request, res: Response) => {
 export const deleteContract = async (req: Request, res: Response) => {
   try {
     const contract = await Contract.findOneBy({ id: req.params.id });
-    
+
     if (!contract) {
       return res.status(404).json({ message: 'Contract not found' });
     }
-    
+
     await contract.remove();
     res.status(200).json({ message: 'Contract deleted successfully' });
   } catch (error) {
     console.error('Failed to delete contract:', error);
     res.status(500).json({ message: 'Failed to delete contract' });
+  }
+};
+
+// Generate contract PDF
+export const generateContractPDF = async (req: Request, res: Response) => {
+  try {
+    const contract = await Contract.findOne({
+      where: { id: req.params.id },
+      relations: ['client', 'coupon']
+    });
+
+    if (!contract) {
+      return res.status(404).json({ message: 'Contract not found' });
+    }
+
+    // Format dates for display
+    const formatDate = (date: Date) => {
+      return new Date(date).toLocaleDateString('fr-FR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    };
+
+    // Create contract data for PDF generation
+    const contractData = {
+      id: contract.id,
+      client: {
+        nom: contract.client.nom,
+        email: contract.client.email,
+        numero_telephone: contract.client.numero_telephone,
+        adresse: contract.client.adresse,
+        pays: contract.client.pays
+      },
+      clientType: contract.clientType,
+      label: contract.label,
+      contractStartDate: formatDate(contract.contractStartDate),
+      contractEndDate: formatDate(contract.contractEndDate),
+      guaranteedMinimum: contract.guaranteedMinimum,
+      travelStartDate: formatDate(contract.travelStartDate),
+      travelEndDate: formatDate(contract.travelEndDate),
+      isActive: contract.isActive,
+      modifiedFeeAmount: contract.modifiedFeeAmount,
+      minTimeBeforeBalanceFlight: contract.minTimeBeforeBalanceFlight,
+      invoiceStamp: contract.invoiceStamp,
+      finalClientAdditionalFees: contract.finalClientAdditionalFees,
+      fixedTicketPrice: contract.fixedTicketPrice,
+      coupon: contract.coupon ? {
+        code: contract.coupon.code,
+        reduction: contract.coupon.reduction,
+        reduction_type: contract.coupon.reduction_type
+      } : null,
+      createdAt: formatDate(contract.createdAt)
+    };
+
+    res.json(contractData);
+  } catch (error) {
+    console.error('Failed to generate contract PDF data:', error);
+    res.status(500).json({ message: 'Failed to generate contract PDF data' });
   }
 };

@@ -30,7 +30,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => EditProfileScreen(userId: user.id),
-      ),  // Added missing closing parenthesis here
+      ), // Added missing closing parenthesis here
     );
     if (updated == true) setState(() => _loadUser());
   }
@@ -39,7 +39,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Mon Profil", 
+        title: Text(
+          "Mon Profil",
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.w600,
             color: Colors.white,
@@ -72,8 +73,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
             return Center(child: CircularProgressIndicator(color: Colors.red));
           }
           if (snapshot.hasError) {
-            return Center(child: Text('Erreur: ${snapshot.error}', 
-              style: TextStyle(color: Colors.red[800])));
+            return Center(
+              child: Text(
+                'Erreur: ${snapshot.error}',
+                style: TextStyle(color: Colors.red[800]),
+              ),
+            );
           }
 
           final user = snapshot.data!;
@@ -149,7 +154,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 user.email,
                 style: GoogleFonts.poppins(
                   color: Colors.grey[600],
-                  fontSize: 14,
+                  fontSize: 9,
                 ),
               ),
             ],
@@ -172,11 +177,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           title: "Adresse",
           value: user.adresse,
         ),
-        _buildInfoItem(
-          icon: Icons.flag,
-          title: "Pays",
-          value: user.pays,
-        ),
+        _buildInfoItem(icon: Icons.flag, title: "Pays", value: user.pays),
         _buildInfoItem(
           icon: Icons.security,
           title: "Rôle",
@@ -255,9 +256,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         backgroundColor: Colors.red[800],
         foregroundColor: Colors.white,
         padding: EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         elevation: 3,
       ),
     );

@@ -1,0 +1,70 @@
+@startuml
+title Diagramme de Déploiement – Tunisair Partner Hub (Simplifié)
+
+skinparam componentStyle rectangle
+
+' Définition des couleurs
+skinparam node {
+    BackgroundColor LightBlue
+    BorderColor DarkBlue
+}
+
+skinparam component {
+    BackgroundColor LightGreen
+    BorderColor DarkGreen
+}
+
+skinparam database {
+    BackgroundColor LightYellow
+    BorderColor Orange
+}
+
+skinparam cloud {
+    BackgroundColor LightPink
+    BorderColor Red
+}
+
+' === CLIENTS ===
+node "Client Web" as ClientWeb {
+  component "Application React.js" as ReactApp
+}
+
+node "Client Mobile" as ClientMobile {
+  component "Application Flutter" as FlutterApp
+}
+
+' === SERVEUR ===
+node "Serveur d'Application" as AppServer {
+  component "API REST (Node.js / Express / TypeScript)" as RestAPI
+  component "Services : Auth, Réservations, Vols" as Services
+}
+
+' === BASE DE DONNÉES ===
+database "MySQL" as MySQL
+
+' === SERVICES EXTERNES ===
+cloud "Google Gemini AI" as GeminiAI
+cloud "Gmail SMTP" as GmailSMTP
+cloud "Stockage Local" as LocalStorage
+
+' === CONNEXIONS ===
+ReactApp --> RestAPI : "HTTP/HTTPS\nRequêtes API"
+FlutterApp --> RestAPI : "HTTP/HTTPS\nRequêtes API"
+
+RestAPI --> MySQL : "Connexion MySQL\nRequêtes SQL"
+RestAPI --> GeminiAI : "API Calls\nChatbot IA"
+RestAPI --> GmailSMTP : "SMTP\nEnvoi Emails"
+RestAPI --> LocalStorage : "File System\nUpload Fichiers"
+
+' === ANNOTATIONS ===
+note right of ClientWeb : **Technologies Web**\n• React 19.0.0\n• Material-UI\n• Tailwind CSS\n• Port 3000
+
+note right of ClientMobile : **Technologies Mobile**\n• Flutter SDK 3.7.0\n• Dart\n• Material Design\n• Cross-platform
+
+note right of AppServer : **Technologies Backend**\n• Node.js + TypeScript\n• Express.js 4.21.2\n• TypeORM 0.3.20\n• Port 5000
+
+note right of MySQL : **Base de Données**\n• MySQL 8.0+\n• Port 3306\n• utf8mb4_unicode_ci\n• ACID Transactions
+
+note bottom : **Services Externes**\n• Google Gemini AI : Chatbot intelligent\n• Gmail SMTP : Service email automatisé\n• Stockage Local : Upload et gestion fichiers
+
+@enduml

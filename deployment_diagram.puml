@@ -1,0 +1,152 @@
+@startuml Diagramme_Deploiement_Tunisair_B2B
+
+!define RECTANGLE class
+!define NODE node
+!define COMPONENT component
+!define DATABASE database
+!define CLOUD cloud
+
+title Diagramme de Déploiement - Tunisair Partner Hub
+
+' Définition des couleurs
+skinparam node {
+    BackgroundColor LightBlue
+    BorderColor DarkBlue
+}
+
+skinparam component {
+    BackgroundColor LightGreen
+    BorderColor DarkGreen
+}
+
+skinparam database {
+    BackgroundColor LightYellow
+    BorderColor Orange
+}
+
+skinparam cloud {
+    BackgroundColor LightPink
+    BorderColor Red
+}
+
+' ===== ENVIRONNEMENT CLIENT =====
+NODE "Poste Client Web" as ClientWeb {
+    COMPONENT "Navigateur Web" as Browser {
+        COMPONENT "React App" as ReactApp
+        COMPONENT "Vite Dev Server" as ViteServer
+        note right : Port 3000\nTechnologies:\n- React 19.0.0\n- Material-UI\n- Tailwind CSS\n- Axios
+    }
+}
+
+NODE "Appareil Mobile" as MobileDevice {
+    COMPONENT "Application Mobile" as FlutterApp {
+        COMPONENT "Flutter Engine" as FlutterEngine
+        COMPONENT "Dart Runtime" as DartRuntime
+        note right : Technologies:\n- Flutter SDK 3.7.0\n- Dart\n- Material Design\n- Dio HTTP Client
+    }
+}
+
+' ===== ENVIRONNEMENT SERVEUR =====
+NODE "Serveur Application" as AppServer {
+    COMPONENT "Node.js Runtime" as NodeJS {
+        COMPONENT "Express.js Server" as ExpressServer
+        COMPONENT "TypeScript Engine" as TypeScript
+        COMPONENT "API REST" as RestAPI
+        COMPONENT "Middleware Auth" as AuthMiddleware
+        COMPONENT "Contrôleurs" as Controllers
+        COMPONENT "Services Métier" as BusinessServices
+        note right : Port 5000\nTechnologies:\n- Node.js 18+\n- TypeScript 5.8.2\n- Express.js 4.21.2\n- TypeORM 0.3.20\n- JWT + bcrypt
+    }
+    
+    COMPONENT "Service Email" as EmailService {
+        COMPONENT "Nodemailer" as Nodemailer
+        note right : Technologies:\n- Nodemailer 6.10.1\n- Templates HTML\n- SMTP Gmail
+    }
+    
+    COMPONENT "Service Chatbot" as ChatbotService {
+        COMPONENT "Google Gemini AI" as GeminiAI
+        COMPONENT "Context Engine" as ContextEngine
+        note right : Technologies:\n- Google Gemini API\n- Intent Detection\n- Real-time Data
+    }
+    
+    COMPONENT "Service Upload" as UploadService {
+        COMPONENT "Multer" as Multer
+        COMPONENT "File Storage" as FileStorage
+        note right : Technologies:\n- Multer 1.4.5\n- Local Storage\n- Image Processing
+    }
+}
+
+' ===== BASE DE DONNÉES =====
+NODE "Serveur Base de Données" as DBServer {
+    DATABASE "MySQL Database" as MySQL {
+        COMPONENT "b2b_db4" as Database
+        note right : Port 3306\nTechnologies:\n- MySQL 8.0+\n- utf8mb4_unicode_ci\n- InnoDB Engine\n- ACID Transactions
+    }
+}
+
+' ===== SERVICES EXTERNES =====
+CLOUD "Services Google" as GoogleCloud {
+    COMPONENT "Google Gemini API" as GeminiAPI
+    note right : Service IA\n- Modèle: gemini-1.5-flash\n- Réponses contextuelles\n- Support multilingue
+}
+
+CLOUD "Gmail SMTP" as GmailSMTP {
+    COMPONENT "Service Email Gmail" as GmailService
+    note right : Service Email\n- SMTP sécurisé\n- Authentification 2FA\n- Templates HTML
+}
+
+CLOUD "Stockage Local" as LocalStorage {
+    COMPONENT "Uploads Directory" as UploadsDir
+    note right : Stockage Fichiers\n- Images vols\n- Images actualités\n- Documents utilisateurs
+}
+
+' ===== CONNEXIONS RÉSEAU =====
+
+' Connexions Client Web
+ClientWeb ||--|| AppServer : "HTTP/HTTPS\nPort 3000 → 5000\nRequêtes API REST"
+ReactApp ..> RestAPI : "Axios HTTP Client\nJSON Data Exchange"
+
+' Connexions Mobile
+MobileDevice ||--|| AppServer : "HTTP/HTTPS\nRequêtes API REST"
+FlutterApp ..> RestAPI : "Dio HTTP Client\nJSON Data Exchange"
+
+' Connexions Serveur → Base de Données
+AppServer ||--|| DBServer : "MySQL Protocol\nPort 5000 → 3306\nTypeORM Queries"
+Controllers ..> Database : "CRUD Operations\nSQL Queries"
+
+' Connexions Services Externes
+AppServer ||--|| GoogleCloud : "HTTPS API Calls\nGoogle Gemini Integration"
+ChatbotService ..> GeminiAPI : "AI Requests\nContext Analysis"
+
+AppServer ||--|| GmailSMTP : "SMTP Protocol\nPort 587/465"
+EmailService ..> GmailService : "Email Sending\nHTML Templates"
+
+AppServer ||--|| LocalStorage : "File System Access\nLocal Storage"
+UploadService ..> UploadsDir : "File Upload/Download\nImage Storage"
+
+' ===== NOTES DE DÉPLOIEMENT =====
+note top of ClientWeb : **Environnement Client**\nDéveloppement: localhost:3000\nProduction: https://partner.tunisair.com
+
+note top of MobileDevice : **Applications Mobiles**\nAndroid: APK Build\niOS: IPA Build\nCross-platform: Flutter
+
+note top of AppServer : **Serveur Principal**\nDéveloppement: localhost:5000\nProduction: https://api.tunisair.com\nLoad Balancer Ready
+
+note top of DBServer : **Base de Données**\nDéveloppement: localhost:3306\nProduction: Cluster MySQL\nBackup & Replication
+
+note top of GoogleCloud : **Services Cloud**\nAuthentification API Key\nQuotas et Limitations\nMonitoring Intégré
+
+' ===== LÉGENDE =====
+legend right
+    |= Symbole |= Description |
+    | <$node> | Nœud physique/serveur |
+    | <$component> | Composant logiciel |
+    | <$database> | Base de données |
+    | <$cloud> | Service externe/cloud |
+    | ——— | Connexion réseau |
+    | ··· | Dépendance logicielle |
+endlegend
+
+' ===== INFORMATIONS DE SÉCURITÉ =====
+note bottom : **Sécurité du Déploiement**\n• HTTPS/TLS pour toutes les communications\n• JWT pour l'authentification\n• CORS configuré pour les origines autorisées\n• Validation des entrées sur toutes les API\n• Chiffrement des mots de passe avec bcrypt\n• Variables d'environnement pour les secrets
+
+@enduml

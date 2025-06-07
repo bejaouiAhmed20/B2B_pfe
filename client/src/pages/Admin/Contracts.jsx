@@ -52,8 +52,6 @@ const Contracts = () => {
     travelEndDate: '',
     isActive: true,
     modifiedFeeAmount: '',
-    payLater: false,
-    payLaterTimeLimit: '',
     minTimeBeforeBalanceFlight: '',
     invoiceStamp: '',
     finalClientAdditionalFees: '',
@@ -128,8 +126,6 @@ const Contracts = () => {
       travelEndDate: formatDateForInput(contract.travelEndDate),
       isActive: contract.isActive,
       modifiedFeeAmount: contract.modifiedFeeAmount || '',
-      payLater: contract.payLater,
-      payLaterTimeLimit: contract.payLaterTimeLimit || '',
       minTimeBeforeBalanceFlight: contract.minTimeBeforeBalanceFlight || '',
       invoiceStamp: contract.invoiceStamp || '',
       finalClientAdditionalFees: contract.finalClientAdditionalFees || '',
@@ -521,28 +517,7 @@ const Contracts = () => {
                 margin="normal"
               />
 
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={formData.payLater}
-                    onChange={handleChange}
-                    name="payLater"
-                    color="primary"
-                  />
-                }
-                label="Payer Plus Tard"
-                sx={{ mt: 1 }}
-              />
 
-              <TextField
-                name="payLaterTimeLimit"
-                label="Limite de Temps pour Payer Plus Tard (heures)"
-                type="number"
-                value={formData.payLaterTimeLimit}
-                onChange={handleChange}
-                fullWidth
-                margin="normal"
-              />
 
               <TextField
                 name="minTimeBeforeCCFlight"

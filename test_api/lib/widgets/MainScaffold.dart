@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:my_test_api/screens/account_screen.dart';
 import 'package:my_test_api/screens/flight_list_screen.dart';
 import 'package:my_test_api/screens/news_list_screen.dart';
@@ -188,7 +187,6 @@ class _MainScaffoldState extends State<MainScaffold> {
                       Navigator.pop(context);
                     },
                   ),
-                
 
                   // Section Compte
                   const Padding(
@@ -224,15 +222,14 @@ class _MainScaffoldState extends State<MainScaffold> {
                   ),
 
                   ListTile(
-                    leading: const Icon(Icons.account_balance_wallet_rounded),
-                    title: const Text("Mon Compte"),
+                    leading: const Icon(Icons.description_rounded),
+                    title: const Text("Mon Contrat"),
                     onTap: () {
                       Navigator.pop(context); // Fermer le drawer d'abord
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder:
-                              (context) => AccountScreen(userId: widget.userId),
+                          builder: (context) => ContractScreen(),
                         ),
                       );
                     },

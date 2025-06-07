@@ -125,7 +125,7 @@ const ResetPassword = () => {
           
           <Box sx={{ mt: 2, textAlign: 'center' }}>
             <Typography variant="body2">
-              <Link to="/login" style={{ color: '#666', textDecoration: 'none' }}>
+              <Link to="/login-client" style={{ color: '#666', textDecoration: 'none' }}>
                 Retour à la connexion
               </Link>
             </Typography>

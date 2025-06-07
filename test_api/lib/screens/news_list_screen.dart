@@ -11,7 +11,6 @@ class NewsListScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.white,
         title: const Text(
           "Actualités",
           style: TextStyle(fontWeight: FontWeight.bold),

@@ -11,10 +11,10 @@ class SoldeRequestDetailScreen extends StatefulWidget {
   final String requestId;
 
   const SoldeRequestDetailScreen({
-    Key? key,
+    super.key,
     required this.userId,
     required this.requestId,
-  }) : super(key: key);
+  });
 
   @override
   State<SoldeRequestDetailScreen> createState() => _SoldeRequestDetailScreenState();

@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { RequestSolde, RequestStatus } from '../../models/RequestSolde';
 import { User } from '../../models/User';
 import { Compte } from '../../models/Compte';
-import { emailTransporter, formatDateFr, formatEuro } from '../../utils/emailConfig';
+import { sendSoldeRequestResponseEmail } from '../../services/emailService';
 
 // Get all requests
 export const getRequests = async (req: Request, res: Response) => {
@@ -190,73 +190,26 @@ export const approveRequest = async (req: Request, res: Response) => {
 
     // Send email notification
     try {
-      // Make sure we have a valid email address
-      if (!request.client.email) {
-        console.error('Client email is missing, cannot send approval notification');
-      } else {
-        const clientName = request.client.nom || 'Client';
-        const requestDate = formatDateFr(request.date);
-        const approvalDate = formatDateFr(new Date());
-        const montantFormatted = formatEuro(parseFloat(request.montant.toString()));
+      if (request.client.email) {
+        const emailData = {
+          userEmail: request.client.email,
+          userName: request.client.nom || 'Client',
+          requestedAmount: parseFloat(request.montant.toString()),
+          status: 'approved' as const,
+          adminComment: req.body.adminComment || undefined,
+          newBalance: parseFloat(compte.solde.toString())
+        };
 
-        console.log(`Preparing to send approval email to: ${request.client.email}`);
+        const emailSent = await sendSoldeRequestResponseEmail(emailData);
 
-        const htmlContent = `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <meta charset="UTF-8">
-            <style>
-              body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
-              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-              .header { background-color: #CC0A2B; color: white; padding: 20px; text-align: center; }
-              .content { padding: 20px; }
-              .details { background-color: #f5f5f5; padding: 15px; margin: 15px 0; border-radius: 5px; }
-              .success { color: #4CAF50; font-weight: bold; }
-              .footer { font-size: 12px; text-align: center; margin-top: 30px; color: #666; }
-            </style>
-          </head>
-          <body>
-            <div class="container">
-              <div class="header">
-                <h1>Tunisair B2B</h1>
-              </div>
-              <div class="content">
-                <h2>Notification de Demande de Solde</h2>
-                <p>Bonjour ${clientName},</p>
-                <p>Nous vous informons que votre demande de solde a été <span class="success">approuvée</span>.</p>
-
-                <div class="details">
-                  <h3>Détails de la demande:</h3>
-                  <p><strong>Montant:</strong> ${montantFormatted}</p>
-                  <p><strong>Date de la demande:</strong> ${requestDate}</p>
-                  <p><strong>Date d'approbation:</strong> ${approvalDate}</p>
-                  <p><strong>Statut:</strong> <span class="success">Approuvée</span></p>
-                </div>
-
-                <p>Le montant a été ajouté à votre compte. Votre nouveau solde est de ${formatEuro(parseFloat(compte.solde.toString()))}.</p>
-                <p>Merci de votre confiance.</p>
-                <p>Cordialement,<br>L'équipe Tunisair B2B</p>
-              </div>
-              <div class="footer">
-                <p>Ceci est un email automatique, merci de ne pas y répondre.</p>
-              </div>
-            </div>
-          </body>
-          </html>
-        `;
-
-        const mailResult = await emailTransporter.sendMail({
-          from: process.env.EMAIL_USER || 'noreply@tunisairb2b.com',
-          to: request.client.email,
-          subject: 'Tunisair B2B - Votre demande de solde a été approuvée',
-          html: htmlContent
-        });
-
-        console.log('Approval email sent successfully:', mailResult.messageId);
+        if (emailSent) {
+          console.log(`Email d'approbation de demande de solde envoyé à ${request.client.email}`);
+        } else {
+          console.log(`Échec de l'envoi de l'email d'approbation à ${request.client.email}`);
+        }
       }
     } catch (emailError) {
-      console.error('Failed to send approval email:', emailError);
+      console.error('Erreur lors de l\'envoi de l\'email d\'approbation:', emailError);
       // Continue with the process even if email fails
     }
 
@@ -301,72 +254,25 @@ export const rejectRequest = async (req: Request, res: Response) => {
 
     // Send email notification
     try {
-      // Make sure we have a valid email address
-      if (!request.client.email) {
-        console.error('Client email is missing, cannot send rejection notification');
-      } else {
-        const clientName = request.client.nom || 'Client';
-        const requestDate = formatDateFr(request.date);
-        const rejectionDate = formatDateFr(new Date());
-        const montantFormatted = formatEuro(parseFloat(request.montant.toString()));
+      if (request.client.email) {
+        const emailData = {
+          userEmail: request.client.email,
+          userName: request.client.nom || 'Client',
+          requestedAmount: parseFloat(request.montant.toString()),
+          status: 'rejected' as const,
+          adminComment: req.body.adminComment || undefined
+        };
 
-        console.log(`Preparing to send rejection email to: ${request.client.email}`);
+        const emailSent = await sendSoldeRequestResponseEmail(emailData);
 
-        const htmlContent = `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <meta charset="UTF-8">
-            <style>
-              body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
-              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-              .header { background-color: #CC0A2B; color: white; padding: 20px; text-align: center; }
-              .content { padding: 20px; }
-              .details { background-color: #f5f5f5; padding: 15px; margin: 15px 0; border-radius: 5px; }
-              .rejected { color: #f44336; font-weight: bold; }
-              .footer { font-size: 12px; text-align: center; margin-top: 30px; color: #666; }
-            </style>
-          </head>
-          <body>
-            <div class="container">
-              <div class="header">
-                <h1>Tunisair B2B</h1>
-              </div>
-              <div class="content">
-                <h2>Notification de Demande de Solde</h2>
-                <p>Bonjour ${clientName},</p>
-                <p>Nous vous informons que votre demande de solde a été <span class="rejected">rejetée</span>.</p>
-
-                <div class="details">
-                  <h3>Détails de la demande:</h3>
-                  <p><strong>Montant:</strong> ${montantFormatted}</p>
-                  <p><strong>Date de la demande:</strong> ${requestDate}</p>
-                  <p><strong>Date de rejet:</strong> ${rejectionDate}</p>
-                  <p><strong>Statut:</strong> <span class="rejected">Rejetée</span></p>
-                </div>
-
-                <p>Pour plus d'informations, veuillez contacter notre service client.</p>
-                <p>Cordialement,<br>L'équipe Tunisair B2B</p>
-              </div>
-              <div class="footer">
-                <p>Ceci est un email automatique, merci de ne pas y répondre.</p>
-              </div>
-            </div>
-          </body>
-          </html>
-        `;
-
-        const mailResult = await emailTransporter.sendMail({
-          from: process.env.EMAIL_USER || 'noreply@tunisairb2b.com',
-          to: request.client.email,
-          subject: 'Tunisair B2B - Votre demande de solde a été rejetée',
-          html: htmlContent
-        });
-
-        console.log('Rejection email sent successfully:', mailResult.messageId);
+        if (emailSent) {
+          console.log(`Email de rejet de demande de solde envoyé à ${request.client.email}`);
+        } else {
+          console.log(`Échec de l'envoi de l'email de rejet à ${request.client.email}`);
+        }
       }
     } catch (emailError) {
-      console.error('Failed to send rejection email:', emailError);
+      console.error('Erreur lors de l\'envoi de l\'email de rejet:', emailError);
       // Continue with the process even if email fails
     }
 

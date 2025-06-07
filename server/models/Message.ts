@@ -18,6 +18,6 @@ export class Message extends BaseEntity {
   @CreateDateColumn()
   created_at!: Date;
 
-  @ManyToOne(() => Reclamation, reclamation => reclamation.messages)
+  @ManyToOne(() => Reclamation)
   reclamation!: Reclamation;
 }
