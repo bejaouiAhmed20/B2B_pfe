@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:my_test_api/widgets/MainScaffold.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:my_test_api/widgets/server_diagnostic_widget.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -24,16 +25,17 @@ class _LoginScreenState extends State<LoginScreen> {
     final String password = _passwordController.text;
 
     try {
+      // Configuration Dio avec timeout plus long
+      _dio.options.connectTimeout = const Duration(seconds: 10);
+      _dio.options.receiveTimeout = const Duration(seconds: 10);
+
       final response = await _dio.post(
-        'http://localhost:5000/api/auth/login-client',
+        'http://localhost:5000/api/auth/login-client', // Commencez par localhost
         data: {'email': email, 'mot_de_passe': password},
         options: Options(
-          // Enable cookies
           receiveDataWhenStatusError: true,
           followRedirects: false,
-          validateStatus: (status) {
-            return status! < 500;
-          },
+          validateStatus: (status) => status! < 500,
         ),
       );
 
@@ -274,6 +276,46 @@ class _LoginScreenState extends State<LoginScreen> {
                                         ),
                                       ],
                                     ),
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // Bouton de test de connexion
+                          OutlinedButton(
+                            onPressed: () async {
+                              final result = await Navigator.push<String>(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const ServerDiagnosticWidget(),
+                                ),
+                              );
+
+                              if (result != null && mounted) {
+                                // L'utilisateur a sélectionné une URL
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('URL configurée: $result'),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              }
+                            },
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: primaryColor,
+                              side: BorderSide(color: primaryColor),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.network_check),
+                                SizedBox(width: 8),
+                                Text('Tester la connexion serveur'),
+                              ],
+                            ),
                           ),
                         ],
                       ),

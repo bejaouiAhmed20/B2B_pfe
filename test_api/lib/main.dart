@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:my_test_api/screens/login_screen.dart';
-import 'package:my_test_api/widgets/MainScaffold.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'screens/login_screen.dart';
+import 'widgets/MainScaffold.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -180,15 +180,12 @@ class MyApp extends StatelessWidget {
       title: 'Tunisair B2B',
       debugShowCheckedModeBanner: false,
       theme: appTheme,
-      home:
-          userId != null ? MainScaffold(userId: userId!) : const LoginScreen(),
+      home: userId != null ? MainScaffold(userId: userId!) : const LoginScreen(),
       routes: {
         '/login': (context) => const LoginScreen(),
-        '/home':
-            (context) =>
-                userId != null
-                    ? MainScaffold(userId: userId!)
-                    : const LoginScreen(),
+        '/home': (context) => userId != null
+            ? MainScaffold(userId: userId!)
+            : const LoginScreen(),
       },
     );
   }
